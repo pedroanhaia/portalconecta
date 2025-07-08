@@ -1,0 +1,9 @@
+.idea
+*.iml
+.hhconfig
+.phpunit.result.cache
+vendor
+composer.phar
+composer.lock
+phpunit.xml
+/tools

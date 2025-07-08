@@ -1,0 +1,10 @@
+parameters:
+    level: 8
+    paths:
+        - ./src/
+    ignoreErrors: []
+    phpVersion: 70200
+
+includes:
+    - phpstan-baseline.neon
+    - vendor/marc-mabe/php-enum-phpstan/extension.neon

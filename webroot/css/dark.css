@@ -1,0 +1,102 @@
+body.dark{
+	--body-color: #18191a;
+	--sidebar-color: #242526;
+	--primary-color: #3a3b3c;
+	--primary-color-light: #5c5d5e;
+	--toggle-color: #fff;
+	--text-color: #ccc;
+	background: #18191a;
+}
+
+body.dark .sidebar header .toggle{
+	color: var(--text-color);
+}
+
+body.dark .sidebar li a:hover .icon,
+body.dark .sidebar li a:hover .text{
+	color: var(--text-color);
+}
+
+body.dark .mode .sun-moon i.sun{
+	opacity: 1;
+}
+
+body.dark .mode .sun-moon i.moon{
+	opacity: 0;
+}
+
+body.dark .switch::before{
+	left: 20px;
+}
+
+body.dark .home .text{
+	color: var(--text-color);
+}
+
+.coluna {
+	background: var(--body-color);
+	color: var(--text-color);
+}
+
+.tarefa-card {
+	background: var(--primary-color-light);
+	color: var(--text-color);
+}
+
+.check-count {
+	color: var(--toggle-color);
+}
+
+.coluna-name, .input-tarefa, .checklist-nome-edit, .checkbox input[type="text"], select, .tarefa-prazo, #linkCompartilhamento, h3, h4, .form-control{
+	color: var(--toggle-color) !important;
+}
+
+.form-control:focus, .coluna-name:focus, .input-tarefa:focus, .checklist-nome-edit:focus, .checkbox input[type="text"]:focus, #linkCompartilhamento:focus{
+	background: var(--sidebar-color) !important;
+}
+
+.form-control::placeholder {
+	color: var(--text-color) !important;
+}
+
+option {
+	color: var(--primary-color) !important;
+}
+
+.modal-content {
+	background: var(--primary-color-light) !important;
+	color: var(--text-color) !important;
+}
+
+.checklist {
+	background: var(--primary-color) !important;
+	color: var(--text-color) !important;
+}
+
+.tarefa-card.finalizada {
+    text-decoration: line-through;
+    background: #4d9b44;
+	color: var(--toggle-color) !important;
+}
+
+.content{
+	background: var(--primary-color);
+	color: var(--text-color);
+}
+
+.card{
+	background: var(--primary-color-light);
+	color: var(--text-color);
+}
+
+.checkbox:hover, .checklist-nome-edit:hover {
+	background: var(--sidebar-color) !important;
+}
+
+.input-tarefa:hover, .form-control:hover {
+	background: var(--body-color) !important;
+}
+
+/* .checkbox:hover, .form-control:hover, .coluna-name:hover, .input-tarefa:hover, .checklist-nome-edit:hover, .checkbox input[type="text"]:hover, #linkCompartilhamento:hover{
+	background: var(--sidebar-color) !important;
+} */

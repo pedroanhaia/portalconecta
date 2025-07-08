@@ -1,0 +1,21 @@
+# Define the line ending behavior of the different file extensions
+# Set default behaviour, in case users don't have core.autocrlf set.
+* text=lf
+
+# Explicitly declare text files we want to always be normalized and converted
+# to native line endings on checkout.
+*.php eol=lf
+
+# Declare files that will always have CRLF line endings on checkout.
+*.bat eol=crlf
+
+# Ignore files for distribution archives, generated using `git archive`
+.editorconfig export-ignore
+.github export-ignore
+.gitattributes export-ignore
+.gitignore export-ignore
+phpcs.xml export-ignore
+phpunit.xml.dist export-ignore
+/CakePHP/Tests export-ignore
+phpstan.neon export-ignore
+.phive export-ignore

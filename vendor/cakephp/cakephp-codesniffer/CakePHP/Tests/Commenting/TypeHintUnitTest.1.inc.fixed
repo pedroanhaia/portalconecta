@@ -1,0 +1,47 @@
+<?php
+namespace Beakman;
+
+class Foo
+{
+    /** @var array<string> */
+    protected $convertToGeneric;
+
+    /** @var \Generator<int>|array<string>|class-string<\Cake\I18n\Number>|null $testVar2 */
+    protected $sortGenerics;
+
+    /** @var array|array<int, string>|array{0: string, 1: int}|string */
+    protected $sortArrayShape
+
+    /** @var \CustomClass|\Closure|\Generator|\ArrayObject|\ArrayAccess|\Traversable|\Stringable|\Countable|string */
+    protected $sortSpecificClassesLast
+
+    /**
+     * @param \Test|\Closure|mixed|array<string|int>|string|int|false $test
+     * @return string|int|void
+     */
+    public function testFunctionAnotations()
+    {
+    }
+
+    /**
+     * @param $test
+     * @return void
+     */
+    public function testNoParamTypeHint(string $test)
+    {
+    }
+}
+
+function test()
+{
+    /** @var string|float|int|null */
+    $testInlineVar;
+}
+
+/**
+ * @param (Type1&Type2)|null $param
+ * @return Type1&Type2
+ */
+function intersection($param)
+{
+}

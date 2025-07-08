@@ -1,0 +1,27 @@
+# Uncomment the following to prevent the httpoxy vulnerability
+# See: https://httpoxy.org/
+#<IfModule mod_headers.c>
+#    RequestHeader unset Proxy
+#</IfModule>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine on
+    RewriteRule    ^(\.well-known/.*)$ $1 [L]
+    RewriteRule    ^$    webroot/    [L]
+    RewriteRule    (.*) webroot/$1    [L]
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+    Header set Cross-Origin-Embedder-Policy "credentialless"
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+    Header always set Cross-Origin-Embedder-Policy "credentialless"
+    Header always set Cross-Origin-Resource-Policy "cross-origin"
+</IfModule>
+
+<IfModule mod_headers.c>
+    Header always set Cross-Origin-Opener-Policy "unsafe-none"
+</IfModule>

@@ -1,0 +1,46 @@
+label {
+	margin-bottom: 0 !important;
+}
+
+@media (min-width: 1500px) {
+	.container, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {
+		max-width: 1420px !important;
+	}
+}
+
+.table-responsive {
+	overflow-x: unset !important;
+}
+
+.radio-label {
+	font-size: 14px;
+	font-weight: 200;
+}
+
+.radio-label > input {
+	margin-right: 5px;
+}
+
+hr {
+	border: 0.1rem solid #000000 !important;
+	margin: 0 !important;
+}
+
+
+/* Buttons */
+
+.btn-info, .btn-danger {
+	color: white;
+}
+
+.button, button, dd, dt, li {
+	margin-bottom: 0 !important;
+}
+
+.button, button, dd, dt, li {
+	margin-bottom: 0 !important;
+}
+
+.button, button, input[type='button'], input[type='reset'], input[type='submit'] {
+	height: auto !important;
+}

@@ -1,0 +1,370 @@
+<?php
+declare(strict_types=1);
+
+/**
+ * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ *
+ * Licensed under The MIT License
+ * Redistributions of files must retain the above copyright notice.
+ *
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * @link          https://cakephp.org CakePHP(tm) Project
+ * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ */
+namespace Migrations\Test\TestCase\Util;
+
+use Cake\TestSuite\TestCase;
+use Migrations\Util\ColumnParser;
+
+/**
+ * Tests the ColumnParser
+ */
+class ColumnParserTest extends TestCase
+{
+    /**
+     * @var \Migrations\Util\ColumnParser
+     */
+    protected $columnParser;
+
+    /**
+     * Setup method
+     *
+     * @return void
+     */
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->columnParser = new ColumnParser();
+    }
+
+    public function testParseFields()
+    {
+        $this->assertEquals([
+            'id' => [
+                'columnType' => 'integer',
+                'options' => [
+                    'null' => false,
+                    'default' => null,
+                    'limit' => 11,
+                ],
+            ],
+        ], $this->columnParser->parseFields(['id']));
+
+        $this->assertEquals([
+            'id' => [
+                'columnType' => 'integer',
+                'options' => [
+                    'null' => false,
+                    'default' => null,
+                    'limit' => 11,
+                    'autoIncrement' => true,
+                ],
+            ],
+        ], $this->columnParser->parseFields(['id:primary']));
+
+        $this->assertEquals([
+            'id' => [
+                'columnType' => 'integer',
+                'options' => [
+                    'null' => false,
+                    'default' => null,
+                    'limit' => 11,
+                ],
+            ],
+            'name' => [
+                'columnType' => 'string',
+                'options' => [
+                    'null' => false,
+                    'default' => null,
+                    'limit' => 255,
+                ],
+            ],
+        ], $this->columnParser->parseFields(['id', 'name']));
+
+        $this->assertEquals([
+            'id' => [
+                'columnType' => 'integer',
+                'options' => [
+                    'null' => false,
+                    'default' => null,
+                    'limit' => 11,
+                ],
+            ],
+            'created' => [
+                'columnType' => 'datetime',
+                'options' => [
+                    'null' => false,
+                    'default' => null,
+                ],
+            ],
+            'modified' => [
+                'columnType' => 'datetime',
+                'options' => [
+                    'null' => false,
+                    'default' => null,
+                ],
+            ],
+            'updated' => [
+                'columnType' => 'datetime',
+                'options' => [
+                    'null' => false,
+                    'default' => null,
+                ],
+            ],
+            'deleted_at' => [
+                'columnType' => 'datetime',
+                'options' => [
+                    'null' => false,
+                    'default' => null,
+                ],
+            ],
+            'latitude' => [
+                'columnType' => 'decimal',
+                'options' => [
+                    'default' => false,
+                    'null' => false,
+                    'precision' => 10,
+                    'scale' => 6,
+                ],
+            ],
+            'longitude' => [
+                'columnType' => 'decimal',
+                'options' => [
+                    'default' => false,
+                    'null' => false,
+                    'precision' => 10,
+                    'scale' => 6,
+                ],
+            ],
+        ], $this->columnParser->parseFields(['id', 'created', 'modified', 'updated', 'deleted_at', 'latitude', 'longitude']));
+
+        $expected = [
+            'id' => [
+                'columnType' => 'integer',
+                'options' => [
+                    'null' => false,
+                    'default' => null,
+                    'limit' => 11,
+                ],
+            ],
+            'name' => [
+                'columnType' => 'string',
+                'options' => [
+                    'null' => false,
+                    'default' => null,
+                    'limit' => 255,
+                ],
+            ],
+            'description' => [
+                'columnType' => 'string',
+                'options' => [
+                    'null' => true,
+                    'default' => null,
+                    'limit' => 255,
+                ],
+            ],
+            'age' => [
+                'columnType' => 'integer',
+                'options' => [
+                    'null' => true,
+                    'default' => null,
+                    'limit' => 11,
+                ],
+            ],
+            'amount' => [
+                'columnType' => 'decimal',
+                'options' => [
+                    'null' => true,
+                    'default' => null,
+                    'precision' => 6,
+                    'scale' => 3,
+                ],
+            ],
+        ];
+        $actual = $this->columnParser->parseFields(['id', 'name:string', 'description:string?', 'age:integer?', 'amount:decimal?[6,3]']);
+        $this->assertEquals($expected, $actual);
+
+        $expected = [
+            'id' => [
+                'columnType' => 'integer',
+                'options' => [
+                    'null' => false,
+                    'default' => null,
+                    'limit' => 11,
+                ],
+            ],
+            'name' => [
+                'columnType' => 'string',
+                'options' => [
+                    'null' => false,
+                    'default' => null,
+                    'limit' => 125,
+                ],
+            ],
+            'description' => [
+                'columnType' => 'string',
+                'options' => [
+                    'null' => true,
+                    'default' => null,
+                    'limit' => 50,
+                ],
+            ],
+            'age' => [
+                'columnType' => 'integer',
+                'options' => [
+                    'null' => true,
+                    'default' => null,
+                    'limit' => 11,
+                ],
+            ],
+        ];
+        $actual = $this->columnParser->parseFields([
+            'id',
+            'name:string[125]',
+            'description:string?[50]',
+            'age:integer?',
+        ]);
+        $this->assertEquals($expected, $actual);
+    }
+
+    public function testParseIndexes()
+    {
+        $this->assertEquals(['UNIQUE_ID' => [
+            'columns' => ['id'],
+            'options' => ['unique' => true, 'name' => 'UNIQUE_ID'],
+        ]], $this->columnParser->parseIndexes(['id:integer:unique']));
+        $this->assertEquals(['UNIQUE_USER' => [
+            'columns' => ['email'],
+            'options' => ['unique' => true, 'name' => 'UNIQUE_USER'],
+        ]], $this->columnParser->parseIndexes(['email:string:unique:UNIQUE_USER']));
+        $this->assertEquals(['UNIQUE_EVENT' => [
+            'columns' => ['event_id', 'market_id'],
+            'options' => ['unique' => true, 'name' => 'UNIQUE_EVENT'],
+        ]], $this->columnParser->parseIndexes([
+            'some_field',
+            'event_id:integer:unique:UNIQUE_EVENT',
+            'market_id:integer:unique:UNIQUE_EVENT',
+        ]));
+    }
+
+    public function testParsePrimaryKey()
+    {
+        $this->assertEquals(['id'], $this->columnParser->parsePrimaryKey(['id:primary']));
+        $this->assertEquals(['id'], $this->columnParser->parsePrimaryKey(['id:integer:primary']));
+        $this->assertEquals(['id'], $this->columnParser->parsePrimaryKey(['id:integer:primary:ID_INDEX']));
+        $this->assertEquals(
+            ['id', 'name'],
+            $this->columnParser->parsePrimaryKey(['id:integer:primary', 'name:primary_key']),
+        );
+    }
+
+    public function testValidArguments()
+    {
+        $this->assertEquals(
+            ['id'],
+            $this->columnParser->validArguments(['id']),
+        );
+        $this->assertEquals(
+            ['id', 'id'],
+            $this->columnParser->validArguments(['id', 'id']),
+        );
+        $this->assertEquals(
+            ['id:primary_key'],
+            $this->columnParser->validArguments(['id:primary_key']),
+        );
+        $this->assertEquals(
+            ['id:primary_key:primary'],
+            $this->columnParser->validArguments(['id:primary_key:primary']),
+        );
+        $this->assertEquals(
+            ['id:integer:primary'],
+            $this->columnParser->validArguments(['id:integer:primary']),
+        );
+        $this->assertEquals(
+            ['id:integer:primary:ID_INDEX'],
+            $this->columnParser->validArguments(['id:integer:primary:ID_INDEX']),
+        );
+        $this->assertEquals(
+            ['id', 'field:string:unique'],
+            $this->columnParser->validArguments(['id', 'field:string:unique']),
+        );
+        $this->assertEquals(
+            ['field:fieldType:indexType:indexName'],
+            $this->columnParser->validArguments(['field:fieldType:indexType:indexName']),
+        );
+        $this->assertEquals(
+            ['field:fieldType[128]:indexType:indexName'],
+            $this->columnParser->validArguments(['field:fieldType[128]:indexType:indexName']),
+        );
+        $this->assertEquals(
+            ['field:integer[9]:indexType:indexName'],
+            $this->columnParser->validArguments(['field:integer[9]:indexType:indexName']),
+        );
+        $this->assertEquals(
+            ['field:string?[50]:indexType:indexName'],
+            $this->columnParser->validArguments(['field:string?[50]:indexType:indexName']),
+        );
+        $this->assertEquals(
+            ['field:biginteger[18]:indexType:indexName'],
+            $this->columnParser->validArguments(['field:biginteger[18]:indexType:indexName']),
+        );
+    }
+
+    public function testGetType()
+    {
+        $this->assertSame('integer', $this->columnParser->getType('id', null));
+        $this->assertSame('integer', $this->columnParser->getType('id', 'primary_key'));
+        $this->assertSame('integer', $this->columnParser->getType('id', 'integer'));
+        $this->assertSame('integer', $this->columnParser->getType('id', 'other'));
+        $this->assertSame('uuid', $this->columnParser->getType('id', 'uuid'));
+        $this->assertSame('uuid', $this->columnParser->getType('created', 'uuid'));
+        $this->assertSame('datetime', $this->columnParser->getType('created', null));
+        $this->assertSame('datetime', $this->columnParser->getType('modified', null));
+        $this->assertSame('datetime', $this->columnParser->getType('updated', null));
+        $this->assertSame('datetime', $this->columnParser->getType('created_at', null));
+        $this->assertSame('datetime', $this->columnParser->getType('deleted_at', null));
+        $this->assertSame('datetime', $this->columnParser->getType('changed_at', null));
+        $this->assertSame('string', $this->columnParser->getType('some_field', null));
+        $this->assertSame('string', $this->columnParser->getType('some_field', 'string'));
+        $this->assertSame('boolean', $this->columnParser->getType('field', 'boolean'));
+        $this->assertSame('polygon', $this->columnParser->getType('field', 'polygon'));
+        $this->assertSame('decimal', $this->columnParser->getType('latitude', null));
+        $this->assertSame('decimal', $this->columnParser->getType('longitude', null));
+    }
+
+    public function testGetTypeAndLength()
+    {
+        $this->assertEquals(['string', 255], $this->columnParser->getTypeAndLength('name', 'string'));
+        $this->assertEquals(['integer', 11], $this->columnParser->getTypeAndLength('counter', 'integer'));
+        $this->assertEquals(['string', 128], $this->columnParser->getTypeAndLength('name', 'string[128]'));
+        $this->assertEquals(['integer', 9], $this->columnParser->getTypeAndLength('counter', 'integer[9]'));
+        $this->assertEquals(['biginteger', 18], $this->columnParser->getTypeAndLength('bigcounter', 'biginteger[18]'));
+        $this->assertEquals(['integer', 11], $this->columnParser->getTypeAndLength('id', null));
+        $this->assertEquals(['string', 255], $this->columnParser->getTypeAndLength('username', null));
+        $this->assertEquals(['datetime', null], $this->columnParser->getTypeAndLength('created', null));
+        $this->assertEquals(['datetime', null], $this->columnParser->getTypeAndLength('changed_at', null));
+        $this->assertEquals(['decimal', [10, 6]], $this->columnParser->getTypeAndLength('latitude', 'decimal[10,6]'));
+    }
+
+    public function testGetLength()
+    {
+        $this->assertSame(255, $this->columnParser->getLength('string'));
+        $this->assertSame(11, $this->columnParser->getLength('integer'));
+        $this->assertSame(20, $this->columnParser->getLength('biginteger'));
+        $this->assertEquals([10, 6], $this->columnParser->getLength('decimal'));
+        $this->assertNull($this->columnParser->getLength('text'));
+    }
+
+    public function testGetIndexName()
+    {
+        $this->assertSame('SOME_INDEX', $this->columnParser->getIndexName('id', null, 'SOME_INDEX', true));
+        $this->assertSame('SOME_INDEX', $this->columnParser->getIndexName('id', null, 'SOME_INDEX', false));
+        $this->assertSame('SOME_INDEX', $this->columnParser->getIndexName('id', 'primary', 'SOME_INDEX', false));
+        $this->assertSame('SOME_INDEX', $this->columnParser->getIndexName('id', 'primary', 'SOME_INDEX', true));
+
+        $this->assertSame('UNIQUE_ID', $this->columnParser->getIndexName('id', null, null, true));
+        $this->assertSame('BY_ID', $this->columnParser->getIndexName('id', null, null, false));
+        $this->assertSame('PRIMARY', $this->columnParser->getIndexName('id', 'primary', null, false));
+        $this->assertSame('PRIMARY', $this->columnParser->getIndexName('id', 'primary', null, true));
+    }
+}

@@ -1,0 +1,10 @@
+includes:
+	- phpstan.neon
+
+parameters:
+	paths!:
+		- %currentWorkingDirectory%/tests
+
+	ignoreErrors!:
+		- "#Offset '(bracket|scope|parenthesis|comment)_(opener|closer)' (does|might) not exist#"
+

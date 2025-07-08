@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<phpunit
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.3/phpunit.xsd"
+	bootstrap="tests/bootstrap.php"
+	colors="true"
+	backupGlobals="false"
+	backupStaticProperties="false"
+	beStrictAboutChangesToGlobalState="true"
+	beStrictAboutOutputDuringTests="true"
+	beStrictAboutTestsThatDoNotTestAnything="true"
+	cacheResult="true"
+	stopOnDefect="true"
+	executionOrder="defects"
+	cacheDirectory="temp/phpunit-cache"
+	displayDetailsOnTestsThatTriggerErrors="true"
+	displayDetailsOnTestsThatTriggerWarnings="true"
+	displayDetailsOnTestsThatTriggerNotices="true"
+	displayDetailsOnTestsThatTriggerDeprecations="true"
+	failOnWarning="true"
+	failOnNotice="true"
+	failOnDeprecation="true"
+>
+	<testsuites>
+		<testsuite name="Slevomat Coding Standard">
+			<directory suffix="Test.php">./tests/</directory>
+		</testsuite>
+	</testsuites>
+	<source>
+		<include>
+			<directory suffix=".php">SlevomatCodingStandard</directory>
+		</include>
+	</source>
+	<coverage>
+		<report>
+			<clover outputFile="temp/coverage.xml"/>
+			<html outputDirectory="temp/coverage"/>
+			<text outputFile="php://stdout" showUncoveredFiles="true" showOnlySummary="true"/>
+		</report>
+	</coverage>
+</phpunit>

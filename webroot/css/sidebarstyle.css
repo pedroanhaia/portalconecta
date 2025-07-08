@@ -1,0 +1,331 @@
+/* Google Font Import - Poppins */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+*{
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	font-family: 'Poppins', sans-serif;
+}
+
+:root{
+	/* ===== Colors ===== */
+	--body-color: #E4E9F7;
+	--sidebar-color: #FFF;
+	--primary-color: #695CFE;
+	--primary-color-light: #F6F5FF;
+	--toggle-color: #DDD;
+	--text-color: #707070;
+
+	/* ====== Transition ====== */
+	--tran-03: all 0.2s ease;
+	--tran-03: all 0.3s ease;
+	--tran-04: all 0.3s ease;
+	--tran-05: all 0.3s ease;
+}
+
+body{
+	/*min-height: 100vh;*/
+	background-color: var(--body-color);
+	transition: var(--tran-05);
+}
+
+::selection{
+	background-color: var(--primary-color);
+	color: #fff;
+}
+
+/* ===== Sidebar ===== */
+ .sidebar{
+	position: fixed;
+	top: 0;
+	left: 0;
+	height: 100%;
+	width: 250px;
+	padding: 10px 0px;
+	background: var(--sidebar-color);
+	transition: var(--tran-05);
+	z-index: 100;
+}
+.sidebar.close{
+	width: 60px;
+}
+
+/* ===== Reusable code - Here ===== */
+.sidebar li{
+	height: 50px;
+	list-style: none;
+	display: flex;
+	align-items: center;
+	margin-top: 10px;
+}
+
+.sidebar li.logo-center {
+	height: auto;
+	margin: 0;
+}
+
+.sidebar header .image,
+.sidebar .icon{
+	min-width: 60px;
+	border-radius: 6px;
+}
+
+.sidebar .icon{
+	width: 60px;           /* largura fixa do “bloco” */
+	min-width: 60px;
+	height: 50px;
+	display: flex;
+	align-items: center;   /* alinha verticalmente */
+	justify-content: center;/* centraliza horizontalmente */
+	font-size: 20px;
+}
+
+/* avatar (com foto) – ocupa 40 px dentro do bloco de 60 px */
+.sidebar .icon.avatar img{
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	object-fit: cover;
+}
+
+/* avatar (sem foto) – círculo com inicial */
+.sidebar .icon.avatar{
+	display:flex;
+	align-items:center;
+	justify-content:center;
+}
+
+/* avatar (sem foto) – círculo com inicial */
+.initials{
+	width: 40px;
+	height: 40px;
+	background:#4a90e2;
+	color:#fff;
+	border-radius:50%;
+	font-size:18px;
+	font-weight:600;
+	display:flex;
+	align-items:center;
+	justify-content:center;
+}
+
+.sidebar .text,
+.sidebar .icon{
+	color: var(--text-color);
+	transition: var(--tran-03);
+}
+
+.nav-user {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.sidebar .text{
+	font-size: 17px;
+	font-weight: 500;
+	white-space: nowrap;
+	opacity: 1;
+}
+.sidebar.close .text{
+	opacity: 0;
+}
+/* =========================== */
+
+.sidebar header{
+	position: relative;
+}
+
+.sidebar header .image-text{
+	display: flex;
+	align-items: center;
+}
+.sidebar header .logo-text{
+	display: flex;
+	flex-direction: column;
+}
+header .image-text .name {
+	margin-top: 2px;
+	font-size: 18px;
+	font-weight: 600;
+}
+
+header .image-text .profession{
+	font-size: 16px;
+	margin-top: -2px;
+	display: block;
+}
+
+.sidebar header .image{
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.sidebar header .image img{
+	width: 40px;
+	border-radius: 6px;
+}
+
+.sidebar header .toggle{
+	position: absolute;
+	top: 50%;
+	right: -25px;
+	transform: translateY(-50%) rotate(180deg);
+	height: 25px;
+	width: 25px;
+	background-color: var(--primary-color);
+	color: var(--sidebar-color);
+	border-radius: 50%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 22px;
+	cursor: pointer;
+	transition: var(--tran-05);
+}
+
+.sidebar.close .toggle{
+	transform: translateY(-50%) rotate(0deg);
+}
+
+.sidebar .menu{
+	margin-top: 0px;
+}
+
+/* link – ícone + texto lado a lado */
+.sidebar li a{
+	display: flex;
+	align-items: center;
+	height: 100%;
+	width: 100%;
+	border-radius: 6px;
+	text-decoration: none;
+	transition: var(--tran-03);
+}
+
+.sidebar li a:hover{
+	background-color: var(--primary-color);
+}
+.sidebar li a:hover .icon,
+.sidebar li a:hover .text{
+	color: var(--sidebar-color);
+}
+
+.menu-links{
+	padding-left: 0rem;
+}
+.sidebar .menu-bar{
+	height: calc(100% - 55px);
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	overflow-y: scroll;
+}
+.menu-bar::-webkit-scrollbar{
+	display: none;
+}
+.sidebar .menu-bar .mode{
+	border-radius: 6px;
+	background-color: var(--primary-color-light);
+	position: relative;
+	transition: var(--tran-05);
+}
+
+.sidebar.close ~ .home{
+	left: 78px;
+	/*height: 100vh;*/
+	width: calc(100% - 78px);
+}
+
+.menu-links img {
+	max-height: 100%;
+}
+
+.sidebar li:first-child {
+	justify-content: center;
+}
+
+.logo-center {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 70px; /* ajuste conforme necessário */
+}
+
+.logo-center a {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	width: 100%;
+	height: 100%;
+}
+
+.logo-center img {
+	max-height: 50px;
+	height: auto;
+	width: auto;
+}
+
+.menu-bar .mode .sun-moon{
+	height: 50px;
+	width: 60px;
+}
+
+.mode .sun-moon i{
+	position: absolute;
+}
+.mode .sun-moon i.sun{
+	opacity: 0;
+}
+
+.menu-bar .bottom-content .toggle-switch{
+	position: absolute;
+	right: 0;
+	height: 100%;
+	min-width: 60px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 6px;
+	cursor: pointer;
+}
+.toggle-switch .switch{
+	position: relative;
+	height: 22px;
+	width: 40px;
+	border-radius: 25px;
+	background-color: var(--toggle-color);
+	transition: var(--tran-05);
+}
+
+.switch::before{
+	content: '';
+	position: absolute;
+	height: 15px;
+	width: 15px;
+	border-radius: 50%;
+	top: 50%;
+	left: 5px;
+	transform: translateY(-50%);
+	background-color: var(--sidebar-color);
+	transition: var(--tran-04);
+}
+
+.home{
+	position: absolute;
+	top: 0;
+	top: 0;
+	left: 250px;
+	/*height: 100vh;*/
+	width: calc(100% - 250px);
+	background-color: var(--body-color);
+	transition: var(--tran-05);
+}
+.home .text{
+	font-size: 30px;
+	font-weight: 500;
+	color: var(--text-color);
+	padding: 12px 60px;
+}

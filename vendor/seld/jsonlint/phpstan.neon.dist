@@ -1,0 +1,15 @@
+includes:
+    - phpstan-baseline.neon
+    - vendor/phpstan/phpstan/conf/bleedingEdge.neon
+
+parameters:
+    level: 8
+
+    treatPhpDocTypesAsCertain: false
+
+    paths:
+        - src/
+        - tests/
+
+    ignoreErrors:
+        - '/Method JsonParserTest::[a-zA-Z0-9]+\(\) has no return type/'

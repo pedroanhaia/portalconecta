@@ -1,0 +1,13 @@
+parameters:
+	level: 8
+	treatPhpDocTypesAsCertain: false
+	bootstrapFiles:
+		- tests/bootstrap.php
+	paths:
+		- src/
+	ignoreErrors:
+		- identifier: missingType.iterableValue
+		-
+			message: "#^Call to an undefined static method DateTimeImmutable\\:\\:createFromTimestamp\\(\\)\\.$#"
+			count: 1
+			path: src/Chronos.php

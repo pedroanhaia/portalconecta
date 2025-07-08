@@ -1,0 +1,30 @@
+includes:
+	- %currentWorkingDirectory%/vendor/phpstan/phpstan-phpunit/extension.neon
+	- %currentWorkingDirectory%/vendor/phpstan/phpstan-phpunit/rules.neon
+	- %currentWorkingDirectory%/vendor/phpstan/phpstan-strict-rules/rules.neon
+
+parameters:
+	level: 7
+
+	paths:
+		- %currentWorkingDirectory%/SlevomatCodingStandard
+
+	bootstrapFiles:
+		- %currentWorkingDirectory%/vendor/squizlabs/php_codesniffer/autoload.php
+		- %currentWorkingDirectory%/vendor/squizlabs/php_codesniffer/src/Util/Tokens.php
+	excludePaths:
+		- %currentWorkingDirectory%/tests/*/data/*
+	ignoreErrors:
+		- identifier: missingType.generics
+		- "#Offset '(bracket|scope|parenthesis|comment|attribute)_(opener|closer)' (does|might) not exist#"
+		- "#Offset '(conditions|scope_condition)' might not exist#"
+		-
+			message: '#Offset ''nested_parenthesis'' (does|might) not exist on array#'
+			count: 1
+			path: %currentWorkingDirectory%/SlevomatCodingStandard/Sniffs/ControlStructures/AssignmentInConditionSniff.php
+
+services:
+	-
+		class: SlevomatCodingStandard\PHPStan\GetTokenDynamicReturnTypeExtension
+		tags:
+			- phpstan.broker.dynamicMethodReturnTypeExtension
