@@ -119,6 +119,13 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 		// Registre serviços no container se necessário
 	}
 
+	public function getAuthorizationService(ServerRequestInterface $request): AuthorizationServiceInterface
+    {
+        $resolver = new OrmResolver();
+
+        return new AuthorizationService($resolver);
+    }
+
 	public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
 	{
 		$url = '/users/login';
@@ -149,10 +156,4 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 		return $authenticationService;
 	}
 	
-	public function getAuthorizationService(ServerRequestInterface $request): AuthorizationServiceInterface
-    {
-        $resolver = new OrmResolver();
-
-        return new AuthorizationService($resolver);
-    }
 }
