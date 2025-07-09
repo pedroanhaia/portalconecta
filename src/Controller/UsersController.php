@@ -25,7 +25,7 @@ class UsersController extends AppController
 	public function index() {
 		if($this->Authentication->getIdentity()->role != 1) {
 			$this->Flash->error(__('Você não possui permissão para acessar esta página.'));
-			return $this->redirect(['controller' => 'Quadros', 'action' => 'index']);
+			return $this->redirect(['controller' => 'Orders', 'action' => 'index']);
 		}
 
 		$users = $this->paginate($this->Users);
@@ -77,7 +77,7 @@ class UsersController extends AppController
 	public function edit($id = null) {
 		if($this->Authentication->getIdentity()->role != 1 && isset($id)) {
 			$this->Flash->error(__('Você não possui permissão para acessar esta página.'));
-			return $this->redirect(['controller' => 'Quadros', 'action' => 'index']);
+			return $this->redirect(['controller' => 'Orders', 'action' => 'index']);
 		}
 		
 		$user = $this->Users->get($this->Authentication->getIdentity()->id, [
@@ -135,7 +135,7 @@ class UsersController extends AppController
 
 		// Se o usuário já está autenticado, redireciona imediatamente
 		if ($result && $result->isValid()) {
-			$redirect = $this->request->getQuery('redirect', '/users/index');
+			$redirect = $this->request->getQuery('redirect', '/orders/index');
 			return $this->redirect($redirect);
 		}
 		
@@ -153,7 +153,7 @@ class UsersController extends AppController
 			
 			if ($result && $result->isValid()) {
 				// Captura a URL original da query string
-				$redirect = $this->request->getQuery('redirect', '/users/edit');
+				$redirect = $this->request->getQuery('redirect', '/orders/index');
 
 				return $this->redirect($redirect);
 			}
@@ -198,7 +198,7 @@ class UsersController extends AppController
 
 	public function changepassword()
 	{
-		$this->viewBuilder()->setLayout('quadros');
+		// $this->viewBuilder()->setLayout('quadros');
 		$user = $this->Users->get($this->Authentication->getIdentity()->getIdentifier());
 
 
