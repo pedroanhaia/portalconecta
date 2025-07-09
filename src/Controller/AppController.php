@@ -37,13 +37,17 @@ class AppController extends Controller
 		$this->loadComponent('Flash'); // <-- esta linha resolve o erro
 
 		// Se quiser pular autorização em algumas actions, pode usar:
-		if ($this->getRequest()->getParam('action') === 'index') {
+		if ($this->getRequest()->getParam('action') === 'logout' && $this->getRequest()->getParam('controller') === 'users') {
 			$this->Authorization->skipAuthorization();
 		}
 	}
     
 	public function beforeFilter(\Cake\Event\EventInterface $event) {
 		parent::beforeFilter($event);
+
+		if ($this->request->getParam('plugin') === 'DebugKit') {
+			$this->Authorization->skipAuthorization();
+		}
 	}
 
 	public function isAuthorized($user)	{
