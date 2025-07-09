@@ -27,6 +27,10 @@ use Authorization\AuthorizationServiceProviderInterface;
 use Authorization\Middleware\AuthorizationMiddleware;
 use Authorization\Policy\OrmResolver;
 
+use Cake\Http\Middleware\CorsMiddleware;
+use App\Middleware\CorsMiddleware as MiddlewareCorsMiddleware;
+
+
 use Psr\Http\Message\ServerRequestInterface;
 
 class Application extends BaseApplication implements AuthenticationServiceProviderInterface, AuthorizationServiceProviderInterface
