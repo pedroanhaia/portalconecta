@@ -1,5 +1,5 @@
 <?php
-	$cakeDescription = 'KanbAda';
+	$cakeDescription = 'CGL-Conecta';
 ?>
 <!DOCTYPE html>
 <html>
