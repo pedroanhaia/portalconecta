@@ -10,10 +10,10 @@
 		<?= $cakeDescription ?>:
 		<?= $this->fetch('title') ?>
 	</title>
-	<?= $this->Html->meta('icon', '/webroot/img/Logo Vertical.png'); ?>
+	<?= $this->Html->meta('icon', '/webroot/img/logo.png'); ?>
 
 	<?= $this->Html->css(['https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css', 'https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css', 'https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css']) ?>
-	<?= $this->Html->css(['mainstyle','normalize.min', 'milligram.min', 'fonts', 'cake', 'sidebarstyle', 'quadros']) ?>
+	<?= $this->Html->css(['mainstyle','normalize.min', 'milligram.min', 'fonts', 'cake', 'sidebarstyle']) ?>
 
 	<?= $this->Html->script(['https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js']) ?>
 	<?= $this->Html->script(["https://code.jquery.com/jquery-3.7.1.min.js", 'selectfolder']) ?>
@@ -43,9 +43,9 @@
 				<ul class="menu-links">
 					<li class="nav-link logo-center">
 						<?= $this->Html->link(
-							$this->Html->image('Logo.png', ['alt' => 'logo', 'class' => 'mini-sidebar']) .
-							$this->Html->image('Logo.png', ['alt' => 'logo', 'class' => 'open-sidebar']),
-							['controller' => 'Quadros', 'action' => 'index'],
+							$this->Html->image('logo.png', ['alt' => 'logo', 'class' => 'mini-sidebar']) .
+							$this->Html->image('logo.png', ['alt' => 'logo', 'class' => 'open-sidebar']),
+							['controller' => 'Orders', 'action' => 'index'],
 							['escape' => false]
 						); ?>
 					</li>

@@ -5,7 +5,7 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 
 		<title> CGL Conecta </title>
-		<?= $this->Html->meta('icon', '/webroot/img/Logo.png'); ?>
+		<?= $this->Html->meta('icon', '/webroot/img/logo.png'); ?>
 
 		<link href="https://fonts.googleapis.com/css?family=Raleway:400,700" rel="stylesheet">
 		<?= $this->Html->css(['https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', 'https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css']) ?>
@@ -23,7 +23,7 @@
 				<div class="col-md-6">
 					<div class="card">
 						<div class="logo-center">
-							<?= $this->Html->image('Logo.png', ['alt' => 'CGL Conecta']) ?>    
+							<?= $this->Html->image('logo.png', ['alt' => 'CGL Conecta']) ?>    
 						</div>
 						<main class="main card-body">
 							<div class="container">
