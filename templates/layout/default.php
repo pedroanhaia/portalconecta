@@ -50,16 +50,19 @@
 						); ?>
 					</li>
 					<li class="nav-link">
-						<?= $this->Html->link('<i class="fa-solid fa-home icon"></i> ' . __('Home'), '/users/edit', ['escape' => false, 'class' => '']);?>
+						<?= $this->Html->link('<i class="fa-solid fa-home icon"></i> ' . __('Home'), '/orders/index', ['escape' => false, 'class' => '']);?>
 					</li>
 					<li class="nav-link">
 						<?= $this->Html->link('<i class="fa-solid fa-user icon"></i> ' . __('Usuário'), '/users/edit', ['escape' => false, 'class' => '']);?>
 					</li>
 					<li class="nav-link">
-						<?= $this->Html->link('<i class="fa-solid fa-cart-shopping icon"></i> ' . __('Pedidos'), '/users/edit', ['escape' => false, 'class' => '']);?>
+						<?= $this->Html->link('<i class="fa-solid fa-cart-shopping icon"></i> ' . __('Pedidos'), '/orders/index', ['escape' => false, 'class' => '']);?>
 					</li>
 					<li class="nav-link">
-						<?= $this->Html->link('<i class="fa-solid fa-gear icon"></i> ' . __('Configurações'), '/users/edit', ['escape' => false, 'class' => '']);?>
+						<?= $this->Html->link('<i class="fa-solid fa-industry icon"></i> ' . __('Clientes'), '/customers/index', ['escape' => false, 'class' => '']);?>
+					</li>
+					<li class="nav-link">
+						<?= $this->Html->link('<i class="fa-solid fa-gear icon"></i> ' . __('Configurações'), '/files/index', ['escape' => false, 'class' => '']);?>
 					</li>
 					<li class="">
 						<?= $this->Html->link('<i class="bx bx-log-out icon"></i> ' . __('<span class="text nav-text">Logout</span>'), '/Users/logout', ['escape' => false, 'class' => '']);?>
