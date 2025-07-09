@@ -18,11 +18,10 @@ namespace Cake\Test\TestCase\Error;
 
 use Cake\Error\PhpError;
 use Cake\TestSuite\TestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 class PhpErrorTest extends TestCase
 {
-    public function testBasicGetters(): void
+    public function testBasicGetters()
     {
         $error = new PhpError(E_ERROR, 'something bad');
         $this->assertEquals(E_ERROR, $error->getCode());
@@ -36,22 +35,20 @@ class PhpErrorTest extends TestCase
     public static function errorCodeProvider(): array
     {
         // [php error code, label, log-level]
-        $return = [
+        return [
             [E_ERROR, 'error', LOG_ERR],
             [E_WARNING, 'warning', LOG_WARNING],
             [E_NOTICE, 'notice', LOG_NOTICE],
+            [E_STRICT, 'strict', LOG_NOTICE],
+            [E_STRICT, 'strict', LOG_NOTICE],
             [E_USER_DEPRECATED, 'deprecated', LOG_NOTICE],
         ];
-
-        if (version_compare(PHP_VERSION, '8.4.0-dev', '<')) {
-            $return[] = [E_STRICT, 'strict', LOG_NOTICE];
-        }
-
-        return $return;
     }
 
-    #[DataProvider('errorCodeProvider')]
-    public function testMappings($phpCode, $label, $logLevel): void
+    /**
+     * @dataProvider errorCodeProvider
+     */
+    public function testMappings($phpCode, $label, $logLevel)
     {
         $error = new PhpError($phpCode, 'something bad');
         $this->assertEquals($phpCode, $error->getCode());
@@ -59,7 +56,7 @@ class PhpErrorTest extends TestCase
         $this->assertEquals($logLevel, $error->getLogLevel());
     }
 
-    public function testGetTraceAsString(): void
+    public function testGetTraceAsString()
     {
         $trace = [
             ['file' => 'a.php', 'line' => 10, 'reference' => 'TestObject::a()'],

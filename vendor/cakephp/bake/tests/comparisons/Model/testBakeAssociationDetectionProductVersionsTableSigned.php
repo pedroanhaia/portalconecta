@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Bake\Test\App\Model\Table;
 
-use Cake\ORM\Query\SelectQuery;
+use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -15,24 +15,24 @@ use Cake\Validation\Validator;
  *
  * @method \Bake\Test\App\Model\Entity\ProductVersion newEmptyEntity()
  * @method \Bake\Test\App\Model\Entity\ProductVersion newEntity(array $data, array $options = [])
- * @method array<\Bake\Test\App\Model\Entity\ProductVersion> newEntities(array $data, array $options = [])
- * @method \Bake\Test\App\Model\Entity\ProductVersion get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
- * @method \Bake\Test\App\Model\Entity\ProductVersion findOrCreate($search, ?callable $callback = null, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\ProductVersion[] newEntities(array $data, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\ProductVersion get($primaryKey, $options = [])
+ * @method \Bake\Test\App\Model\Entity\ProductVersion findOrCreate($search, ?callable $callback = null, $options = [])
  * @method \Bake\Test\App\Model\Entity\ProductVersion patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
- * @method array<\Bake\Test\App\Model\Entity\ProductVersion> patchEntities(iterable $entities, array $data, array $options = [])
- * @method \Bake\Test\App\Model\Entity\ProductVersion|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method \Bake\Test\App\Model\Entity\ProductVersion saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\ProductVersion>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\ProductVersion>|false saveMany(iterable $entities, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\ProductVersion>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\ProductVersion> saveManyOrFail(iterable $entities, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\ProductVersion>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\ProductVersion>|false deleteMany(iterable $entities, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\ProductVersion>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\ProductVersion> deleteManyOrFail(iterable $entities, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\ProductVersion[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\ProductVersion|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \Bake\Test\App\Model\Entity\ProductVersion saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \Bake\Test\App\Model\Entity\ProductVersion[]|\Cake\Datasource\ResultSetInterface|false saveMany(iterable $entities, $options = [])
+ * @method \Bake\Test\App\Model\Entity\ProductVersion[]|\Cake\Datasource\ResultSetInterface saveManyOrFail(iterable $entities, $options = [])
+ * @method \Bake\Test\App\Model\Entity\ProductVersion[]|\Cake\Datasource\ResultSetInterface|false deleteMany(iterable $entities, $options = [])
+ * @method \Bake\Test\App\Model\Entity\ProductVersion[]|\Cake\Datasource\ResultSetInterface deleteManyOrFail(iterable $entities, $options = [])
  */
 class ProductVersionsTable extends Table
 {
     /**
      * Initialize method
      *
-     * @param array<string, mixed> $config The configuration for the Table.
+     * @param array $config The configuration for the Table.
      * @return void
      */
     public function initialize(array $config): void
@@ -58,8 +58,8 @@ class ProductVersionsTable extends Table
     public function validationDefault(Validator $validator): Validator
     {
         $validator
-            ->nonNegativeInteger('product_id')
-            ->notEmptyString('product_id');
+            ->nonNegativeInteger('id')
+            ->allowEmptyString('id', null, 'create');
 
         $validator
             ->dateTime('version')
@@ -78,7 +78,7 @@ class ProductVersionsTable extends Table
      */
     public function buildRules(RulesChecker $rules): RulesChecker
     {
-        $rules->add($rules->existsIn(['product_id'], 'Products'), ['errorField' => 'product_id']);
+        $rules->add($rules->existsIn('product_id', 'Products'), ['errorField' => 'product_id']);
 
         return $rules;
     }

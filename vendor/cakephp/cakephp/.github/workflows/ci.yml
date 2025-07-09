@@ -6,10 +6,11 @@ on:
       - '4.x'
       - '4.next'
       - '5.x'
-      - '5.next'
   pull_request:
     branches:
       - '*'
+  schedule:
+    - cron: "0 0 * * *"
   workflow_dispatch:
 
 permissions:
@@ -17,23 +18,27 @@ permissions:
 
 jobs:
   testsuite:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
-        php-version: ['8.1', '8.3']
+        php-version: ['7.4', '8.0']
         db-type: [sqlite, pgsql]
+        prefer-lowest: ['']
+        exclude:
+          - php-version: '7.4'
+            db-type: 'mysql'
         include:
-          - php-version: '8.1'
+          - php-version: '7.4'
             db-type: 'mariadb'
+          - php-version: '7.4'
+            db-type: 'mysql'
+            prefer-lowest: 'prefer-lowest'
           - php-version: '8.1'
             db-type: 'mysql'
-            dependencies: 'lowest'
           - php-version: '8.2'
             db-type: 'mysql'
           - php-version: '8.3'
-            db-type: 'mysql'
-          - php-version: '8.4'
             db-type: 'mysql'
 
     services:
@@ -47,37 +52,53 @@ jobs:
           - 11211/tcp
 
     steps:
-    - name: Setup MySQL 8.0
-      if: matrix.db-type == 'mysql' && matrix.dependencies != 'lowest'
+    - name: Setup MySQL latest
+      if: matrix.db-type == 'mysql' && matrix.php-version == '7.4'
       run: |
         sudo service mysql start
         mysql -h 127.0.0.1 -u root -proot -e 'CREATE DATABASE cakephp;'
 
-    - name: Setup MySQL 5.7
-      if: matrix.db-type == 'mysql' && matrix.dependencies == 'lowest'
-      run: docker run --rm --name=mysqld -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=cakephp -p 3306:3306 -d mysql:5.7 --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    - name: Setup MySQL 5.6
+      if: matrix.db-type == 'mysql' && matrix.php-version != '7.4'
+      run: docker run --rm --name=mysqld -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=cakephp -p 3306:3306 -d mysql:5.6 --character-set-server=utf8
 
     - name: Setup PostgreSQL latest
-      if: matrix.db-type == 'pgsql'
+      if: matrix.db-type == 'pgsql' && matrix.php-version == '7.4'
       run: docker run --rm --name=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=cakephp -p 5432:5432 -d postgres
 
-    - uses: getong/mariadb-action@v1.11
+    - name: Setup PostgreSQL 9.4
+      if: matrix.db-type == 'pgsql' && matrix.php-version != '7.4'
+      run: docker run --rm --name=postgres -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=cakephp -p 5432:5432 -d postgres:9.4
+
+    - uses: getong/mariadb-action@v1.1
       if: matrix.db-type == 'mariadb'
       with:
         mysql database: 'cakephp'
         mysql root password: 'root'
 
     - uses: actions/checkout@v4
-      with:
-        persist-credentials: false
 
     - name: Setup PHP
       uses: shivammathur/setup-php@v2
       with:
         php-version: ${{ matrix.php-version }}
         extensions: mbstring, intl, apcu, memcached, redis, pdo_${{ matrix.db-type }}
-        ini-values: apc.enable_cli = 1, zend.assertions = 1
+        ini-values: apc.enable_cli = 1
         coverage: pcov
+
+    - name: Get composer cache directory
+      id: composer-cache
+      run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+    - name: Get date part for cache key
+      id: key-date
+      run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
+
+    - name: Cache composer dependencies
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ steps.key-date.outputs.date }}-${{ hashFiles('composer.json') }}-${{ matrix.prefer-lowest }}
 
     - name: Install packages
       run: |
@@ -85,14 +106,20 @@ jobs:
         sudo locale-gen de_DE.UTF-8
 
     - name: Composer install
-      uses: ramsey/composer-install@v3
-      with:
-        dependency-versions: ${{ matrix.dependencies }}
-        composer-options: "${{ matrix.composer-options }}"
+      run: |
+        if ${{ matrix.prefer-lowest == 'prefer-lowest' }}; then
+          composer update --prefer-lowest --prefer-stable
+        else
+          composer update
+        fi
 
     - name: Setup problem matchers for PHPUnit
-      if: matrix.php-version == '8.1' && matrix.db-type == 'mysql'
+      if: matrix.php-version == '7.4' && matrix.db-type == 'mysql'
       run: echo "::add-matcher::${{ runner.tool_cache }}/phpunit.json"
+
+    - name: Wait for MySQL
+      if: matrix.db-type == 'mysql' || matrix.db-type == 'mariadb'
+      run: while ! `mysqladmin ping -h 127.0.0.1 --silent`; do printf 'Waiting for MySQL...\n'; sleep 2; done;
 
     - name: Run PHPUnit
       env:
@@ -100,39 +127,42 @@ jobs:
         MEMCACHED_PORT: ${{ job.services.memcached.ports['11211'] }}
       run: |
         if [[ ${{ matrix.db-type }} == 'sqlite' ]]; then export DB_URL='sqlite:///:memory:'; fi
-        if [[ ${{ matrix.db-type }} == 'mysql' ]]; then export DB_URL='mysql://root:root@127.0.0.1/cakephp'; fi
+        if [[ ${{ matrix.db-type }} == 'mysql' && ${{ matrix.php-version }} == '7.4' ]]; then export DB_URL='mysql://root:root@127.0.0.1/cakephp'; fi
+        if [[ ${{ matrix.db-type }} == 'mysql' && ${{ matrix.php-version }} != '7.4' ]]; then export DB_URL='mysql://root:root@127.0.0.1/cakephp?encoding=utf8'; fi
         if [[ ${{ matrix.db-type }} == 'mariadb' ]]; then export DB_URL='mysql://root:root@127.0.0.1/cakephp'; fi
         if [[ ${{ matrix.db-type }} == 'pgsql' ]]; then export DB_URL='postgres://postgres:postgres@127.0.0.1/postgres'; fi
 
-        if [[ ${{ matrix.php-version }} == '8.1' ]]; then
+        if [[ ${{ matrix.php-version }} == '8.0' ]]; then
           export CODECOVERAGE=1
-          vendor/bin/phpunit --display-warnings --display-incomplete --coverage-clover=coverage.xml
-          CAKE_TEST_AUTOQUOTE=1 vendor/bin/phpunit --display-deprecations --display-warnings --display-incomplete --testsuite=database
-          vendor/bin/phpunit --display-warnings --display-incomplete --testsuite=globalfunctions --coverage-clover=coverage-functions.xml
+          vendor/bin/phpunit --verbose --coverage-clover=coverage.xml
+          CAKE_TEST_AUTOQUOTE=1 vendor/bin/phpunit --verbose --testsuite=database
+          vendor/bin/phpunit --verbose --testsuite=globalfunctions --coverage-clover=coverage-functions.xml
         else
-          vendor/bin/phpunit --display-phpunit-deprecations --display-deprecations --display-warnings
-          CAKE_TEST_AUTOQUOTE=1 vendor/bin/phpunit --display-phpunit-deprecations --display-deprecations --display-warnings --testsuite=database
+          vendor/bin/phpunit
+          CAKE_TEST_AUTOQUOTE=1 vendor/bin/phpunit --testsuite=database
         fi
 
+    - name: Prefer lowest check
+      if: matrix.prefer-lowest == 'prefer-lowest'
+      run: composer require --dev dereuromark/composer-prefer-lowest && vendor/bin/validate-prefer-lowest -m
+
     - name: Submit code coverage
-      if: matrix.php-version == '8.1'
-      uses: codecov/codecov-action@v5
+      if: matrix.php-version == '8.0'
+      uses: codecov/codecov-action@v3
       with:
         files: coverage.xml,coverage-functions.xml
-        token: ${{ secrets.CODECOV_TOKEN }}
+
 
   testsuite-windows:
     runs-on: windows-2022
-    name: Windows - PHP 8.1 & SQL Server
+    name: Windows - PHP 8.0 & SQL Server
 
     env:
-      EXTENSIONS: mbstring, intl, apcu, redis, pdo_sqlsrv
-      PHP_VERSION: '8.1'
+      EXTENSIONS: mbstring, intl, apcu, redis, wincache, pdo_sqlsrv
+      PHP_VERSION: '8.0'
 
     steps:
     - uses: actions/checkout@v4
-      with:
-        persist-credentials: false
 
     - name: Get date part for cache key
       id: key-date
@@ -158,7 +188,7 @@ jobs:
       with:
         php-version: ${{ env.PHP_VERSION }}
         extensions: ${{ env.EXTENSIONS }}
-        ini-values: apc.enable_cli = 1, zend.assertions = 1, extension = php_fileinfo.dll
+        ini-values: apc.enable_cli = 1, extension = php_fileinfo.dll
         coverage: none
 
     - name: Setup SQLServer
@@ -168,80 +198,86 @@ jobs:
         SqlLocalDB info MSSQLLocalDB
         sqlcmd -S "(localdb)\MSSQLLocalDB" -Q "create database cakephp;"
 
+    - name: Get composer cache directory
+      id: composer-cache
+      run: echo "dir=$(composer config cache-files-dir)" >> $env:GITHUB_OUTPUT
+
+    - name: Cache composer dependencies
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ steps.key-date.outputs.date }}-${{ hashFiles('composer.json') }}-${{ matrix.prefer-lowest }}
+
     - name: Composer install
-      uses: ramsey/composer-install@v3
+      run: composer update
 
     - name: Run PHPUnit
       env:
         DB_URL: 'sqlserver://@(localdb)\MSSQLLocalDB/cakephp'
       run: |
           set CAKE_DISABLE_GLOBAL_FUNCS=1
-          vendor/bin/phpunit --display-incomplete
+          vendor/bin/phpunit --verbose
 
     - name: Run PHPUnit (autoquote enabled)
       env:
         DB_URL: 'sqlserver://@(localdb)\MSSQLLocalDB/cakephp'
       run: |
           set CAKE_TEST_AUTOQUOTE=1
-          vendor/bin/phpunit --display-incomplete --testsuite=database
+          vendor/bin/phpunit --verbose --testsuite=database
 
   cs-stan:
     name: Coding Standard & Static Analysis
-    runs-on: ubuntu-24.04
-
-    env:
-      PHIVE_KEYS: 'CF1A108D0E7AE720,51C67305FFC2E5C0,12CE0F1D262429A5'
-      PHPSTAN_TESTS: 1
+    runs-on: ubuntu-22.04
 
     steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
+    - uses: actions/checkout@v4
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: '8.1'
-          extensions: mbstring, intl
-          coverage: none
-          tools: phive, cs2pr
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Setup PHP
+      uses: shivammathur/setup-php@v2
+      with:
+        php-version: '7.4'
+        extensions: mbstring, intl, apcu, memcached, redis
+        coverage: none
+        tools: phive, cs2pr
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Composer install
-        uses: ramsey/composer-install@v3
+    - name: Get composer cache directory
+      id: composer-cache
+      run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
 
-      - name: Install PHP tools with phive.
-        run: 'phive install --trust-gpg-keys "$PHIVE_KEYS"'
+    - name: Get date part for cache key
+      id: key-date
+      run: echo "date=$(date +'%Y-%m')" >> $GITHUB_OUTPUT
 
-      - name: Run phpcs
-        if: always()
-        run: vendor/bin/phpcs --report=checkstyle | cs2pr
+    - name: Cache composer dependencies
+      uses: actions/cache@v4
+      with:
+        path: ${{ steps.composer-cache.outputs.dir }}
+        key: ${{ runner.os }}-composer-${{ steps.key-date.outputs.date }}-${{ hashFiles('composer.json') }}-${{ matrix.prefer-lowest }}
 
-      - name: Run psalm
-        if: always()
-        run: tools/psalm --output-format=github
+    - name: Composer install
+      run: composer update
 
-      - name: Run phpstan
-        if: always()
-        run: vendor/bin/phpstan analyse --error-format=github
+    - name: Install PHP tools with phive.
+      run: phive install --trust-gpg-keys 'CF1A108D0E7AE720,51C67305FFC2E5C0,12CE0F1D262429A5'
 
-      - name: Run phpstan for tests
-        if: env.PHPSTAN_TESTS
-        run: vendor/bin/phpstan analyse -c tests/phpstan.neon --error-format=github
+    - name: Run phpcs
+      if: always()
+      run: vendor/bin/phpcs --report=checkstyle src/ tests/ | cs2pr
 
-      - name: Run class deprecation aliasing validation script
-        if: always()
-        run: php contrib/validate-deprecation-aliases.php
+    - name: Run psalm
+      if: always()
+      run: tools/psalm --output-format=github
 
-      - name: Run composer.json validation for split packages
-        if: always()
-        run: php contrib/validate-split-packages.php
+    - name: Run phpstan
+      if: always()
+      run: tools/phpstan analyse --error-format=github
 
-      - name: Run PHPStan for split packages
-        if: always()
-        run: php contrib/validate-split-packages-phpstan.php
+    - name: Run phpstan for tests
+      if: always()
+      run: tools/phpstan analyse -c tests/phpstan.neon --error-format=github
 
-      - name: Prefer lowest check
-        if: matrix.prefer-lowest == 'prefer-lowest'
-        run: composer require --dev dereuromark/composer-prefer-lowest && vendor/bin/validate-prefer-lowest -m
+    - name: Run class deprecation aliasing validaton script
+      if: always()
+      run: php contrib/validate-deprecation-aliases.php

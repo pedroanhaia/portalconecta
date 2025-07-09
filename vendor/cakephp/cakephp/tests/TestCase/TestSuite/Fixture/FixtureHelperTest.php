@@ -17,8 +17,6 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\TestSuite;
 
 use Cake\Core\Exception\CakeException;
-use Cake\Database\Connection;
-use Cake\Datasource\ConnectionInterface;
 use Cake\Datasource\ConnectionManager;
 use Cake\Test\Fixture\ArticlesFixture;
 use Cake\TestSuite\Fixture\FixtureHelper;
@@ -33,7 +31,7 @@ use UnexpectedValueException;
 
 class FixtureHelperTest extends TestCase
 {
-    protected array $fixtures = ['core.Articles'];
+    protected $fixtures = ['core.Articles'];
 
     /**
      * Clean up after test.
@@ -69,21 +67,6 @@ class FixtureHelperTest extends TestCase
     }
 
     /**
-     * Tests that possible table instances used in the fixture loading mechanism
-     * do not remain in the table locator.
-     */
-    public function testLoadFixturesDoesNotPolluteTheTableLocator(): void
-    {
-        (new FixtureHelper())->loadFixtures([
-            'core.Articles',
-            'plugin.TestPlugin.Blog/Comments',
-        ]);
-
-        $this->assertFalse($this->getTableLocator()->exists('Articles'));
-        $this->assertFalse($this->getTableLocator()->exists('Comments'));
-    }
-
-    /**
      * Tests loading missing fixtures.
      */
     public function testLoadMissingFixtures(): void
@@ -108,32 +91,21 @@ class FixtureHelperTest extends TestCase
      */
     public function testPerConnection(): void
     {
-        $fixture1 = new class extends TestFixture {
-            public function connection(): string
-            {
-                return 'test1';
-            }
+        $fixture1 = $this->createMock(TestFixture::class);
+        $fixture1->expects($this->once())
+            ->method('connection')
+            ->will($this->returnValue('test1'));
 
-            protected function _schemaFromReflection(): void
-            {
-            }
-        };
-        $fixture2 = new class extends TestFixture {
-            public function connection(): string
-            {
-                return 'test2';
-            }
-
-            protected function _schemaFromReflection(): void
-            {
-            }
-        };
+        $fixture2 = $this->createMock(TestFixture::class);
+        $fixture2->expects($this->once())
+            ->method('connection')
+            ->will($this->returnValue('test2'));
 
         ConnectionManager::alias('test', 'test1');
         ConnectionManager::alias('test', 'test2');
 
         $numCalls = 0;
-        (new FixtureHelper())->runPerConnection(function () use (&$numCalls): void {
+        (new FixtureHelper())->runPerConnection(function () use (&$numCalls) {
             ++$numCalls;
         }, [$fixture1, $fixture2]);
         $this->assertSame(2, $numCalls);
@@ -148,14 +120,14 @@ class FixtureHelperTest extends TestCase
          * @var \Cake\Database\Connection $connection
          */
         $connection = ConnectionManager::get('test');
-        $connection->deleteQuery()->delete('articles')->execute()->closeCursor();
-        $rows = $connection->selectQuery()->select('*')->from('articles')->execute();
+        $connection->deleteQuery('articles')->execute()->closeCursor();
+        $rows = $connection->selectQuery('*')->from('articles')->execute();
         $this->assertEmpty($rows->fetchAll());
         $rows->closeCursor();
 
         $helper = new FixtureHelper();
         $helper->insert($helper->loadFixtures(['core.Articles']));
-        $rows = $connection->selectQuery()->select('*')->from('articles')->execute();
+        $rows = $connection->selectQuery('*')->from('articles')->execute();
         $this->assertNotEmpty($rows->fetchAll());
         $rows->closeCursor();
     }
@@ -165,45 +137,23 @@ class FixtureHelperTest extends TestCase
      */
     public function testInsertFixturesException(): void
     {
-        $fixture = new class extends TestFixture {
-            public function connection(): string
-            {
-                return 'test';
-            }
+        $fixture = $this->getMockBuilder(TestFixture::class)->getMock();
+        $fixture->expects($this->once())
+            ->method('connection')
+            ->will($this->returnValue('test'));
+        $fixture->expects($this->once())
+            ->method('insert')
+            ->will($this->throwException(new PDOException('Missing key')));
 
-            protected function _schemaFromReflection(): void
-            {
-            }
-
-            public function insert(ConnectionInterface $connection): bool
-            {
-                throw new PDOException('Missing key');
-            }
-        };
-
-        $helper = new class extends FixtureHelper {
-            public function sortByConstraint(Connection $connection, array $fixtures): array
-            {
-                return [new class extends TestFixture {
-                    public function connection(): string
-                    {
-                        return 'test';
-                    }
-
-                    protected function _schemaFromReflection(): void
-                    {
-                    }
-
-                    public function insert(ConnectionInterface $connection): bool
-                    {
-                        throw new PDOException('Missing key');
-                    }
-                }];
-            }
-        };
+        $helper = $this->getMockBuilder(FixtureHelper::class)
+            ->onlyMethods(['sortByConstraint'])
+            ->getMock();
+        $helper->expects($this->any())
+            ->method('sortByConstraint')
+            ->will($this->returnValue([$fixture]));
 
         $this->expectException(CakeException::class);
-        $this->expectExceptionMessage('Unable to insert rows for table `');
+        $this->expectExceptionMessage('Unable to insert rows for table ``');
         $helper->insert([$fixture]);
     }
 
@@ -216,13 +166,13 @@ class FixtureHelperTest extends TestCase
          * @var \Cake\Database\Connection $connection
          */
         $connection = ConnectionManager::get('test');
-        $rows = $connection->selectQuery()->select('*')->from('articles')->execute();
+        $rows = $connection->selectQuery('*')->from('articles')->execute();
         $this->assertNotEmpty($rows->fetchAll());
         $rows->closeCursor();
 
         $helper = new FixtureHelper();
         $helper->truncate($helper->loadFixtures(['core.Articles']));
-        $rows = $connection->selectQuery()->select('*')->from('articles')->execute();
+        $rows = $connection->selectQuery('*')->from('articles')->execute();
         $this->assertEmpty($rows->fetchAll());
         $rows->closeCursor();
     }
@@ -232,45 +182,23 @@ class FixtureHelperTest extends TestCase
      */
     public function testTruncateFixturesException(): void
     {
-        $fixture = new class extends TestFixture {
-            public function connection(): string
-            {
-                return 'test';
-            }
+        $fixture = $this->getMockBuilder(TestFixture::class)->getMock();
+        $fixture->expects($this->once())
+            ->method('connection')
+            ->will($this->returnValue('test'));
+        $fixture->expects($this->once())
+            ->method('truncate')
+            ->will($this->throwException(new PDOException('Missing key')));
 
-            protected function _schemaFromReflection(): void
-            {
-            }
-
-            public function truncate(ConnectionInterface $connection): bool
-            {
-                throw new PDOException('Missing key');
-            }
-        };
-
-        $helper = new class extends FixtureHelper {
-            public function sortByConstraint(Connection $connection, array $fixtures): array
-            {
-                return [new class extends TestFixture {
-                    public function connection(): string
-                    {
-                        return 'test';
-                    }
-
-                    protected function _schemaFromReflection(): void
-                    {
-                    }
-
-                    public function truncate(ConnectionInterface $connection): bool
-                    {
-                        throw new PDOException('Missing key');
-                    }
-                }];
-            }
-        };
+        $helper = $this->getMockBuilder(FixtureHelper::class)
+            ->onlyMethods(['sortByConstraint'])
+            ->getMock();
+        $helper->expects($this->any())
+            ->method('sortByConstraint')
+            ->will($this->returnValue([$fixture]));
 
         $this->expectException(CakeException::class);
-        $this->expectExceptionMessage('Unable to truncate table `');
+        $this->expectExceptionMessage('Unable to truncate table ``');
         $helper->truncate([$fixture]);
     }
 }

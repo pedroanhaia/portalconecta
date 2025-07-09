@@ -15,5 +15,5 @@ class ExampleMailer extends Mailer
      *
      * @var string
      */
-    public static string $name = 'Example';
+    public static $name = 'Example';
 }

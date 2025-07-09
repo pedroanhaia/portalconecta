@@ -23,7 +23,7 @@ class AuthorsTableTest extends TestCase
      *
      * @return void
      */
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
         $config = $this->getTableLocator()->exists('Authors') ? [] : ['className' => AuthorsTable::class];
@@ -35,7 +35,7 @@ class AuthorsTableTest extends TestCase
      *
      * @return void
      */
-    protected function tearDown(): void
+    public function tearDown(): void
     {
         unset($this->Authors);
 

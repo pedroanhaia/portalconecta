@@ -18,10 +18,16 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\View\Helper;
 
+use Cake\I18n\Number;
 use Cake\TestSuite\TestCase;
 use Cake\View\Helper\NumberHelper;
 use Cake\View\View;
-use PHPUnit\Framework\Attributes\DataProvider;
+use ReflectionMethod;
+use TestApp\I18n\NumberMock;
+use TestApp\I18n\TestAppI18nEngine;
+use TestApp\Utility\TestAppUtilityEngine;
+use TestApp\View\Helper\NumberHelperTestObject;
+use TestPlugin\I18n\TestPluginEngine;
 
 /**
  * NumberHelperTest class
@@ -40,7 +46,6 @@ class NumberHelperTest extends TestCase
     {
         parent::setUp();
         $this->View = new View();
-
         static::setAppNamespace();
     }
 
@@ -59,22 +64,83 @@ class NumberHelperTest extends TestCase
      *
      * @return array
      */
-    public static function methodProvider(): array
+    public function methodProvider(): array
     {
         return [
-            ['precision', 1.23],
-            ['toReadableSize', 1.23],
-            ['toPercentage', 1.23],
+            ['precision'],
+            ['toReadableSize'],
+            ['toPercentage'],
+            ['currency'],
+            ['format'],
+            ['formatDelta'],
+            ['ordinal'],
         ];
     }
 
     /**
-     * Tests calls are proxied to Number class.
+     * test CakeNumber class methods are called correctly
+     *
+     * @dataProvider methodProvider
      */
-    #[DataProvider('methodProvider')]
-    public function testMethodProxying(string $method, mixed $arg): void
+    public function testNumberHelperProxyMethodCalls(string $method): void
     {
-        $helper = new NumberHelper($this->View);
-        $this->assertNotNull($helper->{$method}($arg));
+        $this->deprecated(function () use ($method) {
+            $number = $this->getMockBuilder(NumberMock::class)
+                ->addMethods([$method])
+                ->getMock();
+            $helper = new NumberHelperTestObject($this->View, ['engine' => NumberMock::class]);
+            $helper->attach($number);
+            $number->expects($this->once())
+                ->method($method)
+                ->with(12.3)
+                ->willReturn('');
+            $helper->{$method}(12.3);
+        });
+    }
+
+    /**
+     * Test that number of argument of helper's proxy methods matches
+     * corresponding method of Number class.
+     *
+     * @dataProvider methodProvider
+     */
+    public function testParameterCountMatch(string $method): void
+    {
+        $numberMethod = new ReflectionMethod(Number::class, $method);
+        $helperMethod = new ReflectionMethod(NumberHelper::class, $method);
+
+        $this->assertSame($numberMethod->getNumberOfParameters(), $helperMethod->getNumberOfParameters());
+    }
+
+    /**
+     * test engine override
+     */
+    public function testEngineOverride(): void
+    {
+        $this->deprecated(function () {
+            $Number = new NumberHelperTestObject($this->View, ['engine' => 'TestAppI18nEngine']);
+            $this->assertInstanceOf(TestAppI18nEngine::class, $Number->engine());
+
+            $this->loadPlugins(['TestPlugin']);
+            $Number = new NumberHelperTestObject($this->View, ['engine' => 'TestPlugin.TestPluginEngine']);
+            $this->assertInstanceOf(TestPluginEngine::class, $Number->engine());
+            $this->removePlugins(['TestPlugin']);
+        });
+    }
+
+    /**
+     * test engine override for legacy namespace Utility instead of I18n
+     */
+    public function testEngineOverrideLegacy(): void
+    {
+        $this->deprecated(function () {
+            $Number = new NumberHelperTestObject($this->View, ['engine' => 'TestAppUtilityEngine']);
+            $this->assertInstanceOf(TestAppUtilityEngine::class, $Number->engine());
+
+            $this->loadPlugins(['TestPlugin']);
+            $Number = new NumberHelperTestObject($this->View, ['engine' => 'TestPlugin.TestPluginEngine']);
+            $this->assertInstanceOf(TestPluginEngine::class, $Number->engine());
+            $this->removePlugins(['TestPlugin']);
+        });
     }
 }

@@ -19,9 +19,9 @@ namespace Cake\Test\TestCase\Http;
 use Cake\Core\Container;
 use Cake\Http\MiddlewareQueue;
 use Cake\TestSuite\TestCase;
-use InvalidArgumentException;
 use LogicException;
 use OutOfBoundsException;
+use RuntimeException;
 use TestApp\Middleware\DumbMiddleware;
 use TestApp\Middleware\SampleMiddleware;
 
@@ -164,10 +164,10 @@ class MiddlewareQueueTest extends TestCase
     {
         $queue = new MiddlewareQueue();
         $queue->add('Sample');
-        $queue->prepend(SampleMiddleware::class);
+        $queue->prepend('TestApp\Middleware\SampleMiddleware');
 
-        $this->assertInstanceOf(SampleMiddleware::class, $queue->current());
-        $this->assertInstanceOf(SampleMiddleware::class, $queue->current());
+        $this->assertInstanceOf('TestApp\Middleware\SampleMiddleware', $queue->current());
+        $this->assertInstanceOf('TestApp\Middleware\SampleMiddleware', $queue->current());
     }
 
     /**
@@ -180,9 +180,9 @@ class MiddlewareQueueTest extends TestCase
 
         $queue = new MiddlewareQueue();
         $queue->add([$one]);
-        $queue->prepend([SampleMiddleware::class]);
+        $queue->prepend(['TestApp\Middleware\SampleMiddleware']);
 
-        $this->assertInstanceOf(SampleMiddleware::class, $queue->current());
+        $this->assertInstanceOf('TestApp\Middleware\SampleMiddleware', $queue->current());
         $queue->next();
         $this->assertSame($one, $queue->current()->getCallable());
     }
@@ -305,7 +305,7 @@ class MiddlewareQueueTest extends TestCase
     public function testInsertBeforeInvalid(): void
     {
         $this->expectException(LogicException::class);
-        $this->expectExceptionMessage('No middleware matching `InvalidClassName` could be found.');
+        $this->expectExceptionMessage('No middleware matching \'InvalidClassName\' could be found.');
         $one = function (): void {
         };
         $two = new SampleMiddleware();
@@ -379,6 +379,21 @@ class MiddlewareQueueTest extends TestCase
     }
 
     /**
+     * @deprecated
+     */
+    public function testAddingDeprecatedDoublePassMiddleware(): void
+    {
+        $queue = new MiddlewareQueue();
+        $cb = function ($request, $response, $next) {
+            return $next($request, $response);
+        };
+        $queue->add($cb);
+        $this->deprecated(function () use ($queue, $cb): void {
+            $this->assertSame($cb, $queue->current()->getCallable());
+        });
+    }
+
+    /**
      * Make sure middlewares provided via DI are the same object
      */
     public function testDIContainer(): void
@@ -398,8 +413,8 @@ class MiddlewareQueueTest extends TestCase
     {
         $container = new Container();
         $queue = new MiddlewareQueue([], $container);
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Middleware `UnresolvableMiddleware` was not found.');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Middleware "UnresolvableMiddleware" was not found.');
         $queue->add('UnresolvableMiddleware');
         $queue->current();
     }

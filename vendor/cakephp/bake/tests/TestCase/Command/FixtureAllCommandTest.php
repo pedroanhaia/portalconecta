@@ -2,23 +2,23 @@
 declare(strict_types=1);
 
 /**
- * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP(tm) Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
  * @since         2.0.0
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 namespace Bake\Test\TestCase\Command;
 
 use Bake\Test\TestCase\TestCase;
 use Bake\Utility\SubsetSchemaCollection;
-use Cake\Console\CommandInterface;
+use Cake\Command\Command;
 use Cake\Core\Plugin;
 use Cake\Datasource\ConnectionManager;
 
@@ -30,17 +30,17 @@ class FixtureAllCommandTest extends TestCase
     /**
      * fixtures
      *
-     * @var list<string>
+     * @var array
      */
-    protected array $fixtures = [
-        'plugin.Bake.Articles',
-        'plugin.Bake.Comments',
+    protected $fixtures = [
+        'core.Articles',
+        'core.Comments',
     ];
 
     /**
-     * @var list<string>
+     * @var array
      */
-    protected array $tables = ['articles', 'comments'];
+    protected $tables = ['articles', 'comments'];
 
     /**
      * setUp method
@@ -53,6 +53,7 @@ class FixtureAllCommandTest extends TestCase
 
         $this->_compareBasePath = Plugin::path('Bake') . 'tests' . DS . 'comparisons' . DS . 'Fixture' . DS;
         $this->setAppNamespace('Bake\Test\App');
+        $this->useCommandRunner();
 
         $connection = ConnectionManager::get('test');
         $subsetCollection = new SubsetSchemaCollection($connection->getSchemaCollection(), $this->tables);
@@ -84,7 +85,7 @@ class FixtureAllCommandTest extends TestCase
         ];
         $this->exec('bake fixture all --connection test');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertFileContains('class ArticlesFixture', $this->generatedFiles[0]);
         $this->assertFileContains('class CommentsFixture', $this->generatedFiles[1]);
@@ -103,12 +104,12 @@ class FixtureAllCommandTest extends TestCase
         ];
         $this->exec('bake fixture all --connection test --count 10 --records');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertFileContains("'title' => 'Third Article'", $this->generatedFiles[0]);
         $this->assertFileContains(
             "'comment' => 'First Comment for First Article'",
-            $this->generatedFiles[1],
+            $this->generatedFiles[1]
         );
     }
 
@@ -125,15 +126,15 @@ class FixtureAllCommandTest extends TestCase
         ];
         $this->exec('bake fixture all --connection test --schema');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertFileContains(
-            "public array \$import = ['table' => 'articles'",
-            $this->generatedFiles[0],
+            "public \$import = ['table' => 'articles'",
+            $this->generatedFiles[0]
         );
         $this->assertFileContains(
-            "public array \$import = ['table' => 'comments'",
-            $this->generatedFiles[1],
+            "public \$import = ['table' => 'comments'",
+            $this->generatedFiles[1]
         );
     }
 }

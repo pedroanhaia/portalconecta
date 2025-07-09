@@ -21,9 +21,9 @@ class AuthorsTableTest extends TestCase
     /**
      * Fixtures
      *
-     * @var list<string>
+     * @var array
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'app.Posts',
         'app.Comments',
         'app.Users',
@@ -34,7 +34,7 @@ class AuthorsTableTest extends TestCase
      *
      * @return void
      */
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
         $config = $this->getTableLocator()->exists('Authors') ? [] : ['className' => AuthorsTable::class];
@@ -46,7 +46,7 @@ class AuthorsTableTest extends TestCase
      *
      * @return void
      */
-    protected function tearDown(): void
+    public function tearDown(): void
     {
         unset($this->Authors);
 

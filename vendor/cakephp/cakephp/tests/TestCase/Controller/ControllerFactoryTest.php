@@ -16,8 +16,6 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Controller;
 
-use Cake\Controller\Component\FlashComponent;
-use Cake\Controller\ComponentRegistry;
 use Cake\Controller\ControllerFactory;
 use Cake\Controller\Exception\InvalidParameterException;
 use Cake\Core\Container;
@@ -25,14 +23,8 @@ use Cake\Http\Exception\MissingControllerException;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
-use Company\TestPluginThree\Controller\OvensController;
 use stdClass;
-use TestApp\Controller\Admin\PostsController;
-use TestApp\Controller\Admin\Sub\PostsController as SubPostsController;
-use TestApp\Controller\CakesController;
 use TestApp\Controller\DependenciesController;
-use TestPlugin\Controller\Admin\CommentsController;
-use TestPlugin\Controller\TestPluginController;
 
 /**
  * Test case for ControllerFactory.
@@ -73,7 +65,7 @@ class ControllerFactoryTest extends TestCase
             ],
         ]);
         $result = $this->factory->create($request);
-        $this->assertInstanceOf(CakesController::class, $result);
+        $this->assertInstanceOf('TestApp\Controller\CakesController', $result);
         $this->assertSame($request, $result->getRequest());
     }
 
@@ -92,8 +84,8 @@ class ControllerFactoryTest extends TestCase
         ]);
         $result = $this->factory->create($request);
         $this->assertInstanceOf(
-            PostsController::class,
-            $result,
+            'TestApp\Controller\Admin\PostsController',
+            $result
         );
         $this->assertSame($request, $result->getRequest());
     }
@@ -113,8 +105,8 @@ class ControllerFactoryTest extends TestCase
         ]);
         $result = $this->factory->create($request);
         $this->assertInstanceOf(
-            SubPostsController::class,
-            $result,
+            'TestApp\Controller\Admin\Sub\PostsController',
+            $result
         );
         $this->assertSame($request, $result->getRequest());
     }
@@ -134,8 +126,8 @@ class ControllerFactoryTest extends TestCase
         ]);
         $result = $this->factory->create($request);
         $this->assertInstanceOf(
-            TestPluginController::class,
-            $result,
+            'TestPlugin\Controller\TestPluginController',
+            $result
         );
         $this->assertSame($request, $result->getRequest());
     }
@@ -155,8 +147,8 @@ class ControllerFactoryTest extends TestCase
         ]);
         $result = $this->factory->create($request);
         $this->assertInstanceOf(
-            OvensController::class,
-            $result,
+            'Company\TestPluginThree\Controller\OvensController',
+            $result
         );
         $this->assertSame($request, $result->getRequest());
     }
@@ -177,8 +169,8 @@ class ControllerFactoryTest extends TestCase
         ]);
         $result = $this->factory->create($request);
         $this->assertInstanceOf(
-            CommentsController::class,
-            $result,
+            'TestPlugin\Controller\Admin\CommentsController',
+            $result
         );
         $this->assertSame($request, $result->getRequest());
     }
@@ -186,7 +178,7 @@ class ControllerFactoryTest extends TestCase
     public function testAbstractClassFailure(): void
     {
         $this->expectException(MissingControllerException::class);
-        $this->expectExceptionMessage('Controller class `Abstract` could not be found.');
+        $this->expectExceptionMessage('Controller class Abstract could not be found.');
         $request = new ServerRequest([
             'url' => 'abstract/index',
             'params' => [
@@ -200,7 +192,7 @@ class ControllerFactoryTest extends TestCase
     public function testInterfaceFailure(): void
     {
         $this->expectException(MissingControllerException::class);
-        $this->expectExceptionMessage('Controller class `Interface` could not be found.');
+        $this->expectExceptionMessage('Controller class Interface could not be found.');
         $request = new ServerRequest([
             'url' => 'interface/index',
             'params' => [
@@ -214,7 +206,7 @@ class ControllerFactoryTest extends TestCase
     public function testMissingClassFailure(): void
     {
         $this->expectException(MissingControllerException::class);
-        $this->expectExceptionMessage('Controller class `Invisible` could not be found.');
+        $this->expectExceptionMessage('Controller class Invisible could not be found.');
         $request = new ServerRequest([
             'url' => 'interface/index',
             'params' => [
@@ -228,7 +220,7 @@ class ControllerFactoryTest extends TestCase
     public function testSlashedControllerFailure(): void
     {
         $this->expectException(MissingControllerException::class);
-        $this->expectExceptionMessage('Controller class `Admin/Posts` could not be found.');
+        $this->expectExceptionMessage('Controller class Admin/Posts could not be found.');
         $request = new ServerRequest([
             'url' => 'admin/posts/index',
             'params' => [
@@ -242,11 +234,11 @@ class ControllerFactoryTest extends TestCase
     public function testAbsoluteReferenceFailure(): void
     {
         $this->expectException(MissingControllerException::class);
-        $this->expectExceptionMessage('Controller class `TestApp\Controller\CakesController` could not be found.');
+        $this->expectExceptionMessage('Controller class TestApp\Controller\CakesController could not be found.');
         $request = new ServerRequest([
             'url' => 'interface/index',
             'params' => [
-                'controller' => CakesController::class,
+                'controller' => 'TestApp\Controller\CakesController',
                 'action' => 'index',
             ],
         ]);
@@ -291,6 +283,8 @@ class ControllerFactoryTest extends TestCase
             ->addArgument(ServerRequest::class)
             ->addArgument(null)
             ->addArgument(null)
+            ->addArgument(null)
+            ->addArgument(null)
             ->addArgument(stdClass::class);
 
         $controller = $this->factory->create($request);
@@ -312,7 +306,7 @@ class ControllerFactoryTest extends TestCase
             ],
         ]);
         $result = $this->factory->getControllerClass($request);
-        $this->assertSame(OvensController::class, $result);
+        $this->assertSame('Company\TestPluginThree\Controller\OvensController', $result);
     }
 
     /**
@@ -557,7 +551,7 @@ class ControllerFactoryTest extends TestCase
 
         $this->expectException(InvalidParameterException::class);
         $this->expectExceptionMessage(
-            'Failed to inject dependency from service container for parameter `dep` with type `stdClass` in action `Dependencies::requiredDep()`',
+            'Failed to inject dependency from service container for parameter `dep` with type `stdClass` in action Dependencies::requiredDep()'
         );
         $this->factory->invoke($controller);
     }
@@ -575,7 +569,7 @@ class ControllerFactoryTest extends TestCase
         $controller = $this->factory->create($request);
 
         $this->expectException(InvalidParameterException::class);
-        $this->expectExceptionMessage('Missing passed parameter for `one` in action `Dependencies::requiredParam()`');
+        $this->expectExceptionMessage('Missing passed parameter for `one` in action Dependencies::requiredParam()');
         $this->factory->invoke($controller);
     }
 
@@ -724,7 +718,7 @@ class ControllerFactoryTest extends TestCase
         $controller = $this->factory->create($request);
 
         $this->expectException(InvalidParameterException::class);
-        $this->expectExceptionMessage('Missing passed parameter for `str` in action `Dependencies::requiredString()`');
+        $this->expectExceptionMessage('Missing passed parameter for `str` in action Dependencies::requiredString()');
         $this->factory->invoke($controller);
     }
 
@@ -818,7 +812,7 @@ class ControllerFactoryTest extends TestCase
         $controller = $this->factory->create($request);
 
         $this->expectException(InvalidParameterException::class);
-        $this->expectExceptionMessage('Unable to coerce `true` to `float` for `one` in action `Dependencies::requiredTyped()`');
+        $this->expectExceptionMessage('Unable to coerce "true" to `float` for `one` in action Dependencies::requiredTyped()');
         $this->factory->invoke($controller);
     }
 
@@ -839,7 +833,7 @@ class ControllerFactoryTest extends TestCase
         $controller = $this->factory->create($request);
 
         $this->expectException(InvalidParameterException::class);
-        $this->expectExceptionMessage('Unable to coerce `2.0` to `int` for `two` in action `Dependencies::requiredTyped()`');
+        $this->expectExceptionMessage('Unable to coerce "2.0" to `int` for `two` in action Dependencies::requiredTyped()');
         $this->factory->invoke($controller);
     }
 
@@ -860,7 +854,7 @@ class ControllerFactoryTest extends TestCase
         $controller = $this->factory->create($request);
 
         $this->expectException(InvalidParameterException::class);
-        $this->expectExceptionMessage('Unable to coerce `true` to `bool` for `three` in action `Dependencies::requiredTyped()`');
+        $this->expectExceptionMessage('Unable to coerce "true" to `bool` for `three` in action Dependencies::requiredTyped()');
         $this->factory->invoke($controller);
     }
 
@@ -881,7 +875,7 @@ class ControllerFactoryTest extends TestCase
         $controller = $this->factory->create($request);
 
         $this->expectException(InvalidParameterException::class);
-        $this->expectExceptionMessage('Unable to coerce `test` to `iterable` for `one` in action `Dependencies::unsupportedTyped()`');
+        $this->expectExceptionMessage('Unable to coerce "test" to `iterable` for `one` in action Dependencies::unsupportedTyped()');
         $this->factory->invoke($controller);
     }
 
@@ -890,11 +884,12 @@ class ControllerFactoryTest extends TestCase
      */
     public function testInvokePassedParamUnsupportedReflectionType(): void
     {
+        $this->skipIf(version_compare(PHP_VERSION, '8.0', '<='), 'Unions require PHP 8');
         $request = new ServerRequest([
-            'url' => 'test_plugin_three/dependencies/unsupportedTypedUnion',
+            'url' => 'test_plugin_three/unionDependencies/typedUnion',
             'params' => [
                 'plugin' => null,
-                'controller' => 'Dependencies',
+                'controller' => 'UnionDependencies',
                 'action' => 'typedUnion',
                 'pass' => ['1'],
             ],
@@ -905,34 +900,6 @@ class ControllerFactoryTest extends TestCase
         $data = json_decode((string)$result->getBody(), true);
 
         $this->assertSame(['one' => '1'], $data);
-    }
-
-    /**
-     * Test that default values work for typed parameters
-     */
-    public function testInvokeComponentFromContainer(): void
-    {
-        $this->container->add(FlashComponent::class, function (ComponentRegistry $registry, array $config) {
-            return new FlashComponent($registry, $config);
-        })
-        ->addArgument(ComponentRegistry::class)
-        ->addArgument(['key' => 'customFlash']);
-
-        $request = new ServerRequest([
-            'url' => 'test_plugin_three/component-test/flash',
-            'params' => [
-                'plugin' => null,
-                'controller' => 'ComponentTest',
-                'action' => 'flash',
-                'pass' => [],
-            ],
-        ]);
-        $controller = $this->factory->create($request);
-
-        $result = $this->factory->invoke($controller);
-        $data = json_decode((string)$result->getBody(), true);
-
-        $this->assertSame(['flashKey' => 'customFlash'], $data);
     }
 
     public function testMiddleware(): void

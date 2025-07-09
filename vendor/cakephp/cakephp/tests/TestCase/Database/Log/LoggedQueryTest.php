@@ -50,7 +50,7 @@ class LoggedQueryTest extends TestCase
     public function testStringConversion(): void
     {
         $logged = new LoggedQuery();
-        $logged->setContext(['query' => 'SELECT foo FROM bar']);
+        $logged->query = 'SELECT foo FROM bar';
         $this->assertSame('SELECT foo FROM bar', (string)$logged);
     }
 
@@ -60,11 +60,9 @@ class LoggedQueryTest extends TestCase
     public function testStringInterpolation(): void
     {
         $query = new LoggedQuery();
-        $query->setContext([
-            'driver' => $this->driver,
-            'query' => 'SELECT a FROM b where a = :p1 AND b = :p2 AND c = :p3 AND d = :p4 AND e = :p5 AND f = :p6',
-            'params' => ['p1' => 'string', 'p3' => null, 'p2' => 3, 'p4' => true, 'p5' => false, 'p6' => 0],
-        ]);
+        $query->driver = $this->driver;
+        $query->query = 'SELECT a FROM b where a = :p1 AND b = :p2 AND c = :p3 AND d = :p4 AND e = :p5 AND f = :p6';
+        $query->params = ['p1' => 'string', 'p3' => null, 'p2' => 3, 'p4' => true, 'p5' => false, 'p6' => 0];
 
         $expected = "SELECT a FROM b where a = 'string' AND b = 3 AND c = NULL AND d = $this->true AND e = $this->false AND f = 0";
         $this->assertSame($expected, (string)$query);
@@ -76,11 +74,9 @@ class LoggedQueryTest extends TestCase
     public function testStringInterpolationNotNamed(): void
     {
         $query = new LoggedQuery();
-        $query->setContext([
-            'driver' => $this->driver,
-            'query' => 'SELECT a FROM b where a = ? AND b = ? AND c = ? AND d = ? AND e = ? AND f = ?',
-            'params' => ['string', '3', null, true, false, 0],
-        ]);
+        $query->driver = $this->driver;
+        $query->query = 'SELECT a FROM b where a = ? AND b = ? AND c = ? AND d = ? AND e = ? AND f = ?';
+        $query->params = ['string', '3', null, true, false, 0];
 
         $expected = "SELECT a FROM b where a = 'string' AND b = '3' AND c = NULL AND d = $this->true AND e = $this->false AND f = 0";
         $this->assertSame($expected, (string)$query);
@@ -92,10 +88,8 @@ class LoggedQueryTest extends TestCase
     public function testStringInterpolationDuplicate(): void
     {
         $query = new LoggedQuery();
-        $query->setContext([
-            'query' => 'SELECT a FROM b where a = :p1 AND b = :p1 AND c = :p2 AND d = :p2',
-            'params' => ['p1' => 'string', 'p2' => 3],
-        ]);
+        $query->query = 'SELECT a FROM b where a = :p1 AND b = :p1 AND c = :p2 AND d = :p2';
+        $query->params = ['p1' => 'string', 'p2' => 3];
 
         $expected = "SELECT a FROM b where a = 'string' AND b = 'string' AND c = 3 AND d = 3";
         $this->assertSame($expected, (string)$query);
@@ -107,10 +101,8 @@ class LoggedQueryTest extends TestCase
     public function testStringInterpolationNamed(): void
     {
         $query = new LoggedQuery();
-        $query->setContext([
-            'query' => 'SELECT a FROM b where a = :p1 AND b = :p11 AND c = :p20 AND d = :p2',
-            'params' => ['p11' => 'test', 'p1' => 'string', 'p2' => 3, 'p20' => 5],
-        ]);
+        $query->query = 'SELECT a FROM b where a = :p1 AND b = :p11 AND c = :p20 AND d = :p2';
+        $query->params = ['p11' => 'test', 'p1' => 'string', 'p2' => 3, 'p20' => 5];
 
         $expected = "SELECT a FROM b where a = 'string' AND b = 'test' AND c = 5 AND d = 3";
         $this->assertSame($expected, (string)$query);
@@ -122,10 +114,8 @@ class LoggedQueryTest extends TestCase
     public function testStringInterpolationSpecialChars(): void
     {
         $query = new LoggedQuery();
-        $query->setContext([
-            'query' => 'SELECT a FROM b where a = :p1 AND b = :p2 AND c = :p3 AND d = :p4',
-            'params' => ['p1' => '$2y$10$dUAIj', 'p2' => '$0.23', 'p3' => 'a\\0b\\1c\\d', 'p4' => "a'b"],
-        ]);
+        $query->query = 'SELECT a FROM b where a = :p1 AND b = :p2 AND c = :p3 AND d = :p4';
+        $query->params = ['p1' => '$2y$10$dUAIj', 'p2' => '$0.23', 'p3' => 'a\\0b\\1c\\d', 'p4' => "a'b"];
 
         $expected = "SELECT a FROM b where a = '\$2y\$10\$dUAIj' AND b = '\$0.23' AND c = 'a\\\\0b\\\\1c\\\\d' AND d = 'a''b'";
         $this->assertSame($expected, (string)$query);
@@ -137,11 +127,9 @@ class LoggedQueryTest extends TestCase
     public function testBinaryInterpolation(): void
     {
         $query = new LoggedQuery();
+        $query->query = 'SELECT a FROM b where a = :p1';
         $uuid = str_replace('-', '', Text::uuid());
-        $query->setContext([
-            'query' => 'SELECT a FROM b where a = :p1',
-            'params' => ['p1' => hex2bin($uuid)],
-        ]);
+        $query->params = ['p1' => hex2bin($uuid)];
 
         $expected = "SELECT a FROM b where a = '{$uuid}'";
         $this->assertSame($expected, (string)$query);
@@ -153,10 +141,8 @@ class LoggedQueryTest extends TestCase
     public function testBinaryInterpolationIgnored(): void
     {
         $query = new LoggedQuery();
-        $query->setContext([
-            'query' => 'SELECT a FROM b where a = :p1',
-            'params' => ['p1' => "a\tz"],
-        ]);
+        $query->query = 'SELECT a FROM b where a = :p1';
+        $query->params = ['p1' => "a\tz"];
 
         $expected = "SELECT a FROM b where a = 'a\tz'";
         $this->assertSame($expected, (string)$query);
@@ -165,16 +151,13 @@ class LoggedQueryTest extends TestCase
     public function testGetContext(): void
     {
         $query = new LoggedQuery();
-        $query->setContext([
-            'query' => 'SELECT a FROM b where a = :p1',
-            'numRows' => 10,
-            'took' => 15,
-        ]);
+        $query->query = 'SELECT a FROM b where a = :p1';
+        $query->numRows = 10;
+        $query->took = 15;
 
         $expected = [
-            'query' => 'SELECT a FROM b where a = :p1',
             'numRows' => 10,
-            'took' => 15.0,
+            'took' => 15,
             'role' => '',
         ];
         $this->assertSame($expected, $query->getContext());
@@ -182,25 +165,21 @@ class LoggedQueryTest extends TestCase
 
     public function testJsonSerialize(): void
     {
-        $error = new Exception('You fail!');
-
         $query = new LoggedQuery();
-        $query->setContext([
-            'query' => 'SELECT a FROM b where a = :p1',
-            'params' => ['p1' => '$2y$10$dUAIj'],
-            'numRows' => 4,
-            'error' => $error,
-        ]);
+        $query->query = 'SELECT a FROM b where a = :p1';
+        $query->params = ['p1' => '$2y$10$dUAIj'];
+        $query->numRows = 4;
+        $query->error = new Exception('You fail!');
 
         $expected = json_encode([
-            'query' => 'SELECT a FROM b where a = :p1',
+            'query' => $query->query,
             'numRows' => 4,
-            'params' => ['p1' => '$2y$10$dUAIj'],
+            'params' => $query->params,
             'took' => 0,
             'error' => [
-                'class' => $error::class,
-                'message' => $error->getMessage(),
-                'code' => $error->getCode(),
+                'class' => get_class($query->error),
+                'message' => $query->error->getMessage(),
+                'code' => $query->error->getCode(),
             ],
         ]);
 

@@ -21,6 +21,7 @@ use Cake\Database\Expression\IdentifierExpression;
 use Cake\Database\FunctionsBuilder;
 use Cake\Database\ValueBinder;
 use Cake\TestSuite\TestCase;
+use InvalidArgumentException;
 
 /**
  * Tests FunctionsBuilder class
@@ -173,6 +174,15 @@ class FunctionsBuilderTest extends TestCase
     }
 
     /**
+     * Tests missing type in new CAST() wrapper throws exception.
+     */
+    public function testInvalidCast(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->functions->cast('field');
+    }
+
+    /**
      * Tests generating a NOW(), CURRENT_TIME() and CURRENT_DATE() function
      */
     public function testNow(): void
@@ -292,16 +302,5 @@ class FunctionsBuilderTest extends TestCase
         $this->assertInstanceOf(AggregateExpression::class, $function);
         $this->assertSame('LEAD(field, 1, :param0) OVER ()', $function->sql(new ValueBinder()));
         $this->assertSame('integer', $function->getReturnType());
-    }
-
-    /**
-     * Tests generating a JSON_VALUE() function
-     */
-    public function testJsonValue(): void
-    {
-        $function = $this->functions->jsonValue('field', '$');
-        $this->assertInstanceOf(FunctionExpression::class, $function);
-        $this->assertSame('JSON_VALUE(field, :param0)', $function->sql(new ValueBinder()));
-        $this->assertSame('string', $function->getReturnType());
     }
 }

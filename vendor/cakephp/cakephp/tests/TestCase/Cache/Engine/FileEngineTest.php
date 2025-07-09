@@ -220,7 +220,7 @@ class FileEngineTest extends TestCase
         $this->_configCache(['serialize' => false]);
         $read = Cache::read('serialize_test', 'file_test');
 
-        Cache::delete('serialize_test', 'file_test');
+        $delete = Cache::delete('serialize_test', 'file_test');
         $this->assertSame($read, serialize($data));
         $this->assertSame(unserialize($read), $data);
     }
@@ -255,16 +255,15 @@ class FileEngineTest extends TestCase
         $FileOne = new FileEngine();
         $FileOne->init([
             'prefix' => 'prefix_one_',
-            'duration' => 3600,
+            'duration' => DAY,
         ]);
         $FileTwo = new FileEngine();
         $FileTwo->init([
             'prefix' => 'prefix_two_',
-            'duration' => 3600,
+            'duration' => DAY,
         ]);
-        $dataOne = 'content to cache';
-        $dataTwo = 'content to cache';
-        $expected = 'content to cache';
+
+        $dataOne = $dataTwo = $expected = 'content to cache';
         $FileOne->set('prefix_one_key_one', $dataOne);
         $FileTwo->set('prefix_two_key_two', $dataTwo);
 
@@ -284,7 +283,7 @@ class FileEngineTest extends TestCase
         $engine = new FileEngine();
         $engine->init([
             'prefix' => 'cake_test_',
-            'duration' => 3600,
+            'duration' => DAY,
             'groups' => ['short', 'round'],
         ]);
         $key = 'cake_test_test_key';
@@ -301,7 +300,7 @@ class FileEngineTest extends TestCase
         $engine = new FileEngine();
         $engine->init([
             'prefix' => 'cake_test_',
-            'duration' => 3600,
+            'duration' => DAY,
             'groups' => ['one', 'two'],
         ]);
         $key = 'cake_test_test_key';
@@ -457,7 +456,7 @@ class FileEngineTest extends TestCase
         }
         Cache::setConfig('mask_test', ['engine' => 'File', 'path' => TMP . 'tests']);
         $data = 'This is some test content';
-        Cache::write('masking_test', $data, 'mask_test');
+        $write = Cache::write('masking_test', $data, 'mask_test');
         $result = substr(sprintf('%o', fileperms(TMP . 'tests/cake_masking_test')), -4);
         $expected = '0664';
         $this->assertSame($expected, $result);

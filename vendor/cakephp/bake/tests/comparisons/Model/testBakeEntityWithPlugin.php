@@ -1,50 +1,74 @@
 <?php
 declare(strict_types=1);
 
-namespace BakeTest\Model\Entity;
+namespace BakeTest\Model\Table;
 
-use Cake\ORM\Entity;
+use Cake\ORM\Query;
+use Cake\ORM\RulesChecker;
+use Cake\ORM\Table;
+use Cake\Validation\Validator;
 
 /**
- * User Entity
+ * Users Model
  *
- * @property int $id
- * @property string|null $username
- * @property string|null $password
- * @property \Cake\I18n\DateTime|null $created
- * @property \Cake\I18n\DateTime|null $updated
+ * @property \BakeTest\Model\Table\CommentsTable&\Cake\ORM\Association\HasMany $Comments
+ * @property \BakeTest\Model\Table\TodoItemsTable&\Cake\ORM\Association\HasMany $TodoItems
  *
- * @property \BakeTest\Model\Entity\Comment[] $comments
- * @property \BakeTest\Model\Entity\Relation[] $relations
- * @property \BakeTest\Model\Entity\TodoItem[] $todo_items
+ * @method \BakeTest\Model\Entity\User newEmptyEntity()
+ * @method \BakeTest\Model\Entity\User newEntity(array $data, array $options = [])
+ * @method \BakeTest\Model\Entity\User[] newEntities(array $data, array $options = [])
+ * @method \BakeTest\Model\Entity\User get($primaryKey, $options = [])
+ * @method \BakeTest\Model\Entity\User findOrCreate($search, ?callable $callback = null, $options = [])
+ * @method \BakeTest\Model\Entity\User patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method \BakeTest\Model\Entity\User[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \BakeTest\Model\Entity\User|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \BakeTest\Model\Entity\User saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \BakeTest\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface|false saveMany(iterable $entities, $options = [])
+ * @method \BakeTest\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface saveManyOrFail(iterable $entities, $options = [])
+ * @method \BakeTest\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface|false deleteMany(iterable $entities, $options = [])
+ * @method \BakeTest\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface deleteManyOrFail(iterable $entities, $options = [])
+ *
+ * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
-class User extends Entity
+class UsersTable extends Table
 {
     /**
-     * Fields that can be mass assigned using newEntity() or patchEntity().
+     * Initialize method
      *
-     * Note that when '*' is set to true, this allows all unspecified fields to
-     * be mass assigned. For security purposes, it is advised to set '*' to false
-     * (or remove it), and explicitly make individual fields accessible as needed.
-     *
-     * @var array<string, bool>
+     * @param array $config The configuration for the Table.
+     * @return void
      */
-    protected array $_accessible = [
-        'username' => true,
-        'password' => true,
-        'created' => true,
-        'updated' => true,
-        'comments' => true,
-        'relations' => true,
-        'todo_items' => true,
-    ];
+    public function initialize(array $config): void
+    {
+        parent::initialize($config);
+
+        $this->setTable('users');
+        $this->setDisplayField('id');
+        $this->setPrimaryKey('id');
+
+        $this->addBehavior('Timestamp');
+
+        $this->hasMany('Comments', [
+            'foreignKey' => 'user_id',
+            'className' => 'BakeTest.Comments',
+        ]);
+        $this->hasMany('TodoItems', [
+            'foreignKey' => 'user_id',
+            'className' => 'BakeTest.TodoItems',
+        ]);
+    }
 
     /**
-     * Fields that are excluded from JSON versions of the entity.
+     * Returns a rules checker object that will be used for validating
+     * application integrity.
      *
-     * @var list<string>
+     * @param \Cake\ORM\RulesChecker $rules The rules object to be modified.
+     * @return \Cake\ORM\RulesChecker
      */
-    protected array $_hidden = [
-        'password',
-    ];
+    public function buildRules(RulesChecker $rules): RulesChecker
+    {
+        $rules->add($rules->isUnique(['username']), ['errorField' => 'username']);
+
+        return $rules;
+    }
 }

@@ -35,7 +35,8 @@ class HelpFormatterTest extends TestCase
         $parser = new ConsoleOptionParser('test', false);
         $parser->setDescription('This is fifteen This is fifteen This is fifteen')
             ->addOption('four', ['help' => 'this is help text this is help text'])
-            ->addArgument('four', ['help' => 'this is help text this is help text']);
+            ->addArgument('four', ['help' => 'this is help text this is help text'])
+            ->addSubcommand('four', ['help' => 'this is help text this is help text']);
 
         $formatter = new HelpFormatter($parser);
         $result = $formatter->text(30);
@@ -44,7 +45,14 @@ This is fifteen This is
 fifteen This is fifteen
 
 <info>Usage:</info>
-cake test [--four] [-h] [<four>]
+cake test [subcommand] [--four] [-h] [<four>]
+
+<info>Subcommands:</info>
+
+four  this is help text this
+      is help text
+
+To see help on a subcommand use <info>`cake test [subcommand] --help`</info>
 
 <info>Options:</info>
 
@@ -131,6 +139,42 @@ txt;
     }
 
     /**
+     * test that help() outputs subcommands.
+     */
+    public function testHelpSubcommand(): void
+    {
+        $parser = new ConsoleOptionParser('mycommand', false);
+        $parser->addSubcommand('method', ['help' => 'This is another command'])
+            ->addOption('test', ['help' => 'A test option.']);
+        $parser->addSubcommand('plugin', ['help' =>
+            'Create the directory structure, AppController class and testing setup for a new plugin. ' .
+            'Can create plugins in any of your bootstrapped plugin paths.']);
+
+        $formatter = new HelpFormatter($parser);
+        $result = $formatter->text();
+        $expected = <<<txt
+<info>Usage:</info>
+cake mycommand [subcommand] [-h] [--test]
+
+<info>Subcommands:</info>
+
+method  This is another command
+plugin  Create the directory structure, AppController class and testing
+        setup for a new plugin. Can create plugins in any of your
+        bootstrapped plugin paths.
+
+To see help on a subcommand use <info>`cake mycommand [subcommand] --help`</info>
+
+<info>Options:</info>
+
+--help, -h  Display this help.
+--test      A test option.
+
+txt;
+        $this->assertTextEquals($expected, $result, 'Help is not correct.');
+    }
+
+    /**
      * test getting help with defined options.
      */
     public function testHelpWithOptions(): void
@@ -139,7 +183,7 @@ txt;
         $parser->addOption('test', ['help' => 'A test option.'])
                ->addOption('number', [
                    'help' => 'The number',
-                   'default' => '2',
+                   'default' => 2,
                ])
                 ->addOption('connection', [
                     'short' => 'c',
@@ -275,6 +319,7 @@ xml;
 <shell>
 <command>mycommand</command>
 <description />
+<subcommands />
 <options>
 	<option name="--help" short="-h" help="Display this help." boolean="1" required="0">
 		<default>false</default>
@@ -323,6 +368,7 @@ xml;
 <shell>
 <command>mycommand</command>
 <description>Description text</description>
+<subcommands />
 <options>
 	<option name="--help" short="-h" help="Display this help." boolean="1" required="0">
 		<default>false</default>
@@ -339,6 +385,42 @@ xml;
 	</argument>
 </arguments>
 <epilog>epilog text</epilog>
+</shell>
+xml;
+        $this->assertXmlStringEqualsXmlString($expected, $result, 'Help does not match');
+    }
+
+    /**
+     * test that help() outputs subcommands.
+     */
+    public function testXmlHelpSubcommand(): void
+    {
+        $parser = new ConsoleOptionParser('mycommand', false);
+        $parser->addSubcommand('method', ['help' => 'This is another command'])
+            ->addOption('test', ['help' => 'A test option.']);
+
+        $formatter = new HelpFormatter($parser);
+        $result = $formatter->xml();
+        $expected = <<<xml
+<?xml version="1.0"?>
+<shell>
+<command>mycommand</command>
+<description/>
+<subcommands>
+	<command name="method" help="This is another command" />
+</subcommands>
+<options>
+	<option name="--help" short="-h" help="Display this help." boolean="1" required="0">
+		<default>false</default>
+		<choices></choices>
+	</option>
+	<option name="--test" short="" help="A test option." boolean="0" required="0">
+		<default></default>
+		<choices></choices>
+	</option>
+</options>
+<arguments/>
+<epilog/>
 </shell>
 xml;
         $this->assertXmlStringEqualsXmlString($expected, $result, 'Help does not match');
@@ -362,6 +444,7 @@ xml;
 <shell>
 <command>mycommand</command>
 <description/>
+<subcommands/>
 <options>
 	<option name="--connection" short="-c" help="The connection to use." boolean="0" required="0">
 		<default>default</default>
@@ -400,6 +483,7 @@ xml;
 <shell>
 	<command>mycommand</command>
 	<description/>
+	<subcommands/>
 	<options>
 		<option name="--help" short="-h" help="Display this help." boolean="1" required="0">
 			<default>false</default>

@@ -22,7 +22,7 @@ use Cake\TestSuite\TestCase;
 
 class TransactionStrategyTest extends TestCase
 {
-    protected array $fixtures = ['core.Articles'];
+    protected $fixtures = ['core.Articles'];
 
     /**
      * Tests truncation strategy.
@@ -33,19 +33,19 @@ class TransactionStrategyTest extends TestCase
          * @var \Cake\Database\Connection $connection
          */
         $connection = ConnectionManager::get('test');
-        $connection->deleteQuery()->delete('articles')->execute()->closeCursor();
-        $rows = $connection->selectQuery()->select('*')->from('articles')->execute();
+        $connection->deleteQuery('articles')->execute()->closeCursor();
+        $rows = $connection->selectQuery('*')->from('articles')->execute();
         $this->assertEmpty($rows->fetchAll());
         $rows->closeCursor();
 
         $strategy = new TransactionStrategy();
         $strategy->setupTest(['core.Articles']);
-        $rows = $connection->selectQuery()->select('*')->from('articles')->execute();
+        $rows = $connection->selectQuery('*')->from('articles')->execute();
         $this->assertNotEmpty($rows->fetchAll());
         $rows->closeCursor();
 
         $strategy->teardownTest();
-        $rows = $connection->selectQuery()->select('*')->from('articles')->execute();
+        $rows = $connection->selectQuery('*')->from('articles')->execute();
         $this->assertEmpty($rows->fetchAll());
         $rows->closeCursor();
     }

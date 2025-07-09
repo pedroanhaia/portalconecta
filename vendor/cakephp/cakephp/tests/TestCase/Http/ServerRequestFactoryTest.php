@@ -17,15 +17,11 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\Http;
 
 use Cake\Core\Configure;
-use Cake\Http\ServerRequest;
 use Cake\Http\ServerRequestFactory;
 use Cake\Http\Session;
 use Cake\TestSuite\TestCase;
 use Laminas\Diactoros\Exception\InvalidArgumentException;
 use Laminas\Diactoros\UploadedFile;
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\PreserveGlobalState;
-use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use Psr\Http\Message\UploadedFileInterface;
 
 /**
@@ -89,9 +85,10 @@ class ServerRequestFactoryTest extends TestCase
 
     /**
      * Test fromGlobals includes the session
+     *
+     * @preserveGlobalState disabled
+     * @runInSeparateProcess
      */
-    #[PreserveGlobalState(false)]
-    #[RunInSeparateProcess]
     public function testFromGlobalsUrlSession(): void
     {
         Configure::write('App.base', '/basedir');
@@ -236,19 +233,17 @@ class ServerRequestFactoryTest extends TestCase
      * Test base, webroot, URL and here parsing when there is URL rewriting but
      * CakePHP gets called with index.php in URL nonetheless.
      *
-     * The request instance generated should not have index.php stripped from its Uri.
-     *
      * Tests uri with
      *
      * - index.php/
+     * - index.php/
      * - index.php/apples/
-     * - index.php?%3C%3E?
      * - index.php/bananas/eat/tasty_banana
      */
     public function testBaseUrlWithModRewriteAndIndexPhp(): void
     {
         $request = ServerRequestFactory::fromGlobals([
-            'DOCUMENT_ROOT' => '/cakephp/webroot',
+            'DOCUMENT_ROOT' => '/cakephp/webroot/index.php',
             'PHP_SELF' => '/cakephp/webroot/index.php',
         ]);
 
@@ -257,46 +252,44 @@ class ServerRequestFactoryTest extends TestCase
         $this->assertSame('/', $request->getRequestTarget());
 
         $request = ServerRequestFactory::fromGlobals([
-            'REQUEST_URI' => '/cakephp/index.php/',
+            'REQUEST_URI' => '/cakephp/webroot/index.php/',
             'PHP_SELF' => '/cakephp/webroot/index.php/',
             'PATH_INFO' => '/',
         ]);
 
         $this->assertSame('/cakephp', $request->getAttribute('base'));
         $this->assertSame('/cakephp/', $request->getAttribute('webroot'));
-        $this->assertSame('/index.php/', $request->getRequestTarget());
+        $this->assertSame('/', $request->getRequestTarget());
 
         $request = ServerRequestFactory::fromGlobals([
-            'REQUEST_URI' => '/cakephp/index.php/apples',
+            'REQUEST_URI' => '/cakephp/webroot/index.php/apples',
             'PHP_SELF' => '/cakephp/webroot/index.php/apples',
             'PATH_INFO' => '/apples',
         ]);
 
         $this->assertSame('/cakephp', $request->getAttribute('base'));
         $this->assertSame('/cakephp/', $request->getAttribute('webroot'));
-        $this->assertSame('/index.php/apples', $request->getRequestTarget());
+        $this->assertSame('/apples', $request->getRequestTarget());
 
         $request = ServerRequestFactory::fromGlobals([
-            'QUERY_STRING' => '%3C%3E?',
-            'REQUEST_URI' => '/cakephp/index.php?%3C%3E?',
-            'PHP_SELF' => '/cakephp/webroot/index.php',
-            'SCRIPT_NAME' => '/filepath/cakephp/webroot/index.php',
+            'REQUEST_URI' => '/cakephp/webroot/index.php/melons/share/',
+            'PHP_SELF' => '/cakephp/webroot/index.php/melons/share/',
+            'PATH_INFO' => '/melons/share/',
         ]);
 
         $this->assertSame('/cakephp', $request->getAttribute('base'));
         $this->assertSame('/cakephp/', $request->getAttribute('webroot'));
-        $this->assertSame('/index.php?%3C%3E?', $request->getRequestTarget());
-        $this->assertSame('%3C%3E?', $request->getUri()->getQuery());
+        $this->assertSame('/melons/share/', $request->getRequestTarget());
 
         $request = ServerRequestFactory::fromGlobals([
-            'REQUEST_URI' => '/cakephp/index.php/bananas/eat/tasty_banana',
+            'REQUEST_URI' => '/cakephp/webroot/index.php/bananas/eat/tasty_banana',
             'PHP_SELF' => '/cakephp/webroot/index.php/bananas/eat/tasty_banana',
             'PATH_INFO' => '/bananas/eat/tasty_banana',
         ]);
 
         $this->assertSame('/cakephp', $request->getAttribute('base'));
         $this->assertSame('/cakephp/', $request->getAttribute('webroot'));
-        $this->assertSame('/index.php/bananas/eat/tasty_banana', $request->getRequestTarget());
+        $this->assertSame('/bananas/eat/tasty_banana', $request->getRequestTarget());
     }
 
     /**
@@ -906,11 +899,11 @@ class ServerRequestFactoryTest extends TestCase
     /**
      * Test environment detection
      *
+     * @dataProvider environmentGenerator
      * @param string $name
      * @param array $data
      * @param array $expected
      */
-    #[DataProvider('environmentGenerator')]
     public function testEnvironmentDetection($name, $data, $expected): void
     {
         if (isset($data['App'])) {
@@ -919,7 +912,7 @@ class ServerRequestFactoryTest extends TestCase
 
         $request = ServerRequestFactory::fromGlobals(
             $data['SERVER'] ?? null,
-            $data['GET'] ?? null,
+            $data['GET'] ?? null
         );
         $uri = $request->getUri();
 
@@ -994,7 +987,7 @@ class ServerRequestFactoryTest extends TestCase
         $request = ServerRequestFactory::fromGlobals(
             ['REQUEST_METHOD' => 'POST'],
             [],
-            ['_method' => 'PUT'],
+            ['_method' => 'PUT']
         );
         $this->assertSame('PUT', $request->getEnv('REQUEST_METHOD'));
         $this->assertSame('POST', $request->getEnv('ORIGINAL_REQUEST_METHOD'));
@@ -1030,7 +1023,7 @@ class ServerRequestFactoryTest extends TestCase
         $request = ServerRequestFactory::fromGlobals(
             ['REQUEST_METHOD' => 'POST'],
             [],
-            $body,
+            $body
         );
         $this->assertEmpty($request->getParsedBody());
 
@@ -1040,7 +1033,7 @@ class ServerRequestFactoryTest extends TestCase
                 'HTTP_X_HTTP_METHOD_OVERRIDE' => 'GET',
             ],
             [],
-            ['foo' => 'bar'],
+            ['foo' => 'bar']
         );
         $this->assertEmpty($request->getParsedBody());
     }
@@ -1048,8 +1041,10 @@ class ServerRequestFactoryTest extends TestCase
     /**
      * Tests the default file upload merging behavior.
      */
-    public function testFromGlobalsWithFiles(): void
+    public function testFromGlobalsWithFilesAsObjectsDefault(): void
     {
+        $this->assertNull(Configure::read('App.uploadedFilesAsObjects'));
+
         $files = [
             'file' => [
                 'name' => 'file.txt',
@@ -1067,6 +1062,66 @@ class ServerRequestFactoryTest extends TestCase
         $this->assertSame($files['file']['error'], $expected->getError());
         $this->assertSame($files['file']['name'], $expected->getClientFilename());
         $this->assertSame($files['file']['type'], $expected->getClientMediaType());
+    }
+
+    /**
+     * Tests the "as arrays" file upload merging behavior.
+     */
+    public function testFromGlobalsWithFilesAsObjectsDisabled(): void
+    {
+        Configure::write('App.uploadedFilesAsObjects', false);
+
+        $files = [
+            'file' => [
+                'name' => 'file.txt',
+                'type' => 'text/plain',
+                'tmp_name' => __FILE__,
+                'error' => 0,
+                'size' => 1234,
+            ],
+        ];
+        $request = ServerRequestFactory::fromGlobals(null, null, null, null, $files);
+
+        $expected = [
+            'file' => [
+                'tmp_name' => __FILE__,
+                'error' => 0,
+                'name' => 'file.txt',
+                'type' => 'text/plain',
+                'size' => 1234,
+            ],
+        ];
+        $this->assertEquals($expected, $request->getData());
+    }
+
+    /**
+     * Tests the "as objects" file upload merging behavior.
+     */
+    public function testFromGlobalsWithFilesAsObjectsEnabled(): void
+    {
+        Configure::write('App.uploadedFilesAsObjects', true);
+
+        $files = [
+            'file' => [
+                'name' => 'file.txt',
+                'type' => 'text/plain',
+                'tmp_name' => __FILE__,
+                'error' => 0,
+                'size' => 1234,
+            ],
+        ];
+        $request = ServerRequestFactory::fromGlobals(null, null, null, null, $files);
+
+        $expected = [
+            'file' => new UploadedFile(
+                __FILE__,
+                1234,
+                0,
+                'file.txt',
+                'text/plain'
+            ),
+        ];
+        $this->assertEquals($expected, $request->getData());
     }
 
     /**
@@ -1131,7 +1186,7 @@ class ServerRequestFactoryTest extends TestCase
                     17178,
                     0,
                     'born on.txt',
-                    'text/plain',
+                    'text/plain'
                 ),
             ],
             'pictures' => [
@@ -1142,7 +1197,7 @@ class ServerRequestFactoryTest extends TestCase
                         17188,
                         0,
                         'a-file.png',
-                        'image/png',
+                        'image/png'
                     ),
                 ],
                 1 => [
@@ -1152,7 +1207,7 @@ class ServerRequestFactoryTest extends TestCase
                         2010,
                         0,
                         'a-moose.png',
-                        'image/jpg',
+                        'image/jpg'
                     ),
                 ],
             ],
@@ -1163,7 +1218,7 @@ class ServerRequestFactoryTest extends TestCase
                     1490,
                     0,
                     'scratch.text',
-                    'text/plain',
+                    'text/plain'
                 ),
             ],
         ];
@@ -1197,8 +1252,10 @@ class ServerRequestFactoryTest extends TestCase
             ],
         ];
 
+        Configure::write('App.uploadedFilesAsObjects', false);
         $request = ServerRequestFactory::fromGlobals([], [], [], [], $files);
-        $this->assertInstanceOf(UploadedFileInterface::class, $request->getData()['birth_cert']);
+        $this->assertEquals($files, $request->getData());
+        Configure::write('App.uploadedFilesAsObjects', true);
 
         $uploads = $request->getUploadedFiles();
         $this->assertCount(1, $uploads);
@@ -1224,8 +1281,10 @@ class ServerRequestFactoryTest extends TestCase
             ],
         ];
 
+        Configure::write('App.uploadedFilesAsObjects', false);
         $request = ServerRequestFactory::fromGlobals([], [], [], [], $files);
-        $this->assertInstanceOf(UploadedFileInterface::class, $request->getData()[0]);
+        $this->assertEquals($files, $request->getData());
+        Configure::write('App.uploadedFilesAsObjects', true);
 
         $uploads = $request->getUploadedFiles();
         $this->assertCount(1, $uploads);
@@ -1316,7 +1375,7 @@ class ServerRequestFactoryTest extends TestCase
                 1,
                 0,
                 'flat.txt',
-                'text/plain',
+                'text/plain'
             ),
             'nested' => [
                 'name' => 'nested',
@@ -1325,7 +1384,7 @@ class ServerRequestFactoryTest extends TestCase
                     12,
                     0,
                     'nested.txt',
-                    'text/plain',
+                    'text/plain'
                 ),
             ],
             'deep' => [
@@ -1336,7 +1395,7 @@ class ServerRequestFactoryTest extends TestCase
                         12345,
                         0,
                         'deep-1.txt',
-                        'text/plain',
+                        'text/plain'
                     ),
                 ],
                 1 => [
@@ -1346,7 +1405,7 @@ class ServerRequestFactoryTest extends TestCase
                         123456,
                         0,
                         'deep-2.txt',
-                        'text/plain',
+                        'text/plain'
                     ),
                 ],
             ],
@@ -1355,7 +1414,7 @@ class ServerRequestFactoryTest extends TestCase
                 123,
                 0,
                 'numeric.txt',
-                'text/plain',
+                'text/plain'
             ),
             1 => [
                 'name' => 'numeric nested',
@@ -1364,7 +1423,7 @@ class ServerRequestFactoryTest extends TestCase
                     1234,
                     0,
                     'numeric-nested.txt',
-                    'text/plain',
+                    'text/plain'
                 ),
             ],
         ];
@@ -1389,17 +1448,5 @@ class ServerRequestFactoryTest extends TestCase
                 ],
             ],
         ]);
-    }
-
-    public function testCreateServerRequest(): void
-    {
-        $factory = new ServerRequestFactory();
-        $request = $factory->createServerRequest('GET', 'https://cakephp.org/team', ['foo' => 'bar']);
-
-        $this->assertInstanceOf(ServerRequest::class, $request);
-        $this->assertSame('GET', $request->getMethod());
-        $this->assertSame('/team', $request->getRequestTarget());
-        $expected = ['foo' => 'bar', 'REQUEST_METHOD' => 'GET'];
-        $this->assertEquals($expected, $request->getServerParams());
     }
 }

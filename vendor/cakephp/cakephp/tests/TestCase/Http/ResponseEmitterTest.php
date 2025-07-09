@@ -50,7 +50,7 @@ class ResponseEmitterTest extends TestCase
 
         $this->emitter->expects($this->any())
             ->method('setCookie')
-            ->willReturnCallback(function ($cookie) {
+            ->will($this->returnCallback(function ($cookie) {
                 if (is_string($cookie)) {
                     $cookie = Cookie::createFromHeaderString($cookie, ['path' => '']);
                 }
@@ -59,7 +59,7 @@ class ResponseEmitterTest extends TestCase
                     + $cookie->getOptions();
 
                 return true;
-            });
+            }));
     }
 
     /**

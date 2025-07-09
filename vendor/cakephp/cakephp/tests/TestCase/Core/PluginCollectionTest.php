@@ -49,37 +49,6 @@ class PluginCollectionTest extends TestCase
         $this->assertCount(1, $plugins);
     }
 
-    public function testAddDuplicate(): void
-    {
-        $this->expectException(CakeException::class);
-        $this->expectExceptionMessage('Plugin named `TestPlugin` is already loaded');
-
-        $plugins = new PluginCollection();
-        $plugins->add(new TestPlugin());
-
-        $plugins->add(new TestPlugin());
-    }
-
-    public function testAddFromConfig(): void
-    {
-        Configure::write('debug', false);
-
-        $config = [
-            'Company/TestPluginThree',
-            'TestPlugin' => ['onlyDebug' => true],
-            'Nope' => ['optional' => true],
-            'Named' => ['routes' => false],
-        ];
-
-        $plugins = new PluginCollection();
-        $plugins->addFromConfig($config);
-
-        $this->assertCount(2, $plugins);
-        $this->assertTrue($plugins->has('Company/TestPluginThree'));
-        $this->assertFalse($plugins->has('TestPlugin'));
-        $this->assertFalse($plugins->get('Named')->isEnabled('routes'));
-    }
-
     public function testAddOperations(): void
     {
         $plugins = new PluginCollection();
@@ -178,7 +147,7 @@ class PluginCollectionTest extends TestCase
         ];
         $plugins = new PluginCollection($data);
         $out = [];
-        foreach ($plugins as $plugin) {
+        foreach ($plugins as $key => $plugin) {
             $this->assertInstanceOf(PluginInterface::class, $plugin);
             $out[] = $plugin;
         }
@@ -222,7 +191,6 @@ class PluginCollectionTest extends TestCase
 
         $out = [];
         foreach ($plugins->with('routes') as $p) {
-            // phpcs:ignore SlevomatCodingStandard.Variables.UnusedVariable.UnusedVariable
             foreach ($plugins as $i) {
                 // Do nothing, we just need to enumerate the collection
             }
@@ -238,7 +206,6 @@ class PluginCollectionTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
 
         $plugins = new PluginCollection();
-        // phpcs:ignore SlevomatCodingStandard.Variables.UnusedVariable.UnusedVariable
         foreach ($plugins->with('bad') as $p) {
         }
     }

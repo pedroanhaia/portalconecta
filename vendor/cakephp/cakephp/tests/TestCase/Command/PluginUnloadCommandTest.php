@@ -15,11 +15,9 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Command;
 
-use Cake\Console\CommandInterface;
+use Cake\Command\Command;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
-use Cake\Core\Plugin;
 use Cake\TestSuite\TestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * PluginUnloadCommandTest class
@@ -31,12 +29,12 @@ class PluginUnloadCommandTest extends TestCase
     /**
      * @var string
      */
-    protected $configFile;
+    protected $app;
 
     /**
      * @var string
      */
-    protected $originalContent;
+    protected $originalAppContent;
 
     /**
      * setUp method
@@ -44,23 +42,11 @@ class PluginUnloadCommandTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
+        $this->app = APP . DS . 'Application.php';
 
-        Plugin::getCollection()->clear();
+        $this->originalAppContent = file_get_contents($this->app);
 
-        $this->configFile = CONFIG . 'plugins.php';
-        $this->originalContent = file_get_contents($this->configFile);
-
-        $contents = <<<CONTENTS
-        <?php
-        return [
-            'TestPlugin' => ['routes' => false],
-            'TestPluginTwo',
-            'Company/TestPluginThree'
-        ];
-        CONTENTS;
-
-        file_put_contents($this->configFile, $contents);
-
+        $this->useCommandRunner();
         $this->setAppNamespace();
     }
 
@@ -70,46 +56,133 @@ class PluginUnloadCommandTest extends TestCase
     public function tearDown(): void
     {
         parent::tearDown();
+        $this->clearPlugins();
 
-        file_put_contents($this->configFile, $this->originalContent);
+        file_put_contents($this->app, $this->originalAppContent);
     }
 
     /**
      * testUnload
      */
-    #[DataProvider('pluginNameProvider')]
-    public function testUnload($plugin): void
+    public function testUnload(): void
     {
-        $this->exec('plugin unload ' . $plugin);
+        $plugin1 = "\$this->addPlugin('TestPlugin', ['bootstrap' => false, 'routes' => false]);";
+        $plugin2 = "\$this->addPlugin('TestPluginTwo', ['bootstrap' => false, 'routes' => false]);";
+        $this->addPluginToApp($plugin1);
+        $this->addPluginToApp($plugin2);
+        $this->exec('plugin unload TestPlugin');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
-        $contents = file_get_contents($this->configFile);
+        $this->assertExitCode(Command::CODE_SUCCESS);
+        $contents = file_get_contents($this->app);
 
-        $this->assertStringNotContainsString("'" . $plugin . "'", $contents);
-        $this->assertStringContainsString("'Company/TestPluginThree'", $contents);
+        $this->assertStringNotContainsString($plugin1, $contents);
+        $this->assertStringContainsString($plugin2, $contents);
     }
 
-    public static function pluginNameProvider(): array
+    /**
+     * test removing the first plugin leaves the second behind.
+     */
+    public function testUnloadFirstPlugin(): void
+    {
+        $plugin1 = "\$this->addPlugin('TestPlugin');";
+        $plugin2 = "\$this->addPlugin('Vendor/TestPluginTwo');";
+        $this->addPluginToApp($plugin1);
+        $this->addPluginToApp($plugin2);
+        $this->exec('plugin unload Vendor/TestPluginTwo');
+
+        $this->assertExitCode(Command::CODE_SUCCESS);
+        $contents = file_get_contents($this->app);
+
+        $this->assertStringNotContainsString($plugin2, $contents);
+        $this->assertStringContainsString($plugin1, $contents);
+    }
+
+    /**
+     * Data provider for various forms.
+     *
+     * @return array
+     */
+    public function variantProvider(): array
     {
         return [
-            ['TestPlugin'],
-            ['TestPluginTwo'],
+            //  $this->addPlugin('TestPlugin', [
+            //      'bootstrap' => false
+            //  ]);
+            ["        \$this->addPlugin('TestPlugin', [\n\t'bootstrap' => false\n]);\n"],
+
+            //  $this->addPlugin(
+            //      'TestPlugin',
+            //      [ 'bootstrap' => false]
+            //  );
+            ["        \$this->addPlugin(\n\t'TestPlugin',\n\t[ 'bootstrap' => false]\n);\n"],
+
+            //  $this->addPlugin(
+            //      'Foo',
+            //      [
+            //          'bootstrap' => false
+            //      ]
+            //  );
+            ["        \$this->addPlugin(\n\t'TestPlugin',\n\t[\n\t\t'bootstrap' => false\n\t]\n);\n"],
+
+            //  $this->addPlugin('Test', [
+            //      'bootstrap' => true,
+            //      'routes' => true
+            //  ]);
+            ["        \$this->addPlugin('TestPlugin', [\n\t'bootstrap' => true,\n\t'routes' => true\n]);\n"],
+
+            //  $this->addPlugin('Test',
+            //      [
+            //          'bootstrap' => true,
+            //          'routes' => true
+            //      ]
+            //  );
+            ["        \$this->addPlugin('TestPlugin',\n\t[\n\t\t'bootstrap' => true,\n\t\t'routes' => true\n\t]\n);\n"],
+
+            //  $this->addPlugin('Test',
+            //      [
+            //
+            //      ]
+            //  );
+            ["        \$this->addPlugin('TestPlugin',\n\t[\n\t\n\t]\n);\n"],
+
+            //  $this->addPlugin('Test');
+            ["        \$this->addPlugin('TestPlugin');\n"],
+
+            //  $this->addPlugin('Test', ['bootstrap' => true, 'route' => false]);
+            ["        \$this->addPlugin('TestPlugin', ['bootstrap' => true, 'route' => false]);\n"],
         ];
     }
 
-    public function testUnloadNoConfigFile(): void
+    /**
+     * This method will tests multiple notations of plugin loading in the application class
+     *
+     * @dataProvider variantProvider
+     */
+    public function testRegularExpressionsApplication(string $content): void
     {
-        unlink($this->configFile);
+        $this->addPluginToApp($content);
 
         $this->exec('plugin unload TestPlugin');
-        $this->assertExitCode(CommandInterface::CODE_ERROR);
-        $this->assertErrorContains('`CONFIG/plugins.php` not found or does not return an array');
+        $this->assertExitCode(Command::CODE_SUCCESS);
+
+        $result = file_get_contents($this->app);
+
+        $this->assertStringNotContainsString("addPlugin('TestPlugin'", $result);
+        $this->assertDoesNotMatchRegularExpression("/this\-\>addPlugin\([\'\"]TestPlugin'[\'\"][^\)]*\)\;/mi", $result);
     }
 
-    public function testUnloadUnknownPlugin(): void
+    /**
+     * _addPluginToApp
+     *
+     * Quick method to add a plugin to the Application file.
+     * This is useful for the tests
+     *
+     * @param string $insert The addPlugin line to add.
+     */
+    protected function addPluginToApp($insert): void
     {
-        $this->exec('plugin unload NopeNotThere');
-        $this->assertExitCode(CommandInterface::CODE_ERROR);
-        $this->assertErrorContains('Plugin `NopeNotThere` could not be found');
+        $contents = file_get_contents($this->app);
+        $contents = preg_replace('/(function bootstrap\(\)(?:\s*)\:(?:\s*)void(?:\s+)\{)/m', "\$1\n        " . $insert, $contents);
+        file_put_contents($this->app, $contents);
     }
 }

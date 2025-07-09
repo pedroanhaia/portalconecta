@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 /**
- * CakePHP(tm) <https://book.cakephp.org/5/en/development/testing.html>
+ * CakePHP(tm) <https://book.cakephp.org/4/en/development/testing.html>
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
  *
  * Licensed under The MIT License
@@ -16,15 +16,11 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\Log;
 
 use BadMethodCallException;
-use Cake\Core\Exception\CakeException;
 use Cake\Log\Engine\FileLog;
 use Cake\Log\Log;
 use Cake\TestSuite\TestCase;
 use InvalidArgumentException;
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\WithoutErrorHandler;
-use TestApp\Log\Engine\TestAppLog;
-use TestPlugin\Log\Engine\TestPluginLog;
+use RuntimeException;
 
 /**
  * LogTest class
@@ -35,7 +31,6 @@ class LogTest extends TestCase
     {
         parent::setUp();
         Log::reset();
-        $this->clearPlugins();
     }
 
     public function tearDown(): void
@@ -60,11 +55,11 @@ class LogTest extends TestCase
         ]);
 
         $result = Log::engine('libtest');
-        $this->assertInstanceOf(TestAppLog::class, $result);
+        $this->assertInstanceOf('TestApp\Log\Engine\TestAppLog', $result);
         $this->assertContains('libtest', Log::configured());
 
         $result = Log::engine('plugintest');
-        $this->assertInstanceOf(TestPluginLog::class, $result);
+        $this->assertInstanceOf('TestPlugin\Log\Engine\TestPluginLog', $result);
         $this->assertContains('libtest', Log::configured());
         $this->assertContains('plugintest', Log::configured());
 
@@ -78,7 +73,7 @@ class LogTest extends TestCase
      */
     public function testImportingLoggerFailure(): void
     {
-        $this->expectException(CakeException::class);
+        $this->expectException(RuntimeException::class);
         Log::setConfig('fail', []);
         Log::engine('fail');
     }
@@ -104,6 +99,18 @@ class LogTest extends TestCase
 
         $configured = Log::configured();
         $this->assertSame(['404'], $configured);
+    }
+
+    /**
+     * test that loggers have to implement the correct interface.
+     */
+    public function testNotImplementingInterface(): void
+    {
+        Log::setConfig('fail', ['engine' => '\stdClass']);
+
+        $this->expectException(RuntimeException::class);
+
+        Log::engine('fail');
     }
 
     /**
@@ -158,9 +165,9 @@ class LogTest extends TestCase
     /**
      * Test the various config call signatures.
      *
+     * @dataProvider configProvider
      * @param mixed $settings
      */
-    #[DataProvider('configProvider')]
     public function testConfigVariants($settings): void
     {
         Log::setConfig('test', $settings);
@@ -172,15 +179,37 @@ class LogTest extends TestCase
     /**
      * Test the various setConfig call signatures.
      *
+     * @dataProvider configProvider
      * @param mixed $settings
      */
-    #[DataProvider('configProvider')]
     public function testSetConfigVariants($settings): void
     {
         Log::setConfig('test', $settings);
         $this->assertContains('test', Log::configured());
         $this->assertInstanceOf(FileLog::class, Log::engine('test'));
         Log::drop('test');
+    }
+
+    /**
+     * Test that config() throws an exception when adding an
+     * adapter with the wrong type.
+     */
+    public function testConfigInjectErrorOnWrongType(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        Log::setConfig('test', new \stdClass());
+        Log::info('testing');
+    }
+
+    /**
+     * Test that setConfig() throws an exception when adding an
+     * adapter with the wrong type.
+     */
+    public function testSetConfigInjectErrorOnWrongType(): void
+    {
+        $this->expectException(\RuntimeException::class);
+        Log::setConfig('test', new \stdClass());
+        Log::info('testing');
     }
 
     /**
@@ -402,28 +431,6 @@ class LogTest extends TestCase
     }
 
     /**
-     * Test scoped logging backwards compat
-     */
-    #[WithoutErrorHandler]
-    public function testScopedLoggingBackwardsCompat(): void
-    {
-        $this->_deleteLogs();
-
-        Log::setConfig('debug', [
-            'engine' => 'File',
-            'path' => LOGS,
-            'levels' => ['notice', 'info', 'debug'],
-            'file' => 'debug',
-            'scopes' => false,
-        ]);
-
-        $this->deprecated(function (): void {
-            Log::write('debug', 'debug message', 'orders');
-        });
-        $this->assertFileDoesNotExist(LOGS . 'debug.log');
-    }
-
-    /**
      * Test scoped logging without the default loggers catching everything
      */
     public function testScopedLoggingStrict(): void
@@ -435,7 +442,7 @@ class LogTest extends TestCase
             'path' => LOGS,
             'levels' => ['notice', 'info', 'debug'],
             'file' => 'debug',
-            'scopes' => null,
+            'scopes' => false,
         ]);
         Log::setConfig('shops', [
             'engine' => 'File',
@@ -557,7 +564,6 @@ class LogTest extends TestCase
             'scopes' => ['foo', 'bar'],
         ]);
 
-        /** @var \TestApp\Log\Engine\TestAppLog $engine */
         $engine = Log::engine('scope_test');
         $this->assertNull($engine->passedScope);
 

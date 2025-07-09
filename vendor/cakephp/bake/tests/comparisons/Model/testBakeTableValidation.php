@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Bake\Test\App\Model\Table;
 
-use Cake\ORM\Query\SelectQuery;
+use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -13,17 +13,17 @@ use Cake\Validation\Validator;
  *
  * @method \Bake\Test\App\Model\Entity\TestBakeArticle newEmptyEntity()
  * @method \Bake\Test\App\Model\Entity\TestBakeArticle newEntity(array $data, array $options = [])
- * @method array<\Bake\Test\App\Model\Entity\TestBakeArticle> newEntities(array $data, array $options = [])
- * @method \Bake\Test\App\Model\Entity\TestBakeArticle get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
- * @method \Bake\Test\App\Model\Entity\TestBakeArticle findOrCreate($search, ?callable $callback = null, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\TestBakeArticle[] newEntities(array $data, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\TestBakeArticle get($primaryKey, $options = [])
+ * @method \Bake\Test\App\Model\Entity\TestBakeArticle findOrCreate($search, ?callable $callback = null, $options = [])
  * @method \Bake\Test\App\Model\Entity\TestBakeArticle patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
- * @method array<\Bake\Test\App\Model\Entity\TestBakeArticle> patchEntities(iterable $entities, array $data, array $options = [])
- * @method \Bake\Test\App\Model\Entity\TestBakeArticle|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method \Bake\Test\App\Model\Entity\TestBakeArticle saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\TestBakeArticle>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\TestBakeArticle>|false saveMany(iterable $entities, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\TestBakeArticle>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\TestBakeArticle> saveManyOrFail(iterable $entities, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\TestBakeArticle>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\TestBakeArticle>|false deleteMany(iterable $entities, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\TestBakeArticle>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\TestBakeArticle> deleteManyOrFail(iterable $entities, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\TestBakeArticle[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\TestBakeArticle|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \Bake\Test\App\Model\Entity\TestBakeArticle saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \Bake\Test\App\Model\Entity\TestBakeArticle[]|\Cake\Datasource\ResultSetInterface|false saveMany(iterable $entities, $options = [])
+ * @method \Bake\Test\App\Model\Entity\TestBakeArticle[]|\Cake\Datasource\ResultSetInterface saveManyOrFail(iterable $entities, $options = [])
+ * @method \Bake\Test\App\Model\Entity\TestBakeArticle[]|\Cake\Datasource\ResultSetInterface|false deleteMany(iterable $entities, $options = [])
+ * @method \Bake\Test\App\Model\Entity\TestBakeArticle[]|\Cake\Datasource\ResultSetInterface deleteManyOrFail(iterable $entities, $options = [])
  *
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
@@ -32,7 +32,7 @@ class TestBakeArticlesTable extends Table
     /**
      * Initialize method
      *
-     * @param array<string, mixed> $config The configuration for the Table.
+     * @param array $config The configuration for the Table.
      * @return void
      */
     public function initialize(array $config): void

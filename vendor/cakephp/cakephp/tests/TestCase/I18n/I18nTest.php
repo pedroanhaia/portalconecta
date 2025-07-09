@@ -54,7 +54,7 @@ class I18nTest extends TestCase
         I18n::setDefaultFormatter('default');
         I18n::setLocale(I18n::getDefaultLocale());
         $this->clearPlugins();
-        Cache::clear('_cake_translations_');
+        Cache::clear('_cake_core_');
     }
 
     /**
@@ -157,7 +157,7 @@ class I18nTest extends TestCase
      * Tests that messages can also be loaded from plugins by using the
      * domain = plugin_name convention
      */
-    public function testPluginMessagesLoad(): void
+    public function testPluginMesagesLoad(): void
     {
         $this->loadPlugins([
             'TestPlugin' => [],
@@ -167,24 +167,24 @@ class I18nTest extends TestCase
         $translator = I18n::getTranslator('test_plugin');
         $this->assertSame(
             'Plural Rule 1 (from plugin)',
-            $translator->translate('Plural Rule 1'),
+            $translator->translate('Plural Rule 1')
         );
 
         $translator = I18n::getTranslator('company/test_plugin_three');
         $this->assertSame(
             'String 1 (from plugin three)',
-            $translator->translate('String 1'),
+            $translator->translate('String 1')
         );
 
         $translator = I18n::getTranslator('company/test_plugin_three.custom');
         $this->assertSame(
             'String 2 (from plugin three)',
-            $translator->translate('String 2'),
+            $translator->translate('String 2')
         );
     }
 
     /**
-     * Tests that messages from a plugin can be automatically
+     * Tests that messages messages from a plugin can be automatically
      * overridden by messages in app
      */
     public function testPluginOverride(): void
@@ -197,19 +197,19 @@ class I18nTest extends TestCase
         $translator = I18n::getTranslator('test_theme');
         $this->assertSame(
             'translated',
-            $translator->translate('A Message'),
+            $translator->translate('A Message')
         );
 
         $translator = I18n::getTranslator('test_plugin_two');
         $this->assertSame(
             'Test Message (from app)',
-            $translator->translate('Test Message'),
+            $translator->translate('Test Message')
         );
 
         $translator = I18n::getTranslator('test_plugin_two.custom');
         $this->assertSame(
             'Test Custom (from test plugin two)',
-            $translator->translate('Test Custom'),
+            $translator->translate('Test Custom')
         );
     }
 
@@ -431,20 +431,20 @@ class I18nTest extends TestCase
 
         $this->assertSame(
             'She wrote a letter to Thomas and Sara',
-            __x('communication', 'letters', ['Thomas', 'Sara']),
+            __x('communication', 'letters', ['Thomas', 'Sara'])
         );
         $this->assertSame(
             'She wrote a letter to Thomas',
-            __x('communication', 'letter', ['Thomas']),
+            __x('communication', 'letter', ['Thomas'])
         );
 
         $this->assertSame(
             'She wrote a letter to Thomas and Sara',
-            __x('communication', 'letters', 'Thomas', 'Sara'),
+            __x('communication', 'letters', 'Thomas', 'Sara')
         );
         $this->assertSame(
             'She wrote a letter to Thomas',
-            __x('communication', 'letter', 'Thomas'),
+            __x('communication', 'letter', 'Thomas')
         );
     }
 
@@ -527,20 +527,20 @@ class I18nTest extends TestCase
 
         $this->assertSame(
             'She wrote a letter to Thomas and Sara',
-            __xn('communication', 'letter', 'letters', 2, ['Thomas', 'Sara']),
+            __xn('communication', 'letter', 'letters', 2, ['Thomas', 'Sara'])
         );
         $this->assertSame(
             'She wrote a letter to Thomas',
-            __xn('communication', 'letter', 'letters', 1, ['Thomas']),
+            __xn('communication', 'letter', 'letters', 1, ['Thomas'])
         );
 
         $this->assertSame(
             'She wrote a letter to Thomas and Sara',
-            __xn('communication', 'letter', 'letters', 2, 'Thomas', 'Sara'),
+            __xn('communication', 'letter', 'letters', 2, 'Thomas', 'Sara')
         );
         $this->assertSame(
             'She wrote a letter to Thomas',
-            __xn('communication', 'letter', 'letters', 1, 'Thomas'),
+            __xn('communication', 'letter', 'letters', 1, 'Thomas')
         );
     }
 
@@ -580,20 +580,20 @@ class I18nTest extends TestCase
 
         $this->assertSame(
             'She wrote a letter to Thomas and Sara',
-            __dx('custom', 'communication', 'letters', ['Thomas', 'Sara']),
+            __dx('custom', 'communication', 'letters', ['Thomas', 'Sara'])
         );
         $this->assertSame(
             'She wrote a letter to Thomas',
-            __dx('custom', 'communication', 'letter', ['Thomas']),
+            __dx('custom', 'communication', 'letter', ['Thomas'])
         );
 
         $this->assertSame(
             'She wrote a letter to Thomas and Sara',
-            __dx('custom', 'communication', 'letters', 'Thomas', 'Sara'),
+            __dx('custom', 'communication', 'letters', 'Thomas', 'Sara')
         );
         $this->assertSame(
             'She wrote a letter to Thomas',
-            __dx('custom', 'communication', 'letter', 'Thomas'),
+            __dx('custom', 'communication', 'letter', 'Thomas')
         );
     }
 
@@ -629,29 +629,29 @@ class I18nTest extends TestCase
         }, 'en_US');
         $this->assertSame(
             'The letters A and B',
-            __dxn('custom', 'character', 'letter', 'letters', 2, ['A', 'B']),
+            __dxn('custom', 'character', 'letter', 'letters', 2, ['A', 'B'])
         );
         $this->assertSame(
             'The letter A',
-            __dxn('custom', 'character', 'letter', 'letters', 1, ['A']),
+            __dxn('custom', 'character', 'letter', 'letters', 1, ['A'])
         );
 
         $this->assertSame(
             'She wrote a letter to Thomas and Sara',
-            __dxn('custom', 'communication', 'letter', 'letters', 2, ['Thomas', 'Sara']),
+            __dxn('custom', 'communication', 'letter', 'letters', 2, ['Thomas', 'Sara'])
         );
         $this->assertSame(
             'She wrote a letter to Thomas',
-            __dxn('custom', 'communication', 'letter', 'letters', 1, ['Thomas']),
+            __dxn('custom', 'communication', 'letter', 'letters', 1, ['Thomas'])
         );
 
         $this->assertSame(
             'She wrote a letter to Thomas and Sara',
-            __dxn('custom', 'communication', 'letter', 'letters', 2, 'Thomas', 'Sara'),
+            __dxn('custom', 'communication', 'letter', 'letters', 2, 'Thomas', 'Sara')
         );
         $this->assertSame(
             'She wrote a letter to Thomas',
-            __dxn('custom', 'communication', 'letter', 'letters', 1, 'Thomas'),
+            __dxn('custom', 'communication', 'letter', 'letters', 1, 'Thomas')
         );
     }
 
@@ -663,10 +663,10 @@ class I18nTest extends TestCase
         $english = I18n::getTranslator();
         $spanish = I18n::getTranslator('default', 'es_ES');
 
-        $cached = Cache::read('translations.default.en_US', '_cake_translations_');
+        $cached = Cache::read('translations.default.en_US', '_cake_core_');
         $this->assertEquals($english, $cached);
 
-        $cached = Cache::read('translations.default.es_ES', '_cake_translations_');
+        $cached = Cache::read('translations.default.es_ES', '_cake_core_');
         $this->assertEquals($spanish, $cached);
 
         $this->assertSame($english, I18n::getTranslator());

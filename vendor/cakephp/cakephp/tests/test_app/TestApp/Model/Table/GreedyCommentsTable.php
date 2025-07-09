@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace TestApp\Model\Table;
 
-use Cake\ORM\Query\SelectQuery;
+use Cake\ORM\Query;
 use Cake\ORM\Table;
 
 /**
@@ -26,16 +26,15 @@ class GreedyCommentsTable extends Table
      * Overload find to cause issues.
      *
      * @param string $type Find type
-     * @param mixed ...$args Arguments that match up to finder-specific parameters
+     * @param array<string, mixed> $options find options
      */
-    public function find(string $type = 'all', mixed ...$args): SelectQuery
+    public function find(string $type = 'all', array $options = []): Query
     {
-        $options = &$args[0];
         if (empty($options['conditions'])) {
             $options['conditions'] = [];
         }
         $options['conditions'] = array_merge($options['conditions'], ['Comments.published' => 'Y']);
 
-        return parent::find($type, ...$options);
+        return parent::find($type, $options);
     }
 }

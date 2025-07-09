@@ -3,8 +3,8 @@ declare(strict_types=1);
 
 namespace TestApp\Database\Type;
 
-use Cake\Database\Driver;
 use Cake\Database\Driver\Mysql;
+use Cake\Database\DriverInterface;
 use Cake\Database\Expression\FunctionExpression;
 use Cake\Database\ExpressionInterface;
 use Cake\Database\Schema\TableSchemaInterface;
@@ -19,7 +19,7 @@ class ColumnSchemaAwareType extends BaseType implements ExpressionTypeInterface,
     /**
      * @inheritDoc
      */
-    public function toPHP(mixed $value, Driver $driver): mixed
+    public function toPHP($value, DriverInterface $driver)
     {
         return $value;
     }
@@ -27,7 +27,7 @@ class ColumnSchemaAwareType extends BaseType implements ExpressionTypeInterface,
     /**
      * @inheritDoc
      */
-    public function marshal(mixed $value): mixed
+    public function marshal($value)
     {
         return $value;
     }
@@ -35,7 +35,7 @@ class ColumnSchemaAwareType extends BaseType implements ExpressionTypeInterface,
     /**
      * @inheritDoc
      */
-    public function toDatabase(mixed $value, Driver $driver): mixed
+    public function toDatabase($value, DriverInterface $driver)
     {
         return $value;
     }
@@ -43,7 +43,7 @@ class ColumnSchemaAwareType extends BaseType implements ExpressionTypeInterface,
     /**
      * @inheritDoc
      */
-    public function toExpression(mixed $value): ExpressionInterface
+    public function toExpression($value): ExpressionInterface
     {
         if ($value instanceof ColumnSchemaAwareTypeValueObject) {
             $value = $value->value();
@@ -56,21 +56,21 @@ class ColumnSchemaAwareType extends BaseType implements ExpressionTypeInterface,
                     new FunctionExpression('LOWER', [$value]),
                     'should be',
                     'has been',
-                ],
+                ]
             );
         }
 
         throw new InvalidArgumentException(sprintf(
             'The `$value` argument must be an instance of `\%s`, or a string, `%s` given.',
             ColumnSchemaAwareTypeValueObject::class,
-            get_debug_type($value),
+            getTypeName($value)
         ));
     }
 
     /**
      * @inheritDoc
      */
-    public function getColumnSql(TableSchemaInterface $schema, string $column, Driver $driver): ?string
+    public function getColumnSql(TableSchemaInterface $schema, string $column, DriverInterface $driver): ?string
     {
         $data = $schema->getColumn($column);
 
@@ -98,7 +98,7 @@ class ColumnSchemaAwareType extends BaseType implements ExpressionTypeInterface,
     /**
      * @inheritDoc
      */
-    public function convertColumnDefinition(array $definition, Driver $driver): ?array
+    public function convertColumnDefinition(array $definition, DriverInterface $driver): ?array
     {
         return [
             'type' => 'text',

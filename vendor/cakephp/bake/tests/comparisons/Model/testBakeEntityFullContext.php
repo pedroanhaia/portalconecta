@@ -11,11 +11,10 @@ use Cake\ORM\Entity;
  * @property int $id
  * @property string|null $username
  * @property string|null $password
- * @property \Cake\I18n\DateTime|null $created
- * @property \Cake\I18n\DateTime|null $updated
+ * @property \Cake\I18n\FrozenTime|null $created
+ * @property \Cake\I18n\FrozenTime|null $updated
  *
  * @property \Bake\Test\App\Model\Entity\Comment[] $comments
- * @property \Bake\Test\App\Model\Entity\Relation[] $relations
  * @property \Bake\Test\App\Model\Entity\TodoItem[] $todo_items
  */
 class User extends Entity
@@ -27,24 +26,23 @@ class User extends Entity
      * be mass assigned. For security purposes, it is advised to set '*' to false
      * (or remove it), and explicitly make individual fields accessible as needed.
      *
-     * @var array<string, bool>
+     * @var array
      */
-    protected array $_accessible = [
+    protected $_accessible = [
         'username' => true,
         'password' => true,
         'created' => true,
         'updated' => true,
         'comments' => true,
-        'relations' => true,
         'todo_items' => true,
     ];
 
     /**
      * Fields that are excluded from JSON versions of the entity.
      *
-     * @var list<string>
+     * @var array
      */
-    protected array $_hidden = [
+    protected $_hidden = [
         'password',
     ];
 }

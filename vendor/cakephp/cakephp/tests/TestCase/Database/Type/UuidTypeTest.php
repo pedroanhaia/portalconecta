@@ -16,7 +16,6 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Database\Type;
 
-use Cake\Database\Driver;
 use Cake\Database\TypeFactory;
 use Cake\TestSuite\TestCase;
 use PDO;
@@ -43,7 +42,7 @@ class UuidTypeTest extends TestCase
     {
         parent::setUp();
         $this->type = TypeFactory::build('uuid');
-        $this->driver = $this->getMockBuilder(Driver::class)->getMock();
+        $this->driver = $this->getMockBuilder('Cake\Database\Driver')->getMock();
     }
 
     /**

@@ -16,10 +16,8 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\ORM;
 
-use Cake\Database\Exception\DatabaseException;
-use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
-use Mockery;
+use RuntimeException;
 
 /**
  * Tests the features related to proxying methods from the Association
@@ -30,9 +28,9 @@ class AssociationProxyTest extends TestCase
     /**
      * Fixtures to be loaded
      *
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'core.Articles', 'core.Authors', 'core.Comments',
     ];
 
@@ -56,7 +54,7 @@ class AssociationProxyTest extends TestCase
      */
     public function testGetBadAssociation(): void
     {
-        $this->expectException(DatabaseException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('You have not defined');
         $articles = $this->getTableLocator()->get('articles');
         $articles->posts;
@@ -70,9 +68,9 @@ class AssociationProxyTest extends TestCase
         $table = $this->getTableLocator()->get('Users');
         $table->hasMany('Articles', [
             'foreignKey' => 'author_id',
-            'conditions' => [],
+            'conditions' => '',
         ]);
-        $query = $table->Articles->find('list', limit: 2);
+        $query = $table->Articles->find('list', ['limit' => 2]);
         $this->assertCount(2, $query->all());
     }
 
@@ -101,7 +99,9 @@ class AssociationProxyTest extends TestCase
         // Exclude a record from the published finder.
         $articles->updateAll(['published' => 'N'], ['id' => 1]);
 
-        $authors->Articles->setFinder('published');
+        $authors->hasMany('Articles', [
+            'finder' => 'published',
+        ]);
         $authors->Articles->updateAll(['published' => '?'], '1=1');
         $missed = $articles->find()->where(['published' => 'Y'])->count();
         $this->assertSame(0, $missed);
@@ -135,7 +135,9 @@ class AssociationProxyTest extends TestCase
         // Exclude a record from the published finder.
         $articles->updateAll(['published' => 'N'], ['id' => 1]);
 
-        $authors->Articles->setFinder('published');
+        $authors->hasMany('Articles', [
+            'finder' => 'published',
+        ]);
         $authors->Articles->deleteAll('1=1');
         $remaining = $articles->find()->all();
         $this->assertCount(1, $remaining);
@@ -161,15 +163,16 @@ class AssociationProxyTest extends TestCase
     public function testAssociationMethodProxy(): void
     {
         $articles = $this->getTableLocator()->get('articles');
-        $mock = Mockery::mock(Table::class)
-            ->shouldAllowMockingMethod('crazy');
+        $mock = $this->getMockBuilder('Cake\ORM\Table')
+            ->addMethods(['crazy'])
+            ->getMock();
         $articles->belongsTo('authors', [
             'targetTable' => $mock,
         ]);
 
-        $mock->shouldReceive('crazy')
+        $mock->expects($this->once())->method('crazy')
             ->with('a', 'b')
-            ->andReturn('thing');
+            ->will($this->returnValue('thing'));
         $this->assertSame('thing', $articles->authors->crazy('a', 'b'));
     }
 }

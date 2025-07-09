@@ -3,8 +3,30 @@ declare(strict_types=1);
 
 namespace TestPlugin\Datasource;
 
-use TestApp\Datasource\FakeConnection;
-
-class TestSource extends FakeConnection
+class TestSource
 {
+    /**
+     * Config
+     *
+     * @var array
+     */
+    protected $_config;
+
+    /**
+     * Constructor
+     */
+    public function __construct(array $config)
+    {
+        $this->_config = $config;
+    }
+
+    /**
+     * config
+     *
+     * @return array
+     */
+    public function config(): array
+    {
+        return $this->_config;
+    }
 }

@@ -19,9 +19,9 @@ class PostsControllerTest extends TestCase
     /**
      * Fixtures
      *
-     * @var list<string>
+     * @var array
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'app.Posts',
     ];
 

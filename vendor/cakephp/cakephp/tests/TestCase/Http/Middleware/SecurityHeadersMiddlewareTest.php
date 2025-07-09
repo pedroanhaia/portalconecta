@@ -47,8 +47,7 @@ class SecurityHeadersMiddlewareTest extends TestCase
             ->setXFrameOptions()
             ->setXssProtection()
             ->noOpen()
-            ->noSniff()
-            ->setPermissionsPolicy('camera=(), geolocation=(), microphone=()');
+            ->noSniff();
 
         $expected = [
             'x-permitted-cross-domain-policies' => ['all'],
@@ -57,7 +56,6 @@ class SecurityHeadersMiddlewareTest extends TestCase
             'x-frame-options' => ['sameorigin'],
             'x-download-options' => ['noopen'],
             'x-content-type-options' => ['nosniff'],
-            'permissions-policy' => ['camera=(), geolocation=(), microphone=()'],
         ];
 
         $result = $middleware->process($request, $handler);
@@ -82,7 +80,7 @@ class SecurityHeadersMiddlewareTest extends TestCase
     public function testCheckValues(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid arg `INVALID-VALUE!`, use one of these: `all`, `none`, `master-only`, `by-content-type`, `by-ftp-filename`');
+        $this->expectExceptionMessage('Invalid arg `INVALID-VALUE!`, use one of these: all, none, master-only, by-content-type, by-ftp-filename');
         $middleware = new SecurityHeadersMiddleware();
         $middleware->setCrossDomainPolicy('INVALID-VALUE!');
     }

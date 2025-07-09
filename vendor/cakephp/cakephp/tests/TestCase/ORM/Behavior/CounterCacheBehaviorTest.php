@@ -17,6 +17,7 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\ORM\Behavior;
 
 use Cake\Database\Driver\Sqlserver;
+use Cake\Database\Query;
 use Cake\Datasource\ConnectionManager;
 use Cake\Datasource\EntityInterface;
 use Cake\Event\EventInterface;
@@ -63,9 +64,9 @@ class CounterCacheBehaviorTest extends TestCase
     /**
      * Fixture
      *
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'core.CounterCacheCategories',
         'core.CounterCachePosts',
         'core.CounterCacheComments',
@@ -127,7 +128,7 @@ class CounterCacheBehaviorTest extends TestCase
     {
         $this->skipIf(
             $this->connection->getDriver() instanceof Sqlserver,
-            'This test fails sporadically in SQLServer',
+            'This test fails sporadically in SQLServer'
         );
 
         $this->post->belongsTo('Users');
@@ -338,28 +339,6 @@ class CounterCacheBehaviorTest extends TestCase
         $this->assertSame(2, $after->get('posts_published'));
     }
 
-    public function testCustomFindWithoutSubquery(): void
-    {
-        $this->post->belongsTo('Users');
-
-        $this->post->addBehavior('CounterCache', [
-            'Users' => [
-                'posts_published' => [
-                    'finder' => 'published',
-                    'useSubQuery' => false,
-                ],
-            ],
-        ]);
-
-        $before = $this->_getUser();
-        $entity = $this->_getEntity()->set('published', true);
-        $this->post->save($entity);
-        $after = $this->_getUser();
-
-        $this->assertSame(1, $before->get('posts_published'));
-        $this->assertSame(2, $after->get('posts_published'));
-    }
-
     /**
      * Testing counter cache with lambda returning number
      */
@@ -465,7 +444,9 @@ class CounterCacheBehaviorTest extends TestCase
         $this->post->addBehavior('CounterCache', [
             'Users' => [
                 'posts_published' => function (EventInterface $event, EntityInterface $entity, Table $table) {
-                    return $table->getConnection()->selectQuery(4);
+                    $query = new Query($this->connection);
+
+                    return $query->select(4);
                 },
             ],
         ]);
@@ -572,7 +553,7 @@ class CounterCacheBehaviorTest extends TestCase
                 'comment_count' => 10,
             ],
         ]);
-        $this->post->save($post);
+        $save = $this->post->save($post);
 
         $user = $this->_getUser(1);
         $this->assertSame(10, $user->get('post_count'));
@@ -612,7 +593,7 @@ class CounterCacheBehaviorTest extends TestCase
                 'post_count' => 10,
             ],
         ]);
-        $this->post->save($post);
+        $save = $this->post->save($post);
 
         $user = $this->_getUser(1);
         $this->assertSame(10, $user->get('post_count'));

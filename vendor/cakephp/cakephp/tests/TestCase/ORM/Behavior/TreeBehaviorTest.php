@@ -16,10 +16,10 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\ORM\Behavior;
 
-use Cake\Database\Exception\DatabaseException;
 use Cake\Datasource\Exception\RecordNotFoundException;
 use Cake\ORM\Entity;
 use Cake\TestSuite\TestCase;
+use RuntimeException;
 
 /**
  * Translate behavior test case
@@ -29,9 +29,9 @@ class TreeBehaviorTest extends TestCase
     /**
      * fixtures
      *
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'core.MenuLinkTrees',
         'core.NumberTrees',
         'core.NumberTreesArticles',
@@ -110,16 +110,16 @@ class TreeBehaviorTest extends TestCase
      */
     public function testFindPath(): void
     {
-        $nodes = $this->table->find('path', for: 9);
+        $nodes = $this->table->find('path', ['for' => 9]);
         $this->assertEquals([1, 6, 9], $nodes->all()->extract('id')->toArray());
 
-        $nodes = $this->table->find('path', for: 10);
+        $nodes = $this->table->find('path', ['for' => 10]);
         $this->assertSame([1, 6, 10], $nodes->all()->extract('id')->toArray());
 
-        $nodes = $this->table->find('path', for: 5);
+        $nodes = $this->table->find('path', ['for' => 5]);
         $this->assertSame([1, 2, 5], $nodes->all()->extract('id')->toArray());
 
-        $nodes = $this->table->find('path', for: 1);
+        $nodes = $this->table->find('path', ['for' => 1]);
         $this->assertSame([1], $nodes->all()->extract('id')->toArray());
 
         $entity = $this->table->newEntity(['name' => 'odd one', 'parent_id' => 1]);
@@ -130,13 +130,13 @@ class TreeBehaviorTest extends TestCase
         $entity->parent_id = $newId;
         $this->table->save($entity);
 
-        $nodes = $this->table->find('path', for: 4);
+        $nodes = $this->table->find('path', ['for' => 4]);
         $this->assertSame([1, $newId, 2, 4], $nodes->all()->extract('id')->toArray());
 
         // find path with scope
         $table = $this->getTableLocator()->get('MenuLinkTrees');
         $table->addBehavior('Tree', ['scope' => ['menu' => 'main-menu']]);
-        $nodes = $table->find('path', for: 5);
+        $nodes = $table->find('path', ['for' => 5]);
         $this->assertSame([1, 3, 4, 5], $nodes->all()->extract('id')->toArray());
     }
 
@@ -210,15 +210,17 @@ class TreeBehaviorTest extends TestCase
         $table->addBehavior('Tree', ['scope' => ['menu' => 'main-menu']]);
 
         // root
-        $nodes = $table->find('children', for: 1)->all();
+        $nodeIds = [];
+        $nodes = $table->find('children', ['for' => 1])->all();
         $this->assertEquals([2, 3, 4, 5], $nodes->extract('id')->toArray());
 
         // leaf
-        $nodes = $table->find('children', for: 5)->all();
+        $nodeIds = [];
+        $nodes = $table->find('children', ['for' => 5])->all();
         $this->assertCount(0, $nodes->extract('id')->toArray());
 
         // direct children
-        $nodes = $table->find('children', for: 1, direct: true)->all();
+        $nodes = $table->find('children', ['for' => 1, 'direct' => true])->all();
         $this->assertEquals([2, 3], $nodes->extract('id')->toArray());
     }
 
@@ -231,7 +233,7 @@ class TreeBehaviorTest extends TestCase
         $table->addBehavior('Tree');
         $table->behaviors()->get('Tree')->setConfig('scope', null);
 
-        $nodes = $table->find('children', for: 1, direct: true)->all();
+        $nodes = $table->find('children', ['for' => 1, 'direct' => true])->all();
         $this->assertEquals([2, 3], $nodes->extract('id')->toArray());
     }
 
@@ -243,7 +245,7 @@ class TreeBehaviorTest extends TestCase
         $this->expectException(RecordNotFoundException::class);
         $table = $this->getTableLocator()->get('MenuLinkTrees');
         $table->addBehavior('Tree', ['scope' => ['menu' => 'main-menu']]);
-        $table->find('children', for: 500);
+        $query = $table->find('children', ['for' => 500]);
     }
 
     /**
@@ -320,7 +322,7 @@ class TreeBehaviorTest extends TestCase
         $table = $this->getTableLocator()->get('MenuLinkTrees');
         $table->addBehavior('Tree', ['scope' => ['menu' => 'main-menu']]);
         $result = $table
-            ->find('treeList', keyPath: 'url', valuePath: 'id', spacer: ' ')
+            ->find('treeList', ['keyPath' => 'url', 'valuePath' => 'id', 'spacer' => ' '])
             ->toArray();
         $expected = [
             '/link1.html' => '1',
@@ -348,7 +350,7 @@ class TreeBehaviorTest extends TestCase
             ->where(['menu' => 'main-menu']);
 
         $options = ['keyPath' => 'url', 'valuePath' => 'id', 'spacer' => ' '];
-        $result = $table->formatTreeList($query, ...$options)->toArray();
+        $result = $table->formatTreeList($query, $options)->toArray();
 
         $expected = [
             '/link1.html' => '1',
@@ -403,6 +405,7 @@ class TreeBehaviorTest extends TestCase
 
         // move inner node
         $node = $table->moveUp($table->get(3), 1);
+        $nodes = $table->find('children', ['for' => 1])->all();
         $this->assertEquals(['lft' => 2, 'rght' => 7], $node->extract(['lft', 'rght']));
         $expected = [
             ' 1:10 -  1:Link 1',
@@ -446,7 +449,7 @@ class TreeBehaviorTest extends TestCase
     {
         $table = $this->getTableLocator()->get('MenuLinkTrees');
         $table->addBehavior('Tree', ['scope' => ['menu' => 'main-menu']]);
-        $table->moveUp($table->get(8), true);
+        $node = $table->moveUp($table->get(8), true);
         $expected = [
             ' 1: 2 -  8:Link 8',
             ' 3:12 -  1:Link 1',
@@ -635,8 +638,8 @@ class TreeBehaviorTest extends TestCase
         $table = $this->table;
 
         $expectedLevels = $table
-            ->find('list', valueField: 'depth')
-            ->orderBy('lft')
+            ->find('list', ['valueField' => 'depth'])
+            ->order('lft')
             ->toArray();
         $table->updateAll(['lft' => null, 'rght' => null, 'depth' => null], []);
         $table->behaviors()->Tree->setConfig('level', 'depth');
@@ -658,8 +661,8 @@ class TreeBehaviorTest extends TestCase
         $this->assertMpttValues($expected, $table);
 
         $result = $table
-            ->find('list', valueField: 'depth')
-            ->orderBy('lft')
+            ->find('list', ['valueField' => 'depth'])
+            ->order('lft')
             ->toArray();
         $this->assertSame($expectedLevels, $result);
     }
@@ -734,7 +737,7 @@ class TreeBehaviorTest extends TestCase
         $table = $this->table;
         $entity = new Entity(
             ['name' => 'New Orphan', 'parent_id' => null, 'level' => null],
-            ['markNew' => true],
+            ['markNew' => true]
         );
         $this->assertSame($entity, $table->save($entity));
         $this->assertSame(23, $entity->lft);
@@ -765,7 +768,7 @@ class TreeBehaviorTest extends TestCase
         $table = $this->table;
         $entity = new Entity(
             ['name' => 'laptops', 'parent_id' => 1],
-            ['markNew' => true],
+            ['markNew' => true]
         );
         $this->assertSame($entity, $table->save($entity));
         $this->assertSame(20, $entity->lft);
@@ -796,7 +799,7 @@ class TreeBehaviorTest extends TestCase
         $table = $this->table;
         $entity = new Entity(
             ['name' => 'laptops', 'parent_id' => 2],
-            ['markNew' => true],
+            ['markNew' => true]
         );
         $this->assertSame($entity, $table->save($entity));
         $this->assertSame(9, $entity->lft);
@@ -859,8 +862,8 @@ class TreeBehaviorTest extends TestCase
      */
     public function testReParentSelf(): void
     {
-        $this->expectException(DatabaseException::class);
-        $this->expectExceptionMessage("Cannot set a node's parent as itself");
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot set a node\'s parent as itself');
         $entity = $this->table->get(1);
         $entity->parent_id = $entity->id;
         $this->table->save($entity);
@@ -871,8 +874,8 @@ class TreeBehaviorTest extends TestCase
      */
     public function testReParentSelfNewEntity(): void
     {
-        $this->expectException(DatabaseException::class);
-        $this->expectExceptionMessage("Cannot set a node's parent as itself");
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot set a node\'s parent as itself');
         $entity = $this->table->newEntity(['name' => 'root']);
         $entity->id = 1;
         $entity->parent_id = $entity->id;
@@ -974,6 +977,8 @@ class TreeBehaviorTest extends TestCase
         $this->assertSame($entity, $table->save($entity));
         $this->assertSame(17, $entity->lft);
         $this->assertSame(18, $entity->rght);
+
+        $result = $table->find()->order('lft')->enableHydration(false);
 
         $expected = [
             ' 1:20 -  1:electronics',
@@ -1084,8 +1089,8 @@ class TreeBehaviorTest extends TestCase
      */
     public function testReparentCycle(): void
     {
-        $this->expectException(DatabaseException::class);
-        $this->expectExceptionMessage('Cannot use node `5` as parent for entity `2`.');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot use node "5" as parent for entity "2"');
         $table = $this->table;
         $entity = $table->get(2);
         $entity->parent_id = 5;
@@ -1260,6 +1265,7 @@ class TreeBehaviorTest extends TestCase
         $this->assertSame(21, $entity->lft);
         $this->assertSame(22, $entity->rght);
         $this->assertNull($entity->parent_id);
+        $result = $table->find()->order('lft')->enableHydration(false);
         $expected = [
             ' 1:18 -  1:electronics',
             '_ 2: 9 -  2:televisions',
@@ -1285,9 +1291,11 @@ class TreeBehaviorTest extends TestCase
         $table = $this->table;
         $entity = $table->get(6);
         $this->assertSame($entity, $table->removeFromTree($entity));
+        $result = $table->find('threaded')->order('lft')->enableHydration(false)->toArray();
         $this->assertSame(21, $entity->lft);
         $this->assertSame(22, $entity->rght);
         $this->assertNull($entity->parent_id);
+        $result = $table->find()->order('lft')->enableHydration(false);
         $expected = [
             ' 1:18 -  1:electronics',
             '_ 2: 9 -  2:televisions',
@@ -1312,6 +1320,7 @@ class TreeBehaviorTest extends TestCase
         $table = $this->table;
         $entity = $table->get(1);
         $this->assertSame($entity, $table->removeFromTree($entity));
+        $result = $table->find('threaded')->order('lft')->enableHydration(false)->toArray();
         $this->assertSame(21, $entity->lft);
         $this->assertSame(22, $entity->rght);
         $this->assertNull($entity->parent_id);
@@ -1346,7 +1355,7 @@ class TreeBehaviorTest extends TestCase
             'foreignKey' => 'id',
         ]);
         $result = $table
-            ->find('children', for: 1)
+            ->find('children', ['for' => 1])
             ->contain('FriendlyTrees')
             ->toArray();
         $this->assertCount(9, $result);
@@ -1437,7 +1446,7 @@ class TreeBehaviorTest extends TestCase
      *
      * @param array $expected tree state to be expected
      * @param \Cake\ORM\Table $table Table instance
-     * @param \Cake\ORM\Query\SelectQuery $query Optional query object
+     * @param \Cake\ORM\Query $query Optional query object
      */
     public function assertMpttValues($expected, $table, $query = null): void
     {
@@ -1455,11 +1464,11 @@ class TreeBehaviorTest extends TestCase
                     str_pad((string)$item->lft, 2, ' ', STR_PAD_LEFT),
                     str_pad((string)$item->rght, 2, ' ', STR_PAD_LEFT),
                     str_pad((string)$item->$primaryKey, 2, ' ', STR_PAD_LEFT),
-                    $item->{$displayField},
+                    $item->{$displayField}
                 );
             },
         ];
-        $result = array_values($query->find('treeList', ...$options)->toArray());
+        $result = array_values($query->find('treeList', $options)->toArray());
 
         if (count($result) === count($expected)) {
             $subExpected = array_diff($expected, $result);

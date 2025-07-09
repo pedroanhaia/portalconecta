@@ -2,24 +2,27 @@
 declare(strict_types=1);
 
 /**
- * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP(tm) Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
  * @since         0.1.0
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 namespace Bake\Test\TestCase;
 
-use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\Routing\Router;
+use Cake\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\TestSuite\StringCompareTrait;
 use Cake\TestSuite\TestCase as BaseTestCase;
+use PHPUnit\Framework\Constraint\FileExists;
+use PHPUnit\Framework\Constraint\LogicalNot;
+use PHPUnit\Framework\Constraint\RegularExpression;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -32,7 +35,7 @@ abstract class TestCase extends BaseTestCase
     protected $generatedFile = '';
 
     /**
-     * @var list<string>
+     * @var array
      */
     protected $generatedFiles = [];
 
@@ -67,31 +70,39 @@ abstract class TestCase extends BaseTestCase
      * Load a plugin from the tests folder, and add to the autoloader
      *
      * @param string $name plugin name to load
-     * @param bool $loadBake Whether or not to load the Bake plugin as well.
      * @return void
      */
-    protected function _loadTestPlugin(string $name, bool $loadBake = false): void
+    protected function _loadTestPlugin($name)
     {
         $root = dirname(dirname(__FILE__)) . DS;
         $path = $root . 'test_app' . DS . 'Plugin' . DS . $name . DS;
 
-        $plugins = [
+        $this->loadPlugins([
             $name => [
                 'path' => $path,
             ],
-        ];
+        ]);
+    }
 
-        if ($loadBake) {
-            $plugins[] = 'Bake';
-        }
-
-        $this->loadPlugins($plugins);
+    /**
+     * Asserts that a string matches a given regular expression.
+     *
+     * @param string $pattern Regex pattern
+     * @param string $string String to test
+     * @param string $message Message
+     * @return void
+     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
+     * @codeCoverageIgnore
+     */
+    public static function assertMatchesRegularExpression(string $pattern, string $string, string $message = ''): void
+    {
+        static::assertThat($string, new RegularExpression($pattern), $message);
     }
 
     /**
      * Assert that a list of files exist.
      *
-     * @param list<string> $files The list of files to check.
+     * @param array $files The list of files to check.
      * @param string $message The message to use if a check fails.
      */
     protected function assertFilesExist(array $files, $message = '')
@@ -99,6 +110,20 @@ abstract class TestCase extends BaseTestCase
         foreach ($files as $file) {
             $this->assertFileExists($file, $message);
         }
+    }
+
+    /**
+     * Asserts that a file does not exist.
+     *
+     * @param string $filename Filename
+     * @param string $message Message
+     * @return void
+     * @throws \SebastianBergmann\RecursionContext\InvalidArgumentException
+     * @codeCoverageIgnore
+     */
+    public static function assertFileDoesNotExist(string $filename, string $message = ''): void
+    {
+        static::assertThat($filename, new LogicalNot(new FileExists()), $message);
     }
 
     /**

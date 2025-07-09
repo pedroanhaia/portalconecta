@@ -316,6 +316,25 @@ class NumberTest extends TestCase
     }
 
     /**
+     * Test default currency
+     *
+     * @group deprecated
+     */
+    public function testDefaultCurrency(): void
+    {
+        $this->deprecated(function (): void {
+            $this->assertSame('USD', $this->Number->defaultCurrency());
+
+            $this->Number->defaultCurrency(false);
+            I18n::setLocale('es_ES');
+            $this->assertSame('EUR', $this->Number->defaultCurrency());
+
+            $this->Number->defaultCurrency('JPY');
+            $this->assertSame('JPY', $this->Number->defaultCurrency());
+        });
+    }
+
+    /**
      * Test get default currency
      */
     public function testGetDefaultCurrency(): void

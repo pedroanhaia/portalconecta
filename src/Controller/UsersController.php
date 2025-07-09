@@ -5,6 +5,7 @@ namespace App\Controller;
 use Cake\Log\Log;
 use Authentication\PasswordHasher\DefaultPasswordHasher;
 use App\Service\UsersPlatformService;
+use Cake\Routing\Router;
 
 use function PHPUnit\Framework\isEmpty;
 
@@ -20,7 +21,7 @@ class UsersController extends AppController
 		$this->Authentication->addUnauthenticatedActions(['login', 'add', 'register', 'verificaEmailExistente']);
 		parent::beforeFilter($event);
 	}
- 
+
 	public function index() {
 		if($this->Authentication->getIdentity()->role != 1) {
 			$this->Flash->error(__('Você não possui permissão para acessar esta página.'));
@@ -126,17 +127,28 @@ class UsersController extends AppController
 	}
 
 	public function login() {
+		$this->Authorization->skipAuthorization();
+
 		$this->viewBuilder()->setLayout("login");
 
 		$result = $this->Authentication->getResult();
 
 		// Se o usuário já está autenticado, redireciona imediatamente
 		if ($result && $result->isValid()) {
-			$redirect = $this->request->getQuery('redirect', '/quadros');
+			$redirect = $this->request->getQuery('redirect', '/users/index');
 			return $this->redirect($redirect);
 		}
 		
 		if ($this->request->is('POST')) {
+
+			debug($this->request->getData());
+
+			$user = $this->Users->findByEmail($this->request->getData('email'))->first();
+
+			debug($user);
+			debug($result);
+			die;
+
 			$result = $this->Authentication->getResult();
 			
 			if ($result && $result->isValid()) {

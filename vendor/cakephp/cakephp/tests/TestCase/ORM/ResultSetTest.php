@@ -16,8 +16,12 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\ORM;
 
+use Cake\Database\Exception\DatabaseException;
+use Cake\Database\Log\QueryLogger;
 use Cake\Datasource\ConnectionManager;
+use Cake\Log\Log;
 use Cake\ORM\Entity;
+use Cake\ORM\ResultSet;
 use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
 
@@ -27,9 +31,9 @@ use Cake\TestSuite\TestCase;
 class ResultSetTest extends TestCase
 {
     /**
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $fixtures = ['core.Articles', 'core.Authors', 'core.Comments'];
+    protected $fixtures = ['core.Articles', 'core.Authors', 'core.Comments'];
 
     /**
      * @var \Cake\ORM\Table
@@ -72,8 +76,7 @@ class ResultSetTest extends TestCase
     {
         $query = $this->table->find('all');
         $results = $query->all();
-        $first = [];
-        $second = [];
+        $first = $second = [];
         foreach ($results as $result) {
             $first[] = $result;
         }
@@ -81,6 +84,25 @@ class ResultSetTest extends TestCase
             $second[] = $result;
         }
         $this->assertEquals($first, $second);
+    }
+
+    /**
+     * Test that streaming results cannot be rewound
+     */
+    public function testRewindStreaming(): void
+    {
+        $this->deprecated(function () {
+            $query = $this->table->find('all')->enableBufferedResults(false);
+            $results = $query->all();
+            $first = $second = [];
+            foreach ($results as $result) {
+                $first[] = $result;
+            }
+            $this->expectException(DatabaseException::class);
+            foreach ($results as $result) {
+                $second[] = $result;
+            }
+        });
     }
 
     /**
@@ -112,7 +134,7 @@ class ResultSetTest extends TestCase
 
         // Use a loop to test Iterator implementation
         foreach ($results as $i => $row) {
-            $this->assertEquals($this->fixtureData[$i], $row, "Row {$i} does not match");
+            $this->assertEquals($this->fixtureData[$i], $row, "Row $i does not match");
         }
     }
 
@@ -130,7 +152,7 @@ class ResultSetTest extends TestCase
             $expected->setNew(false);
             $expected->setSource($this->table->getAlias());
             $expected->clean();
-            $this->assertEquals($expected, $row, "Row {$i} does not match");
+            $this->assertEquals($expected, $row, "Row $i does not match");
         }
     }
 
@@ -238,6 +260,133 @@ class ResultSetTest extends TestCase
     }
 
     /**
+     * Test that eagerLoader leaves empty associations unpopulated.
+     */
+    public function testBelongsToEagerLoaderLeavesEmptyAssociation(): void
+    {
+        $comments = $this->getTableLocator()->get('Comments');
+        $comments->belongsTo('Articles');
+
+        // Clear the articles table so we can trigger an empty belongsTo
+        $this->table->deleteAll([]);
+
+        $comment = $comments->find()->where(['Comments.id' => 1])
+            ->contain(['Articles'])
+            ->enableHydration(false)
+            ->first();
+        $this->assertSame(1, $comment['id']);
+        $this->assertNotEmpty($comment['comment']);
+        $this->assertNull($comment['article']);
+
+        $comment = $comments->get(1, ['contain' => ['Articles']]);
+        $this->assertNull($comment->article);
+        $this->assertSame(1, $comment->id);
+        $this->assertNotEmpty($comment->comment);
+    }
+
+    /**
+     * Test showing associated record is preserved when selecting only field with
+     * null value if auto fields is disabled.
+     */
+    public function testBelongsToEagerLoaderWithAutoFieldsFalse(): void
+    {
+        $authors = $this->getTableLocator()->get('Authors');
+
+        $author = $authors->newEntity(['name' => null]);
+        $authors->save($author);
+
+        $articles = $this->getTableLocator()->get('Articles');
+        $articles->belongsTo('Authors');
+
+        $article = $articles->newEntity([
+            'author_id' => $author->id,
+            'title' => 'article with author with null name',
+        ]);
+        $articles->save($article);
+
+        $result = $articles->find()
+            ->select(['Articles.id', 'Articles.title', 'Authors.name'])
+            ->contain(['Authors'])
+            ->where(['Articles.id' => $article->id])
+            ->disableAutoFields()
+            ->enableHydration(false)
+            ->first();
+
+        $this->assertNotNull($result['author']);
+    }
+
+    /**
+     * Test that eagerLoader leaves empty associations unpopulated.
+     */
+    public function testHasOneEagerLoaderLeavesEmptyAssociation(): void
+    {
+        $this->table->hasOne('Comments');
+
+        // Clear the comments table so we can trigger an empty hasOne.
+        $comments = $this->getTableLocator()->get('Comments');
+        $comments->deleteAll([]);
+
+        $article = $this->table->get(1, ['contain' => ['Comments']]);
+        $this->assertNull($article->comment);
+        $this->assertSame(1, $article->id);
+        $this->assertNotEmpty($article->title);
+
+        $article = $this->table->find()->where(['articles.id' => 1])
+            ->contain(['Comments'])
+            ->enableHydration(false)
+            ->first();
+        $this->assertNull($article['comment']);
+        $this->assertSame(1, $article['id']);
+        $this->assertNotEmpty($article['title']);
+    }
+
+    /**
+     * Test that fetching rows does not fail when no fields were selected
+     * on the default alias.
+     */
+    public function testFetchMissingDefaultAlias(): void
+    {
+        $comments = $this->getTableLocator()->get('Comments');
+        $query = $comments->find()->select(['Other__field' => 'test']);
+        $query->disableAutoFields();
+
+        $row = ['Other__field' => 'test'];
+        $statement = $this->getMockBuilder('Cake\Database\StatementInterface')->getMock();
+        $statement->method('fetch')
+            ->will($this->onConsecutiveCalls($row, $row));
+        $statement->method('rowCount')
+            ->will($this->returnValue(1));
+
+        $result = new ResultSet($query, $statement);
+
+        $result->valid();
+        $this->assertNotEmpty($result->current());
+    }
+
+    /**
+     * Test that associations have source() correctly set.
+     */
+    public function testSourceOnContainAssociations(): void
+    {
+        $this->loadPlugins(['TestPlugin']);
+        $comments = $this->getTableLocator()->get('TestPlugin.Comments');
+        $comments->belongsTo('Authors', [
+            'className' => 'TestPlugin.Authors',
+            'foreignKey' => 'user_id',
+        ]);
+        $result = $comments->find()->contain(['Authors'])->first();
+        $this->assertSame('TestPlugin.Comments', $result->getSource());
+        $this->assertSame('TestPlugin.Authors', $result->author->getSource());
+
+        $result = $comments->find()->matching('Authors', function ($q) {
+            return $q->where(['Authors.id' => 1]);
+        })->first();
+        $this->assertSame('TestPlugin.Comments', $result->getSource());
+        $this->assertSame('TestPlugin.Authors', $result->_matchingData['Authors']->getSource());
+        $this->clearPlugins();
+    }
+
+    /**
      * Ensure that isEmpty() on a ResultSet doesn't result in loss
      * of records. This behavior is provided by CollectionTrait.
      */
@@ -278,11 +427,42 @@ class ResultSetTest extends TestCase
         $query = $this->table->find();
         $query->select([
             'counter' => 'COUNT(*)',
-        ])->groupBy('author_id');
+        ])->group('author_id');
 
         $min = $query->all()->min('counter');
         $max = $query->all()->max('counter');
 
         $this->assertTrue($max > $min);
+    }
+
+    /**
+     * @see https://github.com/cakephp/cakephp/issues/14676
+     */
+    public function testQueryLoggingForSelectsWithZeroRows(): void
+    {
+        Log::setConfig('queries', ['className' => 'Array']);
+
+        $defaultLogger = $this->connection->getLogger();
+        $queryLogging = $this->connection->isQueryLoggingEnabled();
+
+        $logger = new QueryLogger();
+        $this->connection->setLogger($logger)->enableQueryLogging(true);
+
+        $messages = Log::engine('queries')->read();
+        $this->assertCount(0, $messages);
+
+        $results = $this->table->find('all')
+            ->enableBufferedResults()
+            ->where(['id' => 0])
+            ->all();
+
+        $this->assertCount(0, $results);
+
+        $messages = Log::engine('queries')->read();
+        $message = array_pop($messages);
+        $this->assertStringContainsString('SELECT', $message);
+
+        $this->connection->setLogger($defaultLogger)->enableQueryLogging($queryLogging);
+        Log::reset();
     }
 }

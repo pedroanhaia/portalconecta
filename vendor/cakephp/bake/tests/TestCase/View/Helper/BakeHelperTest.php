@@ -2,17 +2,17 @@
 declare(strict_types=1);
 
 /**
- * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP(tm) Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
  * @since         0.1.0
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 namespace Bake\Test\TestCase\View\Helper;
 
@@ -33,9 +33,9 @@ class BakeHelperTest extends TestCase
      * Don't sort this list alphabetically - otherwise there are table constraints
      * which fail when using postgres
      *
-     * @var list<string>
+     * @var array
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'plugin.Bake.BakeArticles',
         'plugin.Bake.BakeComments',
         'plugin.Bake.BakeArticlesBakeTags',
@@ -90,7 +90,7 @@ class BakeHelperTest extends TestCase
         ]);
         $this->BakeHelper = $this->getMockBuilder('Bake\View\Helper\BakeHelper')
                 ->disableOriginalConstructor()
-                ->onlyMethods(['_filterHasManyAssociationsAliases'])
+                ->setMethods(['_filterHasManyAssociationsAliases'])
                 ->getMock();
         $this->BakeHelper->expects($this->once())
                 ->method('_filterHasManyAssociationsAliases')
@@ -130,6 +130,107 @@ class BakeHelperTest extends TestCase
     }
 
     /**
+     * test stringifyList empty
+     *
+     * @return void
+     */
+    public function testStringifyListEmpty()
+    {
+        $result = $this->BakeHelper->stringifyList([]);
+        $expected = '';
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * test stringifyList defaults
+     *
+     * @return void
+     */
+    public function testStringifyListDefaults()
+    {
+        $list = ['one' => 'foo', 'two' => 'bar', 'three'];
+        $result = $this->BakeHelper->stringifyList($list);
+        $spaces = '    ';
+        $expected = "\n" .
+            $spaces . $spaces . "'one' => 'foo',\n" .
+            $spaces . $spaces . "'two' => 'bar',\n" .
+            $spaces . $spaces . "'three',\n" .
+            $spaces;
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * test stringifyList indent is false
+     *
+     * @return void
+     */
+    public function testStringifyListIndentIsFalse()
+    {
+        $list = ['one' => 'foo', 'two' => 'bar', 'three'];
+        $result = $this->BakeHelper->stringifyList($list, ['indent' => false]);
+        $expected = "'one' => 'foo', 'two' => 'bar', 'three'";
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * test stringifyList deeper indent
+     *
+     * @return void
+     */
+    public function testStringifyListDeeperIndent()
+    {
+        $list = ['one' => 'foo', 'two' => 'bar', 'three'];
+        $result = $this->BakeHelper->stringifyList($list, ['indent' => 3]);
+        $spaces = '    ';
+        $expected = "\n" .
+            $spaces . $spaces . $spaces . "'one' => 'foo',\n" .
+            $spaces . $spaces . $spaces . "'two' => 'bar',\n" .
+            $spaces . $spaces . $spaces . "'three',\n" .
+            $spaces . $spaces;
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * test stringifyList other tab
+     *
+     * @return void
+     */
+    public function testStringifyListOtherTab()
+    {
+        $list = ['one' => 'foo', 'two' => 'bar', 'three'];
+        $result = $this->BakeHelper->stringifyList($list, ['indent' => 3, 'tab' => "\t"]);
+        $spaces = "\t";
+        $expected = "\n" .
+            $spaces . $spaces . $spaces . "'one' => 'foo',\n" .
+            $spaces . $spaces . $spaces . "'two' => 'bar',\n" .
+            $spaces . $spaces . $spaces . "'three',\n" .
+            $spaces . $spaces;
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * test stringifyList with trailingComma
+     *
+     * @return void
+     */
+    public function testStringifyListWithNoCommaAtEnd()
+    {
+        $list = ['one' => 'foo', 'two' => 'bar', 'three'];
+        $result = $this->BakeHelper->stringifyList($list, [
+            'indent' => 3,
+            'tab' => "\t",
+            'trailingComma' => false,
+        ]);
+        $spaces = "\t";
+        $expected = "\n" .
+            $spaces . $spaces . $spaces . "'one' => 'foo',\n" .
+            $spaces . $spaces . $spaces . "'two' => 'bar',\n" .
+            $spaces . $spaces . $spaces . "'three'\n" .
+            $spaces . $spaces;
+        $this->assertSame($expected, $result);
+    }
+
+    /**
      * test escapeArgument with integers and strings
      *
      * @return void
@@ -148,41 +249,5 @@ class BakeHelperTest extends TestCase
             "'foo \"bar\"'",
         ];
         $this->assertSame($expected, $result);
-    }
-
-    public function testConcat(): void
-    {
-        $statements = [
-            'use Cake\ORM\Query\SelectQuery;',
-            'use RuntimeException as MyException;',
-            '',
-        ];
-        $code = $this->BakeHelper->concat("\n", $statements);
-        $this->assertSame(
-            <<<'PARSE'
-use Cake\ORM\Query\SelectQuery;
-use RuntimeException as MyException;
-PARSE
-            ,
-            $code,
-        );
-
-        $code = $this->BakeHelper->concat("\n", $statements, "\n", "\n");
-        $this->assertSame(
-            <<<'PARSE'
-
-use Cake\ORM\Query\SelectQuery;
-use RuntimeException as MyException;
-
-PARSE
-            ,
-            $code,
-        );
-    }
-
-    public function testHasPlugin(): void
-    {
-        $this->assertTrue($this->BakeHelper->hasPlugin('Bake'));
-        $this->assertFalse($this->BakeHelper->hasPlugin('DebugKit'));
     }
 }

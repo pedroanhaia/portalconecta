@@ -27,7 +27,6 @@ use Cake\View\Exception\MissingCellTemplateException;
 use Cake\View\Exception\MissingTemplateException;
 use Cake\View\View;
 use TestApp\Controller\CellTraitTestController;
-use TestApp\View\Cell\CelloCell;
 use TestApp\View\CustomJsonView;
 
 /**
@@ -49,7 +48,6 @@ class CellTest extends TestCase
     {
         parent::setUp();
         static::setAppNamespace();
-        $this->clearPlugins();
         $this->loadPlugins(['TestPlugin', 'TestTheme']);
         $request = new ServerRequest();
         $response = new Response();
@@ -62,6 +60,7 @@ class CellTest extends TestCase
     public function tearDown(): void
     {
         parent::tearDown();
+        $this->clearPlugins();
         unset($this->View);
     }
 
@@ -80,7 +79,7 @@ class CellTest extends TestCase
         $this->assertStringContainsString('<h2>Suspendisse gravida neque</h2>', $render);
 
         $cell = $this->View->cell('Cello');
-        $this->assertInstanceOf(CelloCell::class, $cell);
+        $this->assertInstanceOf('TestApp\View\Cell\CelloCell', $cell);
         $this->assertSame("Cellos\n", $cell->render());
     }
 
@@ -111,7 +110,7 @@ class CellTest extends TestCase
 
         $cell = $this->View->cell('Articles::teaserList');
         $cell->viewBuilder()->setTemplate('nope');
-        (string)$cell;
+        $result = "{$cell}";
     }
 
     /**
@@ -122,20 +121,9 @@ class CellTest extends TestCase
      */
     public function testCellWithArguments(): void
     {
-        $cell = $this->View->cell('Articles::doEcho', ['dummy', ' message']);
-        $render = "{$cell}";
-        $this->assertStringContainsString('dummy message', $render);
-    }
-
-    public function testCellWithNamedArguments(): void
-    {
         $cell = $this->View->cell('Articles::doEcho', ['msg1' => 'dummy', 'msg2' => ' message']);
         $render = "{$cell}";
         $this->assertStringContainsString('dummy message', $render);
-
-        $cell = $this->View->cell('Articles::doEcho', ['msg2' => ' dummy', 'msg1' => 'message']);
-        $render = "{$cell}";
-        $this->assertStringContainsString('message dummy', $render);
     }
 
     /**
@@ -206,7 +194,7 @@ class CellTest extends TestCase
         $message = $e->getMessage();
         $this->assertStringContainsString(
             str_replace('/', DS, 'Cell template file `cell/Articles/foo_bar.php` could not be found.'),
-            $message,
+            $message
         );
         $this->assertStringContainsString('The following paths', $message);
         $this->assertStringContainsString(ROOT . DS . 'templates', $message);
@@ -219,7 +207,7 @@ class CellTest extends TestCase
     public function testCellRenderThemed(): void
     {
         $this->View->setTheme('TestTheme');
-        $cell = $this->View->cell('Articles');
+        $cell = $this->View->cell('Articles', ['msg' => 'hello world!']);
 
         $this->assertEquals($this->View->getTheme(), $cell->viewBuilder()->getTheme());
         $this->assertStringContainsString('Themed cell content.', $cell->render());
@@ -233,14 +221,14 @@ class CellTest extends TestCase
         $cell = $this->View->cell('Articles');
         $this->assertStringContainsString(
             'TestPlugin Articles/display',
-            $cell->render('TestPlugin.display'),
+            $cell->render('TestPlugin.display')
         );
 
         $cell = $this->View->cell('Articles');
         $cell->viewBuilder()->setPlugin('TestPlugin');
         $this->assertStringContainsString(
             'TestPlugin Articles/display',
-            $cell->render('display'),
+            $cell->render('display')
         );
     }
 
@@ -297,7 +285,8 @@ class CellTest extends TestCase
     public function testNonExistentCell(): void
     {
         $this->expectException(MissingCellException::class);
-        $this->View->cell('Void::echoThis', ['arg1' => 'v1', 'arg2' => 'v2']);
+        $cell = $this->View->cell('TestPlugin.Void::echoThis', ['arg1' => 'v1']);
+        $cell = $this->View->cell('Void::echoThis', ['arg1' => 'v1', 'arg2' => 'v2']);
     }
 
     /**
@@ -306,7 +295,7 @@ class CellTest extends TestCase
     public function testCellMissingMethod(): void
     {
         $this->expectException(BadMethodCallException::class);
-        $this->expectExceptionMessage('Class `TestApp\View\Cell\ArticlesCell` does not have a `nope` method.');
+        $this->expectExceptionMessage('Class TestApp\View\Cell\ArticlesCell does not have a "nope" method.');
         $cell = $this->View->cell('Articles::nope');
         $cell->render();
     }
@@ -316,10 +305,9 @@ class CellTest extends TestCase
      */
     public function testCellOptions(): void
     {
-        /** @var \TestApp\View\Cell\ArticlesCell $cell */
         $cell = $this->View->cell('Articles', [], ['limit' => 10, 'nope' => 'nope']);
         $this->assertSame(10, $cell->limit);
-        $this->assertTrue(!isset($cell->nope), 'Not a valid option');
+        $this->assertObjectNotHasAttribute('nope', $cell, 'Not a valid option');
     }
 
     /**
@@ -334,8 +322,7 @@ class CellTest extends TestCase
         $view = new View($request, $response, null, ['helpers' => $helpers]);
 
         $cell = $view->cell('Articles');
-        $expected = array_combine($helpers, [[], [], []]);
-        $this->assertSame($expected, $cell->viewBuilder()->getHelpers());
+        $this->assertSame($helpers, $cell->viewBuilder()->getHelpers());
     }
 
     /**
@@ -348,7 +335,7 @@ class CellTest extends TestCase
         $view = new CustomJsonView($request, $response);
         $view->setTheme('Pretty');
         $cell = $view->cell('Articles');
-        $this->assertSame(CustomJsonView::class, $cell->viewBuilder()->getClassName());
+        $this->assertSame('TestApp\View\CustomJsonView', $cell->viewBuilder()->getClassName());
         $this->assertSame('Pretty', $cell->viewBuilder()->getTheme());
     }
 
@@ -358,7 +345,8 @@ class CellTest extends TestCase
     public function testCellInheritsController(): void
     {
         $request = new ServerRequest();
-        $controller = new CellTraitTestController($request);
+        $response = new Response();
+        $controller = new CellTraitTestController($request, $response);
         $controller->viewBuilder()->setTheme('Pretty');
         $controller->viewBuilder()->setClassName('Json');
         $cell = $controller->cell('Articles');
@@ -437,7 +425,6 @@ class CellTest extends TestCase
     public function testCachedRenderSimpleCustomTemplateViewBuilder(): void
     {
         Cache::setConfig('default', ['className' => 'Array']);
-        /** @var \TestApp\View\Cell\ArticlesCell $cell */
         $cell = $this->View->cell('Articles::customTemplateViewBuilder', [], ['cache' => ['key' => 'celltest']]);
         $result = $cell->render();
         $this->assertSame(1, $cell->counter);
@@ -462,33 +449,5 @@ class CellTest extends TestCase
         $this->assertStringContainsString('This is NOT the alternate template', $result2);
         Cache::delete('celltest');
         Cache::drop('default');
-    }
-
-    /**
-     * Tests events are dispatched correctly
-     */
-    public function testCellRenderDispatchesEvents(): void
-    {
-        $args = ['msg1' => 'dummy', 'msg2' => ' message'];
-        /** @var \TestApp\View\Cell\ArticlesCell $cell */
-        $cell = $this->View->cell('Articles::doEcho', $args);
-        $beforeEventIsCalled = false;
-        $afterEventIsCalled = false;
-        $manager = $this->View->getEventManager();
-        $manager->on('Cell.beforeAction', function ($event, $eventCell, $action, $eventArgs) use ($cell, $args, &$beforeEventIsCalled): void {
-            $this->assertSame($eventCell, $cell);
-            $this->assertEquals('doEcho', $action);
-            $this->assertEquals($args, $eventArgs);
-            $beforeEventIsCalled = true;
-        });
-        $manager->on('Cell.afterAction', function ($event, $eventCell, $action, $eventArgs) use ($cell, $args, &$afterEventIsCalled): void {
-            $this->assertSame($eventCell, $cell);
-            $this->assertEquals('doEcho', $action);
-            $this->assertEquals($args, $eventArgs);
-            $afterEventIsCalled = true;
-        });
-        $cell->render();
-        $this->assertTrue($beforeEventIsCalled);
-        $this->assertTrue($afterEventIsCalled);
     }
 }

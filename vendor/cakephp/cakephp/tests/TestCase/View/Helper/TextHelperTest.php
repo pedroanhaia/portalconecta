@@ -19,7 +19,10 @@ namespace Cake\Test\TestCase\View\Helper;
 use Cake\TestSuite\TestCase;
 use Cake\View\Helper\TextHelper;
 use Cake\View\View;
-use PHPUnit\Framework\Attributes\DataProvider;
+use TestApp\Utility\TestAppUtilityEngine;
+use TestApp\Utility\TextMock;
+use TestApp\View\Helper\TextHelperTestObject;
+use TestPlugin\Utility\TestPluginEngine;
 
 /**
  * TextHelperTest class
@@ -57,27 +60,79 @@ class TextHelperTest extends TestCase
     }
 
     /**
-     * Provider for method proxying.
-     *
-     * @return array
+     * test String class methods are called correctly
      */
-    public static function methodProvider(): array
+    public function testTextHelperProxyMethodCalls(): void
     {
-        return [
-            ['highlight', ['this is a test', 'test']],
-            ['slug', ['test']],
-            ['tail', ['test test']],
-        ];
+        $this->deprecated(function () {
+            $methods = [
+                'stripLinks', 'toList',
+            ];
+            $String = $this->getMockBuilder(TextMock::class)
+                ->addMethods($methods)
+                ->getMock();
+            $Text = new TextHelperTestObject($this->View, ['engine' => TextMock::class]);
+            $Text->attach($String);
+            foreach ($methods as $method) {
+                $String->expects($this->once())->method($method)->willReturn('');
+                $Text->{$method}(['who'], 'what', 'when', 'where', 'how');
+            }
+
+            $methods = [
+                'excerpt',
+            ];
+            $String = $this->getMockBuilder(TextMock::class)
+                ->addMethods($methods)
+                ->getMock();
+            $Text = new TextHelperTestObject($this->View, ['engine' => TextMock::class]);
+            $Text->attach($String);
+            foreach ($methods as $method) {
+                $String->expects($this->once())->method($method)->willReturn('');
+                $Text->{$method}('who', 'what');
+            }
+
+            $methods = [
+                'highlight',
+            ];
+            $String = $this->getMockBuilder(TextMock::class)
+                ->addMethods($methods)
+                ->getMock();
+            $Text = new TextHelperTestObject($this->View, ['engine' => TextMock::class]);
+            $Text->attach($String);
+            foreach ($methods as $method) {
+                $String->expects($this->once())->method($method)->willReturn('');
+                $Text->{$method}('who', 'what');
+            }
+
+            $methods = [
+                'tail', 'truncate',
+            ];
+            $String = $this->getMockBuilder(TextMock::class)
+                ->addMethods($methods)
+                ->getMock();
+            $Text = new TextHelperTestObject($this->View, ['engine' => TextMock::class]);
+            $Text->attach($String);
+            foreach ($methods as $method) {
+                $String->expects($this->once())->method($method)->willReturn('');
+                $Text->{$method}('who', 1, ['what']);
+            }
+        });
     }
 
     /**
-     * Tests calls are proxied to Number class.
+     * test engine override
      */
-    #[DataProvider('methodProvider')]
-    public function testMethodProxying(string $method, mixed $arg): void
+    public function testEngineOverride(): void
     {
-        $helper = new TextHelper($this->View);
-        $this->assertNotNull($helper->{$method}(...$arg));
+        $this->deprecated(function () {
+            $Text = new TextHelperTestObject($this->View, ['engine' => 'TestAppUtilityEngine']);
+            $this->assertInstanceOf(TestAppUtilityEngine::class, $Text->engine());
+
+            $this->loadPlugins(['TestPlugin']);
+            $Text = new TextHelperTestObject($this->View, ['engine' => 'TestPlugin.TestPluginEngine']);
+            $this->assertInstanceOf(TestPluginEngine::class, $Text->engine());
+            $this->clearPlugins();
+        });
     }
 
     /**
@@ -317,8 +372,9 @@ class TextHelperTest extends TestCase
 
     /**
      * testAutoLinkUrls method
+     *
+     * @dataProvider autoLinkProvider
      */
-    #[DataProvider('autoLinkProvider')]
     public function testAutoLinkUrls(string $text, string $expected): void
     {
         $result = $this->Text->autoLinkUrls($text);
@@ -339,26 +395,6 @@ class TextHelperTest extends TestCase
         $expected = 'Text with a partial <a href="http://WWW.cakephp.org"\s*>WWW.cakephp.org</a> &copy; URL';
         $result = $this->Text->autoLinkUrls($text, ['escape' => false]);
         $this->assertMatchesRegularExpression('#^' . $expected . '$#', $result);
-
-        $text = 'Text with a url https://www.example.org/foo-bar-baz/eruierieriu-erjekr and more';
-        $expected = 'Text with a url <a href="https://www.example.org/foo-bar-baz/eruierieriu-erjekr">https://www.example.org/foo-b…</a> and more';
-        $result = $this->Text->autoLinkUrls($text, ['maxLength' => 30]);
-        $this->assertSame($expected, $result);
-
-        $text = 'Text with a url https://www.example.org/foo-bar-baz/eruierieriu-erjekr and more';
-        $expected = 'Text with a url <a href="https://www.example.org/foo-bar-baz/eruierieriu-erjekr">https://www.example.org/foo-bar-...</a> and more';
-        $result = $this->Text->autoLinkUrls($text, ['maxLength' => 35, 'ellipsis' => '...']);
-        $this->assertSame($expected, $result);
-
-        $text = 'Text with a url http://www.example.org/foo-bar-baz/ and more';
-        $expected = 'Text with a url <a href="http://www.example.org/foo-bar-baz/">www.example.org/foo-bar-baz/</a> and more';
-        $result = $this->Text->autoLinkUrls($text, ['stripProtocol' => true]);
-        $this->assertSame($expected, $result);
-
-        $text = 'Text with a url https://www.example.org/foo-bar-baz/ and more';
-        $expected = 'Text with a url <a href="https://www.example.org/foo-bar-baz/">www.example.org/foo-bar-baz/</a> and more';
-        $result = $this->Text->autoLinkUrls($text, ['stripProtocol' => true]);
-        $this->assertSame($expected, $result);
     }
 
     /**
@@ -428,7 +464,7 @@ class TextHelperTest extends TestCase
      *
      * @return array
      */
-    public static function autoLinkEmailProvider(): array
+    public function autoLinkEmailProvider(): array
     {
         return [
             [
@@ -496,8 +532,8 @@ class TextHelperTest extends TestCase
      *
      * @param string $text The text to link
      * @param string $expected The expected results.
+     * @dataProvider autoLinkEmailProvider
      */
-    #[DataProvider('autoLinkEmailProvider')]
     public function testAutoLinkEmails(string $text, string $expected, array $attrs = []): void
     {
         $result = $this->Text->autoLinkEmails($text, $attrs);
@@ -569,5 +605,36 @@ TEXT;
         $expected = '';
         $result = $this->Text->autoParagraph(null);
         $this->assertTextEquals($expected, $result);
+    }
+
+    /**
+     * testSlug method
+     *
+     * @param string $string String
+     * @param array $options Options
+     * @param String $expected Expected string
+     * @dataProvider slugInputProvider
+     */
+    public function testSlug($string, $options, $expected): void
+    {
+        $result = $this->Text->slug($string, $options);
+        $this->assertSame($expected, $result);
+    }
+
+    /**
+     * @return array
+     */
+    public function slugInputProvider(): array
+    {
+        return [
+            [
+                'Foo Bar: Not just for breakfast any-more', [],
+                'Foo-Bar-Not-just-for-breakfast-any-more',
+            ],
+            [
+                'Foo Bar: Not just for breakfast any-more', ['replacement' => false],
+                'FooBarNotjustforbreakfastanymore',
+            ],
+        ];
     }
 }

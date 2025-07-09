@@ -36,21 +36,21 @@ class TestPluginCacheEngine extends CacheEngine
     /**
      * @inheritDoc
      */
-    public function get($key, $default = null): mixed
+    public function get($key, $default = null)
     {
     }
 
     /**
      * @inheritDoc
      */
-    public function increment(string $key, int $offset = 1): int|false
+    public function increment(string $key, int $offset = 1)
     {
     }
 
     /**
      * @inheritDoc
      */
-    public function decrement(string $key, int $offset = 1): int|false
+    public function decrement(string $key, int $offset = 1)
     {
     }
 

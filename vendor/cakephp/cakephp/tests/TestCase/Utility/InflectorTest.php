@@ -10,7 +10,7 @@ declare(strict_types=1);
  * Redistributions of files must retain the above copyright notice.
  *
  * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://book.cakephp.org/5/en/development/testing.html
+ * @link          https://book.cakephp.org/4/en/development/testing.html
  * @since         1.2.0
  * @license       https://opensource.org/licenses/mit-license.php MIT License
  */
@@ -18,7 +18,6 @@ namespace Cake\Test\TestCase\Utility;
 
 use Cake\TestSuite\TestCase;
 use Cake\Utility\Inflector;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Short description for class.
@@ -87,8 +86,9 @@ class InflectorTest extends TestCase
 
     /**
      * testInflectingSingulars method
+     *
+     * @dataProvider singularizeProvider
      */
-    #[DataProvider('singularizeProvider')]
     public function testInflectingSingulars(string $singular, string $plural): void
     {
         $this->assertSame($singular, Inflector::singularize($plural));
@@ -103,7 +103,7 @@ class InflectorTest extends TestCase
      *
      * @return array
      */
-    public static function singularizeProvider(): array
+    public function singularizeProvider(): array
     {
         return [
             ['categoria', 'categorias'],
@@ -211,18 +211,19 @@ class InflectorTest extends TestCase
         $this->assertSame('pregunta_frecuente', Inflector::singularize('preguntas_frecuentes'));
         $this->assertSame(
             'categoria_pregunta_frecuente',
-            Inflector::singularize('categorias_preguntas_frecuentes'),
+            Inflector::singularize('categorias_preguntas_frecuentes')
         );
         $this->assertSame(
             'faq_categoria_pregunta_frecuente',
-            Inflector::singularize('faq_categorias_preguntas_frecuentes'),
+            Inflector::singularize('faq_categorias_preguntas_frecuentes')
         );
     }
 
     /**
      * testInflectingPlurals method
+     *
+     * @dataProvider pluralizeProvider
      */
-    #[DataProvider('pluralizeProvider')]
     public function testInflectingPlurals(string $plural, string $singular): void
     {
         $this->assertSame($plural, Inflector::pluralize($singular));
@@ -237,7 +238,7 @@ class InflectorTest extends TestCase
      *
      * @return array
      */
-    public static function pluralizeProvider(): array
+    public function pluralizeProvider(): array
     {
         return [
             ['axmen', 'axman'],
@@ -327,11 +328,11 @@ class InflectorTest extends TestCase
         $this->assertSame('preguntas_frecuentes', Inflector::pluralize('pregunta_frecuente'));
         $this->assertSame(
             'categorias_preguntas_frecuentes',
-            Inflector::pluralize('categoria_pregunta_frecuente'),
+            Inflector::pluralize('categoria_pregunta_frecuente')
         );
         $this->assertSame(
             'faq_categorias_preguntas_frecuentes',
-            Inflector::pluralize('faq_categoria_pregunta_frecuente'),
+            Inflector::pluralize('faq_categoria_pregunta_frecuente')
         );
     }
 

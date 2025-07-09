@@ -7,5 +7,7 @@ use Cake\Command\Command;
 
 class AutoLoadModelCommand extends Command
 {
-    protected ?string $defaultTable = 'Posts';
+    protected $modelClass = 'Posts';
+
+    public $Posts = null;
 }

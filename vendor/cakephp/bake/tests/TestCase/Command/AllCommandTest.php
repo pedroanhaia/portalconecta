@@ -2,23 +2,23 @@
 declare(strict_types=1);
 
 /**
- * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP(tm) Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
  * @since         2.0.0
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 namespace Bake\Test\TestCase\Command;
 
 use Bake\Test\TestCase\TestCase;
 use Bake\Utility\SubsetSchemaCollection;
-use Cake\Console\CommandInterface;
+use Cake\Command\Command;
 use Cake\Datasource\ConnectionManager;
 
 /**
@@ -29,17 +29,17 @@ class AllCommandTest extends TestCase
     /**
      * fixtures
      *
-     * @var list<string>
+     * @var array
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'plugin.Bake.Products',
         'plugin.Bake.ProductVersions',
     ];
 
     /**
-     * @var list<string>
+     * @var array
      */
-    protected array $tables = ['products', 'product_versions'];
+    protected $tables = ['products', 'product_versions'];
 
     /**
      * setUp method
@@ -51,6 +51,7 @@ class AllCommandTest extends TestCase
         parent::setUp();
 
         $this->setAppNamespace('Bake\Test\App');
+        $this->useCommandRunner();
 
         $connection = ConnectionManager::get('test');
         $subsetCollection = new SubsetSchemaCollection($connection->getSchemaCollection(), $this->tables);
@@ -94,7 +95,7 @@ class AllCommandTest extends TestCase
         ];
         $this->exec('bake all --connection test Products', ['y']);
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertOutputContains('Bake All complete');
     }
@@ -135,7 +136,7 @@ class AllCommandTest extends TestCase
         ];
         $this->exec('bake all --connection test --everything', ['y']);
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertOutputContains('Bake All complete');
     }
@@ -165,29 +166,29 @@ class AllCommandTest extends TestCase
         ];
         $this->exec('bake all --connection test --prefix admin Products', ['y']);
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertFileContains(
             'namespace Bake\Test\App\Controller\Admin;',
-            $path . 'Controller/Admin/ProductsController.php',
+            $path . 'Controller/Admin/ProductsController.php'
         );
         $this->assertFileContains(
             'use Bake\Test\App\Controller\AppController;',
-            $path . 'Controller/Admin/ProductsController.php',
+            $path . 'Controller/Admin/ProductsController.php'
         );
         $this->assertFileContains(
             'class ProductsController extends AppController',
-            $path . 'Controller/Admin/ProductsController.php',
+            $path . 'Controller/Admin/ProductsController.php'
         );
         $this->assertFileContains(
             'use Bake\Test\App\Controller\Admin\ProductsController;',
-            $testsPath . 'TestCase/Controller/Admin/ProductsControllerTest.php',
+            $testsPath . 'TestCase/Controller/Admin/ProductsControllerTest.php'
         );
         $this->assertOutputContains('Bake All complete');
     }
 
     /**
-     * Test docblock @ uses generated for test methods
+     * Test docblock @uses generated for test methods
      *
      * @return void
      */
@@ -211,14 +212,14 @@ class AllCommandTest extends TestCase
         ];
         $this->exec('bake all --connection test Products', ['y', 'y', 'y', 'y']);
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileContains(
             '@uses \Bake\Test\App\Controller\ProductsController::index()',
-            $testsPath . 'TestCase/Controller/ProductsControllerTest.php',
+            $testsPath . 'TestCase/Controller/ProductsControllerTest.php'
         );
         $this->assertFileContains(
             '@uses \Bake\Test\App\Model\Table\ProductsTable::validationDefault()',
-            $testsPath . 'TestCase/Model/Table/ProductsTableTest.php',
+            $testsPath . 'TestCase/Model/Table/ProductsTableTest.php'
         );
         $this->assertOutputContains('Bake All complete');
         foreach ($this->generatedFiles as $file) {

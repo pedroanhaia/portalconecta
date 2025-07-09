@@ -8,12 +8,12 @@
 /phpstan.neon
 /tools
 /vendor
+/vendors
 /composer.phar
 *.mo
 debug.log
 error.log
 .phpunit.result.cache
-.phpunit.cache
 
 # OS generated files #
 ######################

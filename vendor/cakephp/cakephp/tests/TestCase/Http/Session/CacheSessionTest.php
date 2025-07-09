@@ -61,7 +61,7 @@ class CacheSessionTest extends TestCase
      */
     public function testOpen(): void
     {
-        $this->assertTrue($this->storage->open('', ''));
+        $this->assertTrue($this->storage->open(null, null));
     }
 
     /**

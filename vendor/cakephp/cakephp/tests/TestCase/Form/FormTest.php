@@ -20,7 +20,6 @@ use Cake\Form\Form;
 use Cake\Form\Schema;
 use Cake\TestSuite\TestCase;
 use Cake\Validation\Validator;
-use Exception;
 use TestApp\Form\AppForm;
 use TestApp\Form\FormSchema;
 
@@ -30,6 +29,29 @@ use TestApp\Form\FormSchema;
 class FormTest extends TestCase
 {
     /**
+     * Test schema()
+     *
+     * @group deprecated
+     */
+    public function testSchema(): void
+    {
+        $this->deprecated(function (): void {
+            $form = new Form();
+            $schema = $form->schema();
+
+            $this->assertInstanceOf('Cake\Form\Schema', $schema);
+            $this->assertSame($schema, $form->schema(), 'Same instance each time');
+
+            $schema = new Schema();
+            $this->assertSame($schema, $form->schema($schema));
+            $this->assertSame($schema, $form->schema());
+
+            $form = new AppForm();
+            $this->assertInstanceOf(FormSchema::class, $form->schema());
+        });
+    }
+
+    /**
      * Test setSchema() and getSchema()
      */
     public function testSetGetSchema(): void
@@ -37,7 +59,7 @@ class FormTest extends TestCase
         $form = new Form();
         $schema = $form->getSchema();
 
-        $this->assertInstanceOf(Schema::class, $schema);
+        $this->assertInstanceOf('Cake\Form\Schema', $schema);
         $this->assertSame($schema, $form->getSchema(), 'Same instance each time');
 
         $schema = new Schema();
@@ -53,7 +75,12 @@ class FormTest extends TestCase
      */
     public function testGetValidator(): void
     {
-        $form = new Form();
+        $form = $this->getMockBuilder(Form::class)
+            ->addMethods(['buildValidator'])
+            ->getMock();
+
+        $form->expects($this->once())
+            ->method('buildValidator');
 
         $this->assertInstanceof(Validator::class, $form->getValidator());
     }
@@ -165,18 +192,16 @@ class FormTest extends TestCase
      */
     public function testExecuteInvalid(): void
     {
-        $form = new class extends Form {
-            // phpcs:ignore CakePHP.NamingConventions.ValidFunctionName.PublicWithUnderscore
-            public function _execute(array $data): bool
-            {
-                throw new Exception('Should not be called');
-            }
-        };
+        $form = $this->getMockBuilder('Cake\Form\Form')
+            ->onlyMethods(['_execute'])
+            ->getMock();
         $form->getValidator()
             ->add('email', 'format', ['rule' => 'email']);
         $data = [
             'email' => 'rong',
         ];
+        $form->expects($this->never())
+            ->method('_execute');
 
         $this->assertFalse($form->execute($data));
     }

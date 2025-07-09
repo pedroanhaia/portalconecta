@@ -24,7 +24,7 @@ class AppleComponentTest extends TestCase
      *
      * @return void
      */
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
         $registry = new ComponentRegistry();
@@ -36,7 +36,7 @@ class AppleComponentTest extends TestCase
      *
      * @return void
      */
-    protected function tearDown(): void
+    public function tearDown(): void
     {
         unset($this->Apple);
 

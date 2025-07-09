@@ -2,17 +2,17 @@
 declare(strict_types=1);
 
 /**
- * CakePHP :  Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP :  Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP Project
  * @since         0.1.0
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 namespace Bake\Test\TestCase\Command;
 
@@ -21,10 +21,10 @@ use Bake\Test\App\Controller\PostsController;
 use Bake\Test\App\Model\Table\ArticlesTable;
 use Bake\Test\App\Model\Table\CategoryThreadsTable;
 use Bake\Test\TestCase\TestCase;
-use Cake\Console\CommandInterface;
+use Cake\Command\Command;
 use Cake\Core\Plugin;
+use Cake\Http\Response;
 use Cake\Http\ServerRequest as Request;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * TestCommandTest class
@@ -36,12 +36,12 @@ class TestCommandTest extends TestCase
      *
      * @var string
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'plugin.Bake.BakeArticles',
         'plugin.Bake.BakeArticlesBakeTags',
         'plugin.Bake.BakeComments',
         'plugin.Bake.BakeTags',
-        'plugin.Bake.Authors',
+        'core.Authors',
     ];
 
     /**
@@ -54,6 +54,7 @@ class TestCommandTest extends TestCase
         parent::setUp();
         $this->setAppNamespace('Bake\Test\App');
         $this->_compareBasePath = Plugin::path('Bake') . 'tests' . DS . 'comparisons' . DS . 'Test' . DS;
+        $this->useCommandRunner();
     }
 
     public function tearDown(): void
@@ -76,7 +77,7 @@ class TestCommandTest extends TestCase
         $this->assertOutputContains('1. Entity');
         $this->assertOutputContains('2. Table');
         $this->assertOutputContains('3. Controller');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
     }
 
     /**
@@ -89,7 +90,7 @@ class TestCommandTest extends TestCase
     {
         $this->exec('bake test entity');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertOutputContains('You must provide a class to bake');
     }
 
@@ -105,11 +106,11 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test Table TestTaskTag');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertFileContains(
             'class TestTaskTagTableTest extends TestCase',
-            $this->generatedFiles[0],
+            $this->generatedFiles[0]
         );
     }
 
@@ -127,15 +128,15 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test table TestBake.BakeArticles');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertFileContains(
             'class BakeArticlesTableTest extends TestCase',
-            $this->generatedFiles[0],
+            $this->generatedFiles[0]
         );
         $this->assertFileContains(
             'namespace TestBake\Test\TestCase\Model\Table;',
-            $this->generatedFiles[0],
+            $this->generatedFiles[0]
         );
     }
 
@@ -152,12 +153,10 @@ class TestCommandTest extends TestCase
             ROOT . 'tests/TestCase/Model/Table/BakeArticlesTableTest.php',
             ROOT . 'tests/TestCase/Model/Table/CategoryThreadsTableTest.php',
             ROOT . 'tests/TestCase/Model/Table/TemplateTaskCommentsTableTest.php',
-            ROOT . 'tests/TestCase/Model/Table/HiddenFieldsTableTest.php',
-            ROOT . 'tests/TestCase/Model/Table/ParseTestTableTest.php',
         ];
         $this->exec('bake test table --all');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
     }
 
@@ -170,15 +169,14 @@ class TestCommandTest extends TestCase
     {
         $this->exec('bake test table');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertOutputContains('You must provide a class to bake a test for. Some possible options are:');
         $this->assertOutputContains('1. ArticlesTable');
         $this->assertOutputContains('2. AuthorsTable');
         $this->assertOutputContains('3. BakeArticlesTable');
         $this->assertOutputContains('4. CategoryThreadsTable');
         $this->assertOutputContains('5. HiddenFieldsTable');
-        $this->assertOutputContains('6. ParseTestTable');
-        $this->assertOutputContains('7. TemplateTaskCommentsTable');
+        $this->assertOutputContains('6. TemplateTaskCommentsTable');
         $this->assertOutputContains('Re-run your command as `cake bake Table <classname>`');
     }
 
@@ -192,7 +190,7 @@ class TestCommandTest extends TestCase
         $this->loadPlugins(['BakeTest' => ['path' => ROOT . 'Plugin' . DS . 'BakeTest' . DS]]);
         $this->exec('bake test table --plugin BakeTest');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertOutputContains('You must provide a class to bake a test for. Some possible options are:');
         $this->assertOutputContains('1. AuthorsTable');
         $this->assertOutputContains('2. BakeArticlesTable');
@@ -257,7 +255,7 @@ class TestCommandTest extends TestCase
      */
     public function testFixtureGenerationFromController()
     {
-        $subject = new PostsController(new Request());
+        $subject = new PostsController(new Request(), new Response());
         $command = new TestCommand();
         $result = $command->generateFixtureList($subject);
         $expected = [
@@ -284,6 +282,12 @@ class TestCommandTest extends TestCase
             ['Behavior', 'TimestampBehavior', 'App\Model\Behavior\TimestampBehavior'],
             ['Helper', 'Form', 'App\View\Helper\FormHelper'],
             ['Helper', 'FormHelper', 'App\View\Helper\FormHelper'],
+            ['Component', 'Auth', 'App\Controller\Component\AuthComponent'],
+            ['Component', 'AuthComponent', 'App\Controller\Component\AuthComponent'],
+            ['Shell', 'Example', 'App\Shell\ExampleShell'],
+            ['Shell', 'ExampleShell', 'App\Shell\ExampleShell'],
+            ['Task', 'Example', 'App\Shell\Task\ExampleTask'],
+            ['Task', 'ExampleTask', 'App\Shell\Task\ExampleTask'],
             ['Cell', 'Example', 'App\View\Cell\ExampleCell'],
             ['Cell', 'ExampleCell', 'App\View\Cell\ExampleCell'],
         ];
@@ -292,9 +296,9 @@ class TestCommandTest extends TestCase
     /**
      * test that resolving class names works
      *
+     * @dataProvider realClassProvider
      * @return void
      */
-    #[DataProvider('realClassProvider')]
     public function testGetRealClassname($type, $name, $expected)
     {
         $this->setAppNamespace('App');
@@ -346,7 +350,7 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test table Authors --fixtures app.Posts,app.Comments,app.Users');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
     }
@@ -363,7 +367,7 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test table Authors --no-fixture');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
     }
@@ -380,7 +384,7 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test cell Articles');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
     }
@@ -397,7 +401,7 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test command OtherExample');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
     }
@@ -414,7 +418,7 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test table Articles');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
     }
@@ -431,7 +435,7 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test controller PostsController');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
     }
@@ -448,7 +452,7 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test controller NoModelController');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
     }
@@ -465,7 +469,7 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test controller Admin\PostsController');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
     }
@@ -482,7 +486,7 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test controller --prefix Admin PostsController');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
     }
@@ -499,7 +503,7 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test component Apple');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
     }
@@ -516,7 +520,7 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test behavior Example');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
     }
@@ -533,7 +537,58 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test helper Example');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
+        $this->assertFilesExist($this->generatedFiles);
+        $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
+    }
+
+    /**
+     * Test baking a test for a shell.
+     *
+     * @return void
+     */
+    public function testBakeShellTest()
+    {
+        $this->generatedFiles = [
+            ROOT . 'tests/TestCase/Shell/ArticlesShellTest.php',
+        ];
+        $this->exec('bake test shell Articles');
+
+        $this->assertExitCode(Command::CODE_SUCCESS);
+        $this->assertFilesExist($this->generatedFiles);
+        $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
+    }
+
+    /**
+     * Test baking a test for a shell task.
+     *
+     * @return void
+     */
+    public function testBakeShellTaskTest()
+    {
+        $this->generatedFiles = [
+            ROOT . 'tests/TestCase/Shell/Task/ArticlesTaskTest.php',
+        ];
+        $this->exec('bake test task Articles');
+
+        $this->assertExitCode(Command::CODE_SUCCESS);
+        $this->assertFilesExist($this->generatedFiles);
+        $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
+    }
+
+    /**
+     * Test baking a test for a shell helper.
+     *
+     * @return void
+     */
+    public function testBakeShellHelperTest()
+    {
+        $this->generatedFiles = [
+            ROOT . 'tests/TestCase/Shell/Helper/ExampleHelperTest.php',
+        ];
+        $this->exec('bake test shell_helper Example');
+
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertSameAsFile(__FUNCTION__ . '.php', file_get_contents($this->generatedFiles[0]));
     }
@@ -547,7 +602,7 @@ class TestCommandTest extends TestCase
     {
         $this->exec('bake test Foo Example');
 
-        $this->assertExitCode(CommandInterface::CODE_ERROR);
+        $this->assertExitCode(Command::CODE_ERROR);
     }
 
     /**
@@ -576,6 +631,14 @@ class TestCommandTest extends TestCase
 
         $result = $command->generateConstructor('Entity', 'TestBake\Model\Entity\Article');
         $expected = ['', 'new Article();', ''];
+        $this->assertEquals($expected, $result);
+
+        $result = $command->generateConstructor('ShellHelper', 'TestBake\Shell\Helper\ExampleHelper');
+        $expected = [
+            "\$this->stub = new ConsoleOutput();\n        \$this->io = new ConsoleIo(\$this->stub);",
+            'new ExampleHelper($this->io);',
+            '',
+        ];
         $this->assertEquals($expected, $result);
 
         $result = $command->generateConstructor('Form', 'TestBake\Form\ExampleForm');
@@ -621,6 +684,21 @@ class TestCommandTest extends TestCase
             'App\View\Helper\FormHelper',
         ];
         $this->assertEquals($expected, $result);
+
+        $result = $command->generateUses('Component', 'App\Controller\Component\AuthComponent');
+        $expected = [
+            'Cake\Controller\ComponentRegistry',
+            'App\Controller\Component\AuthComponent',
+        ];
+        $this->assertEquals($expected, $result);
+
+        $result = $command->generateUses('ShellHelper', 'App\Shell\Helper\ExampleHelper');
+        $expected = [
+            'Cake\TestSuite\Stub\ConsoleOutput',
+            'Cake\Console\ConsoleIo',
+            'App\Shell\Helper\ExampleHelper',
+        ];
+        $this->assertEquals($expected, $result);
     }
 
     /**
@@ -649,20 +727,32 @@ class TestCommandTest extends TestCase
             ['Controller', 'App\Controller\PostsController', 'TestCase/Controller/PostsControllerTest.php'],
             ['Controller', 'App\Controller\Admin\PostsController', 'TestCase/Controller/Admin/PostsControllerTest.php'],
             ['Behavior', 'App\Model\Behavior\TreeBehavior', 'TestCase/Model/Behavior/TreeBehaviorTest.php'],
+            [
+                'Component',
+                'App\Controller\Component\AuthComponent',
+                'TestCase/Controller/Component/AuthComponentTest.php',
+            ],
             ['entity', 'App\Model\Entity\Article', 'TestCase/Model/Entity/ArticleTest.php'],
             ['table', 'App\Model\Table\PostsTable', 'TestCase/Model/Table/PostsTableTest.php'],
             ['helper', 'App\View\Helper\FormHelper', 'TestCase/View/Helper/FormHelperTest.php'],
             ['controller', 'App\Controller\PostsController', 'TestCase/Controller/PostsControllerTest.php'],
             ['behavior', 'App\Model\Behavior\TreeBehavior', 'TestCase/Model/Behavior/TreeBehaviorTest.php'],
+            [
+                'component',
+                'App\Controller\Component\AuthComponent',
+                'TestCase/Controller/Component/AuthComponentTest.php',
+            ],
+            ['Shell', 'App\Shell\ExampleShell', 'TestCase/Shell/ExampleShellTest.php'],
+            ['shell', 'App\Shell\ExampleShell', 'TestCase/Shell/ExampleShellTest.php'],
         ];
     }
 
     /**
      * Test filename generation for each type + plugins
      *
+     * @dataProvider caseFileNameProvider
      * @return void
      */
-    #[DataProvider('caseFileNameProvider')]
     public function testTestCaseFileName($type, $class, $expected)
     {
         $this->setAppNamespace('App');
@@ -689,7 +779,7 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test entity --plugin TestTest Article');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
     }
 
@@ -707,15 +797,16 @@ class TestCommandTest extends TestCase
             ['Entity', 'Model\Entity'],
             ['Behavior', 'Model\Behavior'],
             ['Helper', 'View\Helper'],
+            ['ShellHelper', 'Shell\Helper'],
         ];
     }
 
     /**
      * Test that mapType returns the correct package names.
      *
+     * @dataProvider mapTypeProvider
      * @return void
      */
-    #[DataProvider('mapTypeProvider')]
     public function testMapType($original, $expected)
     {
         $command = new TestCommand();
@@ -723,7 +814,7 @@ class TestCommandTest extends TestCase
     }
 
     /**
-     * Test docblock @ uses generated for test methods
+     * Test docblock @uses generated for test methods
      *
      * @return void
      */
@@ -733,15 +824,15 @@ class TestCommandTest extends TestCase
 
         $this->exec('bake test --connection test controller Products', ['y']);
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileContains(
             '@uses \Bake\Test\App\Controller\ProductsController::index()',
-            $testsPath . 'TestCase/Controller/ProductsControllerTest.php',
+            $testsPath . 'TestCase/Controller/ProductsControllerTest.php'
         );
     }
 
     /**
-     * Test docblock @ uses generated for test methods
+     * Test docblock @uses generated for test methods
      *
      * @return void
      */
@@ -755,10 +846,10 @@ class TestCommandTest extends TestCase
         ];
         $this->exec('bake test --connection test table Products', ['y']);
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileContains(
             '@uses \Bake\Test\App\Model\Table\ProductsTable::validationDefault()',
-            $testsPath . 'TestCase/Model/Table/ProductsTableTest.php',
+            $testsPath . 'TestCase/Model/Table/ProductsTableTest.php'
         );
     }
 }

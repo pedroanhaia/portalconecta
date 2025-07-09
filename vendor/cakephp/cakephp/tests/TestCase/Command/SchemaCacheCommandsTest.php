@@ -19,7 +19,6 @@ namespace Cake\Test\TestCase\Command;
 use Cake\Cache\Cache;
 use Cake\Cache\Engine\NullEngine;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
-use Cake\Database\Schema\CachedCollection;
 use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\TestCase;
 
@@ -33,9 +32,9 @@ class SchemaCacheCommandsTest extends TestCase
     /**
      * Fixtures.
      *
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $fixtures = ['core.Articles', 'core.Tags'];
+    protected $fixtures = ['core.Articles', 'core.Tags'];
 
     /**
      * @var \Cake\Datasource\ConnectionInterface
@@ -54,6 +53,7 @@ class SchemaCacheCommandsTest extends TestCase
     {
         parent::setUp();
         $this->setAppNamespace();
+        $this->useCommandRunner();
 
         $this->cache = $this->getMockBuilder(NullEngine::class)
             ->onlyMethods(['set', 'get', 'delete'])
@@ -85,7 +85,7 @@ class SchemaCacheCommandsTest extends TestCase
 
         $this->exec('schema_cache clear --connection test');
         $this->assertExitSuccess();
-        $this->assertInstanceOf(CachedCollection::class, $this->connection->getSchemaCollection());
+        $this->assertInstanceOf('Cake\Database\Schema\CachedCollection', $this->connection->getSchemaCollection());
     }
 
     /**
@@ -97,7 +97,7 @@ class SchemaCacheCommandsTest extends TestCase
 
         $this->exec('schema_cache build --connection test');
         $this->assertExitSuccess();
-        $this->assertInstanceOf(CachedCollection::class, $this->connection->getSchemaCollection());
+        $this->assertInstanceOf('Cake\Database\Schema\CachedCollection', $this->connection->getSchemaCollection());
     }
 
     /**
@@ -107,7 +107,8 @@ class SchemaCacheCommandsTest extends TestCase
     {
         $this->cache->expects($this->atLeastOnce())
             ->method('set')
-            ->willReturn(true);
+            ->withConsecutive(['test_articles'])
+            ->will($this->returnValue(true));
 
         $this->exec('schema_cache build --connection test');
         $this->assertExitSuccess();
@@ -121,10 +122,10 @@ class SchemaCacheCommandsTest extends TestCase
         $this->cache->expects($this->once())
             ->method('set')
             ->with('test_articles')
-            ->willReturn(true);
+            ->will($this->returnValue(true));
         $this->cache->expects($this->never())
             ->method('delete')
-            ->willReturn(false);
+            ->will($this->returnValue(false));
 
         $this->exec('schema_cache build --connection test articles');
         $this->assertExitSuccess();
@@ -138,12 +139,12 @@ class SchemaCacheCommandsTest extends TestCase
         $this->cache->expects($this->once())
             ->method('set')
             ->with('test_articles')
-            ->willReturn(true);
+            ->will($this->returnValue(true));
         $this->cache->expects($this->never())
             ->method('get');
         $this->cache->expects($this->never())
             ->method('delete')
-            ->willReturn(false);
+            ->will($this->returnValue(false));
 
         $this->exec('schema_cache build --connection test articles');
         $this->assertExitSuccess();
@@ -174,7 +175,8 @@ class SchemaCacheCommandsTest extends TestCase
     {
         $this->cache->expects($this->atLeastOnce())
             ->method('delete')
-            ->willReturn(true);
+            ->withConsecutive(['test_articles'])
+            ->will($this->returnValue(true));
 
         $this->exec('schema_cache clear --connection test');
         $this->assertExitSuccess();
@@ -187,11 +189,11 @@ class SchemaCacheCommandsTest extends TestCase
     {
         $this->cache->expects($this->never())
             ->method('set')
-            ->willReturn(true);
+            ->will($this->returnValue(true));
         $this->cache->expects($this->once())
             ->method('delete')
             ->with('test_articles')
-            ->willReturn(false);
+            ->will($this->returnValue(false));
 
         $this->exec('schema_cache clear --connection test articles');
         $this->assertExitSuccess();

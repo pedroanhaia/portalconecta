@@ -126,27 +126,6 @@ class CookieCollectionTest extends TestCase
     }
 
     /**
-     * Tests the magic __isset() and  __get() methods
-     */
-    public function testMagicIssetAndGet(): void
-    {
-        $cookies = [
-            new Cookie('remember_me', 'a'),
-            new Cookie('gtm', 'b'),
-        ];
-
-        $collection = new CookieCollection($cookies);
-
-        $this->assertFalse(isset($collection->nope));
-        $this->assertTrue(isset($collection->remember_me));
-        $this->assertTrue(isset($collection->REMEMBER_me));
-
-        $this->assertEquals('a', $collection->remember_me->getValue());
-        $this->assertEquals('b', $collection->GTM->getValue());
-        $this->assertNull($collection->nope);
-    }
-
-    /**
      * Test removing cookies
      */
     public function testRemove(): void
@@ -233,7 +212,7 @@ class CookieCollectionTest extends TestCase
         $this->assertSame(
             '2031-06-09 10:18:14',
             $new->get('expiring')->getExpiry()->format('Y-m-d H:i:s'),
-            'Has expiry',
+            'Has expiry'
         );
         $session = $new->get('session');
         $this->assertNull($session->getExpiry(), 'No expiry');
@@ -243,7 +222,7 @@ class CookieCollectionTest extends TestCase
         $this->assertLessThanOrEqual(
             (new DateTime('60 seconds'))->format('Y-m-d H:i:s'),
             $maxage->getExpiry()->format('Y-m-d H:i:s'),
-            'Has max age',
+            'Has max age'
         );
     }
 
@@ -406,14 +385,15 @@ class CookieCollectionTest extends TestCase
      */
     public function testCookieSizeWarning(): void
     {
-        $this->expectWarningMessageMatches('/The cookie `default` exceeds the recommended maximum cookie length of 4096 bytes.*/', function (): void {
-            $string = Security::insecureRandomBytes(9000);
-            $collection = new CookieCollection();
-            $collection = $collection
-                ->add(new Cookie('default', $string, null, '/', 'example.com'));
-            $request = new ClientRequest('http://example.com/api');
-            $collection->addToRequest($request);
-        });
+        $this->expectWarning();
+        $this->expectWarningMessage('The cookie `default` exceeds the recommended maximum cookie length of 4096 bytes.');
+
+        $string = Security::insecureRandomBytes(9000);
+        $collection = new CookieCollection();
+        $collection = $collection
+            ->add(new Cookie('default', $string, null, '/', 'example.com'));
+        $request = new ClientRequest('http://example.com/api');
+        $collection->addToRequest($request);
     }
 
     /**

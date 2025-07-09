@@ -17,18 +17,14 @@ declare(strict_types=1);
 
 namespace Cake\Test\TestCase\Database\Driver;
 
-use Cake\Database\Connection;
 use Cake\Database\Driver\Sqlserver;
-use Cake\Database\DriverFeatureEnum;
+use Cake\Database\DriverInterface;
 use Cake\Database\Exception\MissingConnectionException;
-use Cake\Database\Query\InsertQuery;
-use Cake\Database\Query\SelectQuery;
+use Cake\Database\Query;
 use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\TestCase;
 use InvalidArgumentException;
 use PDO;
-use PDOStatement;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Tests Sqlserver driver
@@ -54,7 +50,7 @@ class SqlserverTest extends TestCase
      *
      * @return array
      */
-    public static function dnsStringDataProvider(): array
+    public function dnsStringDataProvider(): array
     {
         return [
             [
@@ -98,23 +94,27 @@ class SqlserverTest extends TestCase
     /**
      * Test if all options in dns string are set
      *
+     * @dataProvider dnsStringDataProvider
      * @param array $constructorArgs
      * @param string $dnsString
      */
-    #[DataProvider('dnsStringDataProvider')]
     public function testDnsString($constructorArgs, $dnsString): void
     {
-        $driver = $this->getMockBuilder(Sqlserver::class)
-            ->onlyMethods(['createPdo'])
+        $driver = $this->getMockBuilder('Cake\Database\Driver\Sqlserver')
+            ->onlyMethods(['_connect', 'getConnection'])
             ->setConstructorArgs([$constructorArgs])
             ->getMock();
 
-        $driver->method('createPdo')
+        $driver->method('_connect')
             ->with($this->callback(function ($dns) use ($dnsString) {
                 $this->assertSame($dns, $dnsString);
 
                 return true;
-            }));
+            }))
+            ->will($this->returnValue(true));
+
+        $driver->method('getConnection')
+            ->will($this->returnValue(null));
 
         $driver->connect();
     }
@@ -135,8 +135,8 @@ class SqlserverTest extends TestCase
             'init' => ['Execute this', 'this too'],
             'settings' => ['config1' => 'value1', 'config2' => 'value2'],
         ];
-        $driver = $this->getMockBuilder(Sqlserver::class)
-            ->onlyMethods(['createPdo', 'getPdo'])
+        $driver = $this->getMockBuilder('Cake\Database\Driver\Sqlserver')
+            ->onlyMethods(['_connect', 'setConnection', 'getConnection'])
             ->setConstructorArgs([$config])
             ->getMock();
         $dsn = 'sqlsrv:Server=foo;Database=bar;MultipleActiveResultSets=false';
@@ -153,32 +153,35 @@ class SqlserverTest extends TestCase
         $expected['loginTimeout'] = null;
         $expected['multiSubnetFailover'] = null;
         $expected['port'] = null;
-        $expected['log'] = false;
         $expected['encrypt'] = null;
         $expected['trustServerCertificate'] = null;
 
-        $connection = $this->getMockBuilder('PDO')
-            ->disableOriginalConstructor()
-            ->onlyMethods(['exec', 'quote'])
+        $connection = $this->getMockBuilder('stdClass')
+            ->addMethods(['exec', 'quote'])
             ->getMock();
         $connection->expects($this->any())
             ->method('quote')
-            ->willReturnArgument(0);
+            ->will($this->onConsecutiveCalls(
+                $this->returnArgument(0),
+                $this->returnArgument(0),
+                $this->returnArgument(0)
+            ));
 
         $connection->expects($this->exactly(4))
             ->method('exec')
-            ->with(
-                ...self::withConsecutive(
-                    ['Execute this'],
-                    ['this too'],
-                    ['SET config1 value1'],
-                    ['SET config2 value2'],
-                ),
+            ->withConsecutive(
+                ['Execute this'],
+                ['this too'],
+                ['SET config1 value1'],
+                ['SET config2 value2']
             );
 
-        $driver->expects($this->once())->method('createPdo')
-            ->with($dsn, $expected)
-            ->willReturn($connection);
+        $driver->setConnection($connection);
+        $driver->expects($this->once())->method('_connect')
+            ->with($dsn, $expected);
+
+        $driver->expects($this->any())->method('getConnection')
+            ->will($this->returnValue($connection));
 
         $driver->connect();
     }
@@ -228,92 +231,46 @@ class SqlserverTest extends TestCase
     }
 
     /**
-     * Test setting/skipping of client side buffering options based on output of
-     * SelectQuery::isBufferedResultsEnabled()
-     *
-     * @return void
-     */
-    public function testPrepare(): void
-    {
-        $this->skipIf($this->missingExtension, 'pdo_sqlsrv is not installed.');
-
-        $driver = $this->getMockBuilder(Sqlserver::class)
-            ->onlyMethods(['getPdo'])
-            ->disableOriginalConstructor()
-            ->getMock();
-
-        $pdo = $this->getMockBuilder(PDO::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-
-        $statement = $this->getMockBuilder(PDOStatement::class)
-            ->getMock();
-
-        $connection = $this->getMockBuilder(Connection::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-
-        $driver->method('getPdo')
-            ->willReturn($pdo);
-
-        $pdo->expects($this->exactly(2))
-            ->method('prepare')
-            ->with(
-                ...self::withConsecutive(
-                    ['', [
-                        PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL,
-                        PDO::SQLSRV_ATTR_CURSOR_SCROLL_TYPE => PDO::SQLSRV_CURSOR_BUFFERED,
-                    ]],
-                    ['', []],
-                ),
-            )
-            ->willReturn($statement);
-
-        $query = new SelectQuery($connection);
-        $driver->prepare($query);
-
-        $query->disableBufferedResults();
-        $driver->prepare($query);
-    }
-
-    /**
      * Test select with limit only and SQLServer2012+
      */
     public function testSelectLimitVersion12(): void
     {
-        $driver = $this->getMockBuilder(Sqlserver::class)
-            ->onlyMethods(['createPdo', 'getPdo', 'version', 'enabled'])
+        $driver = $this->getMockBuilder('Cake\Database\Driver\Sqlserver')
+            ->onlyMethods(['_connect', 'getConnection', 'version', 'enabled'])
             ->setConstructorArgs([[]])
             ->getMock();
         $driver->method('version')
-            ->willReturn('12');
+            ->will($this->returnValue('12'));
         $driver->method('enabled')
-            ->willReturn(true);
+            ->will($this->returnValue(true));
 
-        $connection = new Connection(['driver' => $driver, 'log' => false]);
+        $connection = $this->getMockBuilder('Cake\Database\Connection')
+            ->onlyMethods(['connect'])
+            ->setConstructorArgs([['driver' => $driver, 'log' => false]])
+            ->getMock();
 
-        $query = new SelectQuery($connection);
+        $query = new Query($connection);
         $query->select(['id', 'title'])
             ->from('articles')
-            ->orderBy(['id'])
+            ->order(['id'])
             ->offset(10);
         $this->assertSame('SELECT id, title FROM articles ORDER BY id OFFSET 10 ROWS', $query->sql());
 
-        $query = new SelectQuery($connection);
+        $query = new Query($connection);
         $query->select(['id', 'title'])
             ->from('articles')
-            ->orderBy(['id'])
+            ->order(['id'])
             ->limit(10)
             ->offset(50);
         $this->assertSame('SELECT id, title FROM articles ORDER BY id OFFSET 50 ROWS FETCH FIRST 10 ROWS ONLY', $query->sql());
 
-        $query = new SelectQuery($connection);
+        $query = new Query($connection);
         $query->select(['id', 'title'])
             ->from('articles')
             ->offset(10);
         $this->assertSame('SELECT id, title FROM articles ORDER BY (SELECT NULL) OFFSET 10 ROWS', $query->sql());
 
-        $query = new SelectQuery($connection);
+        $query = new Query($connection);
         $query->select(['id', 'title'])
             ->from('articles')
             ->limit(10);
@@ -325,26 +282,29 @@ class SqlserverTest extends TestCase
      */
     public function testSelectLimitOldServer(): void
     {
-        $driver = $this->getMockBuilder(Sqlserver::class)
-            ->onlyMethods(['createPdo', 'getPdo', 'version', 'enabled'])
+        $driver = $this->getMockBuilder('Cake\Database\Driver\Sqlserver')
+            ->onlyMethods(['_connect', 'getConnection', 'version', 'enabled'])
             ->setConstructorArgs([[]])
             ->getMock();
         $driver->expects($this->any())
             ->method('version')
-            ->willReturn('8');
+            ->will($this->returnValue('8'));
         $driver->method('enabled')
-            ->willReturn(true);
+            ->will($this->returnValue(true));
 
-        $connection = new Connection(['driver' => $driver, 'log' => false]);
+        $connection = $this->getMockBuilder('Cake\Database\Connection')
+            ->onlyMethods(['connect'])
+            ->setConstructorArgs([['driver' => $driver, 'log' => false]])
+            ->getMock();
 
-        $query = new SelectQuery($connection);
+        $query = new Query($connection);
         $query->select(['id', 'title'])
             ->from('articles')
             ->limit(10);
         $expected = 'SELECT TOP 10 id, title FROM articles';
         $this->assertSame($expected, $query->sql());
 
-        $query = new SelectQuery($connection);
+        $query = new Query($connection);
         $query->select(['id', 'title'])
             ->from('articles')
             ->offset(10);
@@ -357,20 +317,20 @@ class SqlserverTest extends TestCase
             'WHERE _cake_paging_._cake_page_rownum_ > 10';
         $this->assertSame($expected, $query->sql());
 
-        $query = new SelectQuery($connection);
+        $query = new Query($connection);
         $query->select(['id', 'title'])
             ->from('articles')
-            ->orderBy(['id'])
+            ->order(['id'])
             ->offset(10);
         $expected = 'SELECT * FROM (SELECT id, title, (ROW_NUMBER() OVER (ORDER BY id)) AS ' . $identifier . ' ' .
             'FROM articles) _cake_paging_ ' .
             'WHERE _cake_paging_._cake_page_rownum_ > 10';
         $this->assertSame($expected, $query->sql());
 
-        $query = new SelectQuery($connection);
+        $query = new Query($connection);
         $query->select(['id', 'title'])
             ->from('articles')
-            ->orderBy(['id'])
+            ->order(['id'])
             ->where(['title' => 'Something'])
             ->limit(10)
             ->offset(50);
@@ -379,8 +339,8 @@ class SqlserverTest extends TestCase
             'WHERE (_cake_paging_._cake_page_rownum_ > 50 AND _cake_paging_._cake_page_rownum_ <= 60)';
         $this->assertSame($expected, $query->sql());
 
-        $query = new SelectQuery($connection);
-        $subquery = new SelectQuery($connection);
+        $query = new Query($connection);
+        $subquery = new Query($connection);
         $subquery->select(1);
         $query
             ->select([
@@ -388,7 +348,7 @@ class SqlserverTest extends TestCase
                 'computed' => $subquery,
             ])
             ->from('articles')
-            ->orderBy([
+            ->order([
                 'computed' => 'ASC',
             ])
             ->offset(10);
@@ -400,7 +360,7 @@ class SqlserverTest extends TestCase
             'WHERE _cake_paging_._cake_page_rownum_ > 10';
         $this->assertSame($expected, $query->sql());
 
-        $subqueryA = new SelectQuery($connection);
+        $subqueryA = new Query($connection);
         $subqueryA
             ->select('count(*)')
             ->from(['a' => 'articles'])
@@ -409,7 +369,7 @@ class SqlserverTest extends TestCase
                 'a.published' => 'Y',
             ]);
 
-        $subqueryB = new SelectQuery($connection);
+        $subqueryB = new Query($connection);
         $subqueryB
             ->select('count(*)')
             ->from(['b' => 'articles'])
@@ -418,7 +378,7 @@ class SqlserverTest extends TestCase
                 'b.published' => 'N',
             ]);
 
-        $query = new SelectQuery($connection);
+        $query = new Query($connection);
         $query
             ->select([
                 'id',
@@ -426,7 +386,7 @@ class SqlserverTest extends TestCase
                 'computedB' => $subqueryB,
             ])
             ->from('articles')
-            ->orderBy([
+            ->order([
                 'computedA' => 'ASC',
             ])
             ->offset(10);
@@ -439,7 +399,7 @@ class SqlserverTest extends TestCase
                 '(ROW_NUMBER() OVER (ORDER BY (SELECT count(*) FROM articles a WHERE (a.id = articles.id AND a.published = :c2)) ASC)) AS _cake_page_rownum_ FROM articles' .
             ') _cake_paging_ ' .
             'WHERE _cake_paging_._cake_page_rownum_ > 10',
-            $query->sql(),
+            $query->sql()
         );
     }
 
@@ -448,14 +408,17 @@ class SqlserverTest extends TestCase
      */
     public function testInsertUsesOutput(): void
     {
-        $driver = $this->getMockBuilder(Sqlserver::class)
-            ->onlyMethods(['createPdo', 'getPdo', 'enabled'])
+        $driver = $this->getMockBuilder('Cake\Database\Driver\Sqlserver')
+            ->onlyMethods(['_connect', 'getConnection', 'enabled'])
             ->setConstructorArgs([[]])
             ->getMock();
         $driver->method('enabled')
-            ->willReturn(true);
-        $connection = new Connection(['driver' => $driver, 'log' => false]);
-        $query = new InsertQuery($connection);
+            ->will($this->returnValue(true));
+        $connection = $this->getMockBuilder('Cake\Database\Connection')
+            ->onlyMethods(['connect'])
+            ->setConstructorArgs([['driver' => $driver, 'log' => false]])
+            ->getMock();
+        $query = new Query($connection);
         $query->insert(['title'])
             ->into('articles')
             ->values(['title' => 'A new article']);
@@ -468,25 +431,28 @@ class SqlserverTest extends TestCase
      */
     public function testHavingReplacesAlias(): void
     {
-        $driver = $this->getMockBuilder(Sqlserver::class)
-            ->onlyMethods(['connect', 'getPdo', 'version', 'enabled'])
+        $driver = $this->getMockBuilder('Cake\Database\Driver\Sqlserver')
+            ->onlyMethods(['connect', 'getConnection', 'version', 'enabled'])
             ->setConstructorArgs([[]])
             ->getMock();
         $driver->expects($this->any())
             ->method('version')
-            ->willReturn('8');
+            ->will($this->returnValue('8'));
         $driver->method('enabled')
-            ->willReturn(true);
+            ->will($this->returnValue(true));
 
-        $connection = new Connection(['driver' => $driver, 'log' => false]);
+        $connection = $this->getMockBuilder('\Cake\Database\Connection')
+            ->onlyMethods(['connect'])
+            ->setConstructorArgs([['driver' => $driver, 'log' => false]])
+            ->getMock();
 
-        $query = new SelectQuery($connection);
+        $query = new Query($connection);
         $query
             ->select([
                 'posts.author_id',
                 'post_count' => $query->func()->count('posts.id'),
             ])
-            ->groupBy(['posts.author_id'])
+            ->group(['posts.author_id'])
             ->having([$query->newExpr()->gte('post_count', 2, 'integer')]);
 
         $expected = 'SELECT posts.author_id, (COUNT(posts.id)) AS post_count ' .
@@ -499,25 +465,28 @@ class SqlserverTest extends TestCase
      */
     public function testHavingWhenNoAliasIsUsed(): void
     {
-        $driver = $this->getMockBuilder(Sqlserver::class)
-            ->onlyMethods(['connect', 'getPdo', 'version', 'enabled'])
+        $driver = $this->getMockBuilder('Cake\Database\Driver\Sqlserver')
+            ->onlyMethods(['connect', 'getConnection', 'version', 'enabled'])
             ->setConstructorArgs([[]])
             ->getMock();
         $driver->expects($this->any())
             ->method('version')
-            ->willReturn('8');
+            ->will($this->returnValue('8'));
         $driver->method('enabled')
-            ->willReturn(true);
+            ->will($this->returnValue(true));
 
-        $connection = new Connection(['driver' => $driver, 'log' => false]);
+        $connection = $this->getMockBuilder('\Cake\Database\Connection')
+            ->onlyMethods(['connect'])
+            ->setConstructorArgs([['driver' => $driver, 'log' => false]])
+            ->getMock();
 
-        $query = new SelectQuery($connection);
+        $query = new Query($connection);
         $query
             ->select([
                 'posts.author_id',
                 'post_count' => $query->func()->count('posts.id'),
             ])
-            ->groupBy(['posts.author_id'])
+            ->group(['posts.author_id'])
             ->having([$query->newExpr()->gte('posts.author_id', 2, 'integer')]);
 
         $expected = 'SELECT posts.author_id, (COUNT(posts.id)) AS post_count ' .
@@ -536,7 +505,7 @@ class SqlserverTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage(
-            'Exceeded maximum number of parameters (2100) for prepared statements in Sql Server',
+            'Exceeded maximum number of parameters (2100) for prepared statements in Sql Server'
         );
         $connection->getDriver()->prepare($query);
     }
@@ -549,15 +518,12 @@ class SqlserverTest extends TestCase
         $driver = ConnectionManager::get('test')->getDriver();
         $this->skipIf(!$driver instanceof Sqlserver);
 
-        $this->assertTrue($driver->supports(DriverFeatureEnum::CTE));
-        $this->assertTrue($driver->supports(DriverFeatureEnum::DISABLE_CONSTRAINT_WITHOUT_TRANSACTION));
-        $this->assertTrue($driver->supports(DriverFeatureEnum::SAVEPOINT));
-        $this->assertTrue($driver->supports(DriverFeatureEnum::TRUNCATE_WITH_CONSTRAINTS));
-        $this->assertTrue($driver->supports(DriverFeatureEnum::WINDOW));
-        $this->assertTrue($driver->supports(DriverFeatureEnum::INTERSECT));
+        $this->assertTrue($driver->supports(DriverInterface::FEATURE_CTE));
+        $this->assertFalse($driver->supports(DriverInterface::FEATURE_JSON));
+        $this->assertTrue($driver->supports(DriverInterface::FEATURE_SAVEPOINT));
+        $this->assertTrue($driver->supports(DriverInterface::FEATURE_QUOTE));
+        $this->assertTrue($driver->supports(DriverInterface::FEATURE_WINDOW));
 
-        $this->assertFalse($driver->supports(DriverFeatureEnum::INTERSECT_ALL));
-        $this->assertFalse($driver->supports(DriverFeatureEnum::JSON));
-        $this->assertFalse($driver->supports(DriverFeatureEnum::SET_OPERATIONS_ORDER_BY));
+        $this->assertFalse($driver->supports('this-is-fake'));
     }
 }

@@ -22,28 +22,21 @@ use Cake\Core\App;
 use Cake\Core\Configure;
 use Cake\Core\Exception\CakeException;
 use Cake\Core\Plugin;
-use Cake\Database\Exception\QueryException;
 use Cake\Event\EventInterface;
-use Cake\Event\EventManager;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
 use Cake\View\Exception\MissingElementException;
 use Cake\View\Exception\MissingLayoutException;
 use Cake\View\Exception\MissingTemplateException;
-use Cake\View\Helper\FormHelper;
-use Cake\View\Helper\HtmlHelper;
-use Cake\View\HelperRegistry;
 use Cake\View\View;
-use Error;
 use Exception;
 use InvalidArgumentException;
 use LogicException;
-use PDOException;
-use PHPUnit\Framework\Attributes\DataProvider;
 use RuntimeException;
 use TestApp\Controller\ThemePostsController;
 use TestApp\Controller\ViewPostsController;
+use TestApp\Error\Exception\MyPDOException;
 use TestApp\View\Helper\TestBeforeAfterHelper;
 use TestApp\View\Object\TestObjectWithoutToString;
 use TestApp\View\Object\TestObjectWithToString;
@@ -59,9 +52,9 @@ class ViewTest extends TestCase
     /**
      * Fixtures used in this test.
      *
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $fixtures = ['core.Posts', 'core.Users'];
+    protected $fixtures = ['core.Posts', 'core.Users'];
 
     /**
      * @var \Cake\View\View
@@ -716,7 +709,7 @@ class ViewTest extends TestCase
      */
     public function testElementParamsDontOverwriteHelpers(): void
     {
-        $Controller = new ViewPostsController(new ServerRequest());
+        $Controller = new ViewPostsController();
 
         $View = $Controller->createView();
         $result = $View->element('type_check', ['form' => 'string'], ['callbacks' => true]);
@@ -732,7 +725,7 @@ class ViewTest extends TestCase
      */
     public function testElementCacheHelperNoCache(): void
     {
-        $Controller = new ViewPostsController(new ServerRequest());
+        $Controller = new ViewPostsController();
         $View = $Controller->createView();
         $result = $View->element('test_element', ['ram' => 'val', 'test' => ['foo', 'bar']]);
         $this->assertSame('this is the test element', $result);
@@ -846,7 +839,7 @@ class ViewTest extends TestCase
     public function testAddHelper(): void
     {
         $View = new TestView();
-        $this->assertInstanceOf(HtmlHelper::class, $View->Html);
+        $this->assertInstanceOf('Cake\View\Helper\HtmlHelper', $View->Html);
 
         $config = $View->Html->getConfig();
         $this->assertSame('myval', $config['mykey']);
@@ -860,7 +853,7 @@ class ViewTest extends TestCase
         $View = new View();
 
         $View->loadHelper('Html', ['foo' => 'bar']);
-        $this->assertInstanceOf(HtmlHelper::class, $View->Html);
+        $this->assertInstanceOf('Cake\View\Helper\HtmlHelper', $View->Html);
 
         $config = $View->Html->getConfig();
         $this->assertSame('bar', $config['foo']);
@@ -878,7 +871,7 @@ class ViewTest extends TestCase
             $View->loadHelper('Html', ['test' => 'value']);
             $this->fail('No exception');
         } catch (RuntimeException $e) {
-            $this->assertStringContainsString('The `Html` alias has already been loaded', $e->getMessage());
+            $this->assertStringContainsString('The "Html" alias has already been loaded', $e->getMessage());
         }
     }
 
@@ -894,8 +887,8 @@ class ViewTest extends TestCase
         $result = $View->loadHelpers();
         $this->assertSame($View, $result);
 
-        $this->assertInstanceOf(HtmlHelper::class, $View->Html, 'Object type is wrong.');
-        $this->assertInstanceOf(FormHelper::class, $View->Form, 'Object type is wrong.');
+        $this->assertInstanceOf('Cake\View\Helper\HtmlHelper', $View->Html, 'Object type is wrong.');
+        $this->assertInstanceOf('Cake\View\Helper\FormHelper', $View->Form, 'Object type is wrong.');
 
         $config = $View->Html->getConfig();
         $this->assertSame('bar', $config['foo']);
@@ -911,19 +904,8 @@ class ViewTest extends TestCase
     {
         $View = new View();
 
-        $this->assertInstanceOf(HtmlHelper::class, $View->Html, 'Object type is wrong.');
-        $this->assertInstanceOf(FormHelper::class, $View->Form, 'Object type is wrong.');
-    }
-
-    /**
-     * Test lazy loading helpers in plugins
-     */
-    public function testLazyLoadHelpersPlugin(): void
-    {
-        $view = new View(null, null, null, ['plugin' => 'TestPlugin']);
-
-        $this->assertEquals('hello other', $view->OtherHelper->hello());
-        $this->assertEquals('hello plugged, hello other', $view->PluggedHelper->hello());
+        $this->assertInstanceOf('Cake\View\Helper\HtmlHelper', $View->Html, 'Object type is wrong.');
+        $this->assertInstanceOf('Cake\View\Helper\FormHelper', $View->Form, 'Object type is wrong.');
     }
 
     /**
@@ -944,38 +926,36 @@ class ViewTest extends TestCase
         $View = $this->PostsController->createView();
         $View->setTemplatePath($this->PostsController->getName());
 
-        $manager = $this->getMockBuilder(EventManager::class)->getMock();
+        $manager = $this->getMockBuilder('Cake\Event\EventManager')->getMock();
         $View->setEventManager($manager);
 
         $manager->expects($this->exactly(8))
             ->method('dispatch')
-            ->with(
-                ...self::withConsecutive(
-                    [$this->callback(function (EventInterface $event) {
-                        return $event->getName() === 'View.beforeRender';
-                    })],
-                    [$this->callback(function (EventInterface $event) {
-                        return $event->getName() === 'View.beforeRenderFile';
-                    })],
-                    [$this->callback(function (EventInterface $event) {
-                        return $event->getName() === 'View.afterRenderFile';
-                    })],
-                    [$this->callback(function (EventInterface $event) {
-                        return $event->getName() === 'View.afterRender';
-                    })],
-                    [$this->callback(function (EventInterface $event) {
-                        return $event->getName() === 'View.beforeLayout';
-                    })],
-                    [$this->callback(function (EventInterface $event) {
-                        return $event->getName() === 'View.beforeRenderFile';
-                    })],
-                    [$this->callback(function (EventInterface $event) {
-                        return $event->getName() === 'View.afterRenderFile';
-                    })],
-                    [$this->callback(function (EventInterface $event) {
-                        return $event->getName() === 'View.afterLayout';
-                    })],
-                ),
+            ->withConsecutive(
+                [$this->callback(function (EventInterface $event) {
+                    return $event->getName() === 'View.beforeRender';
+                })],
+                [$this->callback(function (EventInterface $event) {
+                    return $event->getName() === 'View.beforeRenderFile';
+                })],
+                [$this->callback(function (EventInterface $event) {
+                    return $event->getName() === 'View.afterRenderFile';
+                })],
+                [$this->callback(function (EventInterface $event) {
+                    return $event->getName() === 'View.afterRender';
+                })],
+                [$this->callback(function (EventInterface $event) {
+                    return $event->getName() === 'View.beforeLayout';
+                })],
+                [$this->callback(function (EventInterface $event) {
+                    return $event->getName() === 'View.beforeRenderFile';
+                })],
+                [$this->callback(function (EventInterface $event) {
+                    return $event->getName() === 'View.afterRenderFile';
+                })],
+                [$this->callback(function (EventInterface $event) {
+                    return $event->getName() === 'View.afterLayout';
+                })]
             );
 
         $View->render('index');
@@ -989,7 +969,7 @@ class ViewTest extends TestCase
         $this->PostsController->viewBuilder()->setHelpers([
             'TestBeforeAfter' => ['className' => TestBeforeAfterHelper::class],
             'Html',
-        ]);
+        ], false);
         $View = $this->PostsController->createView();
         $View->setTemplatePath($this->PostsController->getName());
         $View->render('index');
@@ -1004,7 +984,7 @@ class ViewTest extends TestCase
         $this->PostsController->viewBuilder()->setHelpers([
             'TestBeforeAfter' => ['className' => TestBeforeAfterHelper::class],
             'Html',
-        ]);
+        ], false);
         $this->PostsController->set('variable', 'values');
 
         $View = $this->PostsController->createView();
@@ -1021,7 +1001,7 @@ class ViewTest extends TestCase
      */
     public function testRenderLoadHelper(): void
     {
-        $this->PostsController->viewBuilder()->addHelpers(['Form', 'Number']);
+        $this->PostsController->viewBuilder()->setHelpers(['Form', 'Number'], false);
         $View = $this->PostsController->createView(TestView::class);
         $View->setTemplatePath($this->PostsController->getName());
 
@@ -1033,7 +1013,7 @@ class ViewTest extends TestCase
         $this->assertEquals(['Form', 'Number', 'Html'], $attached);
 
         $this->PostsController->viewBuilder()->addHelpers(
-            ['Html', 'Form', 'Number', 'TestPlugin.PluggedHelper'],
+            ['Html', 'Form', 'Number', 'TestPlugin.PluggedHelper']
         );
         $View = $this->PostsController->createView(TestView::class);
         $View->setTemplatePath($this->PostsController->getName());
@@ -1061,7 +1041,7 @@ class ViewTest extends TestCase
 
         $this->PostsController->viewBuilder()->addHelpers(['Html']);
         $this->PostsController->setRequest(
-            $this->PostsController->getRequest()->withParam('action', 'index'),
+            $this->PostsController->getRequest()->withParam('action', 'index')
         );
         Configure::write('Cache.check', true);
 
@@ -1093,8 +1073,8 @@ class ViewTest extends TestCase
      */
     public function testRenderUsingLayoutArgument(): void
     {
-        $pdoException = $this->getMockBuilder(PDOException::class)->getMock();
-        $error = new QueryException('this is sql string', $pdoException);
+        $error = new MyPDOException();
+        $error->queryString = 'this is sql string';
         $exceptions = [$error];
         $message = 'it works';
         $trace = $error->getTrace();
@@ -1139,8 +1119,8 @@ class ViewTest extends TestCase
 
     public function testGetTemplateException(): void
     {
-        $this->expectException(CakeException::class);
-        $this->expectExceptionMessage('Template file `` could not be found.');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Template name not provided');
         $view = new View();
         $view->render();
     }
@@ -1151,7 +1131,7 @@ class ViewTest extends TestCase
      */
     public function testViewVarOverwritingLocalHelperVar(): void
     {
-        $Controller = new ViewPostsController(new ServerRequest());
+        $Controller = new ViewPostsController();
         $Controller->set('html', 'I am some test html');
         $View = $Controller->createView();
         $View->setTemplatePath($Controller->getName());
@@ -1332,7 +1312,7 @@ class ViewTest extends TestCase
     public function testBlockSetObjectWithoutToString(): void
     {
         $this->checkException(
-            'Object of class ' . TestObjectWithoutToString::class . ' could not be converted to string',
+            'Object of class ' . TestObjectWithoutToString::class . ' could not be converted to string'
         );
 
         $objectWithToString = new TestObjectWithoutToString();
@@ -1367,8 +1347,8 @@ class ViewTest extends TestCase
      * Test appending to a block with append.
      *
      * @param mixed $value Value
+     * @dataProvider blockValueProvider
      */
-    #[DataProvider('blockValueProvider')]
     public function testBlockAppend($value): void
     {
         $this->View->assign('testBlock', 'Block');
@@ -1384,7 +1364,7 @@ class ViewTest extends TestCase
     public function testBlockAppendObjectWithoutToString(): void
     {
         $this->checkException(
-            'Object of class ' . TestObjectWithoutToString::class . ' could not be converted to string',
+            'Object of class ' . TestObjectWithoutToString::class . ' could not be converted to string'
         );
 
         $object = new TestObjectWithoutToString();
@@ -1396,8 +1376,8 @@ class ViewTest extends TestCase
      * Test prepending to a block with prepend.
      *
      * @param mixed $value Value
+     * @dataProvider blockValueProvider
      */
-    #[DataProvider('blockValueProvider')]
     public function testBlockPrepend($value): void
     {
         $this->View->assign('test', 'Block');
@@ -1414,7 +1394,7 @@ class ViewTest extends TestCase
     public function testBlockPrependObjectWithoutToString(): void
     {
         $this->checkException(
-            'Object of class ' . TestObjectWithoutToString::class . ' could not be converted to string',
+            'Object of class ' . TestObjectWithoutToString::class . ' could not be converted to string'
         );
 
         $object = new TestObjectWithoutToString();
@@ -1481,7 +1461,7 @@ class ViewTest extends TestCase
             $this->View->start('first');
             $this->View->start('first');
             $this->fail('No exception');
-        } catch (CakeException) {
+        } catch (CakeException $e) {
             ob_end_clean();
             $this->assertTrue(true);
         }
@@ -1498,7 +1478,7 @@ class ViewTest extends TestCase
             $this->fail('No exception');
         } catch (LogicException $e) {
             ob_end_clean();
-            $this->assertStringContainsString('The `no_close` block was left open', $e->getMessage());
+            $this->assertStringContainsString('The "no_close" block was left open', $e->getMessage());
         }
     }
 
@@ -1733,7 +1713,7 @@ TEXT;
      */
     public function testHelpers(): void
     {
-        $this->assertInstanceOf(HelperRegistry::class, $this->View->helpers());
+        $this->assertInstanceOf('Cake\View\HelperRegistry', $this->View->helpers());
 
         $result = $this->View->helpers();
         $this->assertSame($result, $this->View->helpers());
@@ -1789,6 +1769,7 @@ TEXT;
         $result = $this->View->disableAutoLayout();
         $this->assertSame($this->View, $result);
 
+        $autoLayout = $this->View->isAutoLayoutEnabled();
         $this->assertFalse($this->View->isAutoLayoutEnabled());
     }
 
@@ -1843,14 +1824,18 @@ TEXT;
     /**
      * Somewhat pointless, but helps ensure BC for defaults.
      */
-    public function testContentType(): void
+    public function testContentType()
     {
         $this->assertSame('', $this->View->contentType());
     }
 
     protected function checkException(string $message): void
     {
-        $this->expectException(Error::class);
+        if (version_compare(PHP_VERSION, '7.4', '>=')) {
+            $this->expectException(\Error::class);
+        } else {
+            $this->expectException(\PHPUnit\Framework\Error\Error::class);
+        }
         $this->expectExceptionMessage($message);
     }
 }

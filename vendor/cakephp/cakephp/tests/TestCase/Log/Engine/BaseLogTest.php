@@ -21,8 +21,10 @@ use Cake\Datasource\ConnectionManager;
 use Cake\Http\Response;
 use Cake\ORM\Entity;
 use Cake\TestSuite\TestCase;
+use InvalidArgumentException;
 use Psr\Log\LogLevel;
 use TestApp\Log\Engine\TestBaseLog;
+use TestApp\Log\Formatter\InvalidFormatter;
 use TestApp\Log\Formatter\ValidFormatter;
 
 class BaseLogTest extends TestCase
@@ -51,7 +53,7 @@ class BaseLogTest extends TestCase
             $this->assertStringContainsString(
                 $needle,
                 $haystack,
-                'Formatted log message does not contain unescaped unicode character.',
+                'Formatted log message does not contain unescaped unicode character.'
             );
         }
     }
@@ -61,7 +63,7 @@ class BaseLogTest extends TestCase
      */
     public function testLogUnicodeString(): void
     {
-        $this->logger->log(LogLevel::INFO, implode('', $this->testData));
+        $this->logger->log(LogLevel::INFO, implode($this->testData));
 
         $this->assertUnescapedUnicode($this->testData, $this->logger->getMessage());
     }
@@ -85,7 +87,7 @@ class BaseLogTest extends TestCase
             LogLevel::INFO,
             '1: {string}, 2: {bool}, 3: {json}, 4: {not a placeholder}, 5: {array}, '
             . '6: {array-obj} 7: {obj}, 8: {debug-info} 9: {valid-ph-not-in-context}',
-            $context,
+            $context
         );
 
         $message = $this->logger->getMessage();
@@ -99,49 +101,49 @@ class BaseLogTest extends TestCase
         $this->assertStringContainsString('7: [unhandled value of type Closure]', $message);
         $this->assertStringContainsString(
             '8: ' . json_encode(ConnectionManager::get('test')->__debugInfo(), JSON_UNESCAPED_UNICODE),
-            $message,
+            $message
         );
         $this->assertStringContainsString('9: {valid-ph-not-in-context}', $message);
 
         $this->logger->log(
             LogLevel::INFO,
             '1: {to-string}',
-            $context,
+            $context
         );
         $this->assertSame('1: response body', $this->logger->getMessage());
 
         $this->logger->log(
             LogLevel::INFO,
             'no placeholder holders',
-            $context,
+            $context
         );
         $this->assertSame('no placeholder holders', $this->logger->getMessage());
 
         $this->logger->log(
             LogLevel::INFO,
             '{to-array}',
-            $context,
+            $context
         );
         $this->assertSame('["my-type"]', $this->logger->getMessage());
 
         $this->logger->log(
             LogLevel::INFO,
             '\{string}',
-            ['string' => 'a-string'],
+            ['string' => 'a-string']
         );
         $this->assertSame('\{string}', $this->logger->getMessage());
 
         $this->logger->log(
             LogLevel::INFO,
             '1: {_ph1}, 2: {0ph2}',
-            ['_ph1' => '1st-string', '0ph2' => '2nd-string'],
+            ['_ph1' => '1st-string', '0ph2' => '2nd-string']
         );
         $this->assertSame('1: 1st-string, 2: 2nd-string', $this->logger->getMessage());
 
         $this->logger->log(
             LogLevel::INFO,
             '{0}',
-            ['val'],
+            ['val']
         );
         $this->assertSame('val', $this->logger->getMessage());
     }
@@ -156,5 +158,14 @@ class BaseLogTest extends TestCase
 
         $log = new TestBaseLog(['formatter' => new ValidFormatter()]);
         $this->assertNotNull($log);
+    }
+
+    /**
+     * Test creating log engine with invalid formatter.
+     */
+    public function testInvalidFormatter(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        new TestBaseLog(['formatter' => InvalidFormatter::class]);
     }
 }

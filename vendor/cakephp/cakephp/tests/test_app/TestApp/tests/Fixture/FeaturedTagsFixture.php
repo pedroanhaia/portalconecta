@@ -12,14 +12,14 @@ class FeaturedTagsFixture extends TestFixture
      *
      * @var string
      */
-    public string $table = 'featured_tags';
+    public $table = 'featured_tags';
 
     /**
      * Records property
      *
      * @var array
      */
-    public array $records = [
+    public $records = [
         ['tag_id' => 1, 'priority' => 1.0],
         ['tag_id' => 2, 'priority' => 0.7],
     ];

@@ -2,17 +2,17 @@
 declare(strict_types=1);
 
 /**
- * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP(tm) Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
  * @since         0.1.0
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 namespace Bake\Test\TestCase\View;
 
@@ -120,7 +120,7 @@ class BakeViewTest extends TestCase
         $this->assertSame(
             $expected,
             $result,
-            'Tags at the end of a line should not swallow new lines when rendered',
+            'Tags at the end of a line should not swallow new lines when rendered'
         );
     }
 
@@ -158,7 +158,7 @@ class BakeViewTest extends TestCase
         $result = $this->View->render('Custom' . DS . 'file');
         $this->assertSame(
             'success' . "\n",
-            $result,
+            $result
         );
 
         $this->View->set('test', 'success');
@@ -171,7 +171,7 @@ class BakeViewTest extends TestCase
         $result = $this->View->render('Custom' . DS . 'file');
         $this->assertSame(
             'separator constant beforeRender' . "\n",
-            $result,
+            $result
         );
         $this->assertSame($this->View->get('test'), 'separator constant afterRender');
 
@@ -185,7 +185,7 @@ class BakeViewTest extends TestCase
         $result = $this->View->render('Custom/file');
         $this->assertSame(
             'fixed separator beforeRender' . "\n",
-            $result,
+            $result
         );
         $this->assertSame($this->View->get('test'), 'fixed separator afterRender');
     }
@@ -201,7 +201,7 @@ class BakeViewTest extends TestCase
         $result = $this->View->render('Bake.Custom' . DS . 'file');
         $this->assertSame(
             'success' . "\n",
-            $result,
+            $result
         );
 
         $this->View->set('test', 'success');
@@ -214,7 +214,7 @@ class BakeViewTest extends TestCase
         $result = $this->View->render('Bake.Custom' . DS . 'file');
         $this->assertSame(
             'plugin template beforeRender' . "\n",
-            $result,
+            $result
         );
         $this->assertSame($this->View->get('test'), 'plugin template afterRender');
     }
@@ -230,7 +230,7 @@ class BakeViewTest extends TestCase
         $result = $this->View->render('Custom' . DS . 'file');
         $this->assertSame(
             'success' . "\n",
-            $result,
+            $result
         );
 
         $this->View->set('test', 'success');
@@ -243,7 +243,7 @@ class BakeViewTest extends TestCase
         $result = $this->View->render('Custom' . DS . 'file');
         $this->assertSame(
             'custom template beforeRender' . "\n",
-            $result,
+            $result
         );
         $this->assertSame($this->View->get('test'), 'custom template afterRender');
     }

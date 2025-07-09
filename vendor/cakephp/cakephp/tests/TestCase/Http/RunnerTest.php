@@ -62,10 +62,10 @@ class RunnerTest extends TestCase
         $this->queue = new MiddlewareQueue();
 
         $this->ok = function ($request, $handler) {
-            return $handler->handle($request->withAttribute('ok', true));
+            return $handler->handle($request);
         };
         $this->pass = function ($request, $handler) {
-            return $handler->handle($request->withAttribute('pass', true));
+            return $handler->handle($request);
         };
         $this->fail = function ($request, $handler): void {
             throw new RuntimeException('A bad thing');
@@ -78,7 +78,7 @@ class RunnerTest extends TestCase
     public function testRunSingle(): void
     {
         $this->queue->add($this->ok);
-        $req = new ServerRequest();
+        $req = $this->getMockBuilder('Psr\Http\Message\ServerRequestInterface')->getMock();
 
         $runner = new Runner();
         $result = $runner->run($this->queue, $req);
@@ -109,7 +109,7 @@ class RunnerTest extends TestCase
         $this->queue->add($one)->add($two)->add($three);
         $runner = new Runner();
 
-        $req = new ServerRequest();
+        $req = $this->getMockBuilder('Psr\Http\Message\ServerRequestInterface')->getMock();
         $result = $runner->run($this->queue, $req);
         $this->assertInstanceof(Response::class, $result);
 
@@ -125,7 +125,7 @@ class RunnerTest extends TestCase
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('A bad thing');
         $this->queue->add($this->ok)->add($this->fail);
-        $req = new ServerRequest();
+        $req = $this->getMockBuilder('Psr\Http\Message\ServerRequestInterface')->getMock();
 
         $runner = new Runner();
         $runner->run($this->queue, $req);
@@ -133,28 +133,15 @@ class RunnerTest extends TestCase
 
     public function testRunSetRouterContext(): void
     {
-        $attributes = [];
-
-        $this->queue
-            ->add(function ($request, $handler) use (&$attributes) {
-                try {
-                    return $handler->handle($request);
-                } catch (Throwable) {
-                    $request = Router::getRequest();
-
-                    $attributes['pass'] = $request->getAttribute('pass');
-                    $attributes['ok'] = $request->getAttribute('ok');
-                }
-
-                return new Response();
-            })
-            ->add($this->ok)
-            ->add($this->pass)
-            ->add($this->fail);
         $runner = new Runner();
+        $request = new ServerRequest();
         $app = new Application(CONFIG);
 
-        $runner->run($this->queue, new ServerRequest(), $app);
-        $this->assertSame(['pass' => true, 'ok' => true], $attributes);
+        try {
+            $runner->run($this->queue, $request, $app);
+        } catch (Throwable $e) {
+        }
+
+        $this->assertSame($request, Router::getRequest());
     }
 }

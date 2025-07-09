@@ -1,5 +1,5 @@
 <?php
-$paging = $this->Paginator->options['url'] ?? null;
+$paging = isset($this->Paginator->options['url']) ? $this->Paginator->options['url'] : null;
 
 $formatted = [
     'user' => $user['User']['username'],

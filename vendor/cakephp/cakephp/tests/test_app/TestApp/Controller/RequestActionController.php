@@ -28,9 +28,9 @@ class RequestActionController extends AppController
     /**
      * The default model to use.
      *
-     * @var string|null
+     * @var string
      */
-    protected ?string $modelClass = 'Posts';
+    protected $modelClass = 'Posts';
 
     /**
      * test_request_action method
@@ -72,6 +72,17 @@ class RequestActionController extends AppController
     public function return_here()
     {
         return $this->response->withStringBody($this->here);
+    }
+
+    /**
+     * paginate_request_action method
+     *
+     * @return void
+     */
+    public function paginate_request_action()
+    {
+        $data = $this->paginate();
+        $this->autoRender = false;
     }
 
     /**
@@ -166,7 +177,7 @@ class RequestActionController extends AppController
      * @throws \Cake\Http\Exception\NotFoundException
      * @return void
      */
-    public function error_method(): never
+    public function error_method()
     {
         throw new NotFoundException('Not there or here.');
     }

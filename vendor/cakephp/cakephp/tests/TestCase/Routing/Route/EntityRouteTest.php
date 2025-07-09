@@ -16,9 +16,9 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Routing\Route;
 
-use Cake\Core\Exception\CakeException;
 use Cake\Routing\Route\EntityRoute;
 use Cake\TestSuite\TestCase;
+use RuntimeException;
 use TestApp\Model\Entity\Article;
 
 /**
@@ -40,7 +40,7 @@ class EntityRouteTest extends TestCase
             '/articles/{category_id}/{slug}',
             [
                 '_name' => 'articlesView',
-            ],
+            ]
         );
 
         $result = $route->match([
@@ -66,7 +66,7 @@ class EntityRouteTest extends TestCase
             '/articles/{category_id}/{slug}',
             [
                 '_name' => 'articlesView',
-            ],
+            ]
         );
 
         $result = $route->match([
@@ -91,7 +91,7 @@ class EntityRouteTest extends TestCase
             '/articles/{category_id}_{slug}',
             [
                 '_name' => 'articlesView',
-            ],
+            ]
         );
 
         $result = $route->match([
@@ -117,7 +117,7 @@ class EntityRouteTest extends TestCase
             [
                 '_name' => 'articlesView',
                 '_entity' => $entity,
-            ],
+            ]
         );
 
         $result = $route->match([
@@ -133,7 +133,7 @@ class EntityRouteTest extends TestCase
      */
     public function testInvalidEntityValueException(): void
     {
-        $this->expectException(CakeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('Route `/` expects the URL option `_entity` to be an array or object implementing \ArrayAccess, but `string` passed.');
 
         $route = new EntityRoute('/', [

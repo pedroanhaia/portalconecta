@@ -51,7 +51,7 @@ class PluginTest extends TestCase
     {
         $this->loadPlugins(['TestPlugin']);
         $instance = Plugin::getCollection()->get('TestPlugin');
-        $this->assertSame(TestPlugin::class, $instance::class);
+        $this->assertSame(TestPlugin::class, get_class($instance));
     }
 
     /**
@@ -61,7 +61,7 @@ class PluginTest extends TestCase
     {
         $this->loadPlugins(['TestPluginTwo']);
         $instance = Plugin::getCollection()->get('TestPluginTwo');
-        $this->assertSame(BasePlugin::class, $instance::class);
+        $this->assertSame(BasePlugin::class, get_class($instance));
     }
 
     /**

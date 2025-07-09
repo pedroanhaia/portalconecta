@@ -16,14 +16,13 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\View;
 
-use Cake\Core\Exception\CakeException;
-use Cake\I18n\Number;
 use Cake\TestSuite\TestCase;
 use Cake\View\Exception\MissingHelperException;
 use Cake\View\Helper\FormHelper;
 use Cake\View\Helper\HtmlHelper;
 use Cake\View\HelperRegistry;
 use Cake\View\View;
+use RuntimeException;
 use TestApp\View\Helper\HtmlAliasHelper;
 use TestPlugin\View\Helper\OtherHelperHelper;
 
@@ -194,7 +193,7 @@ class HelperRegistryTest extends TestCase
         $this->assertInstanceOf(
             OtherHelperHelper::class,
             $this->Helpers->get('thing.helper'),
-            'Class is wrong',
+            'Class is wrong'
         );
         $this->assertTrue($this->Helpers->has('thing.helper'));
         $this->assertFalse($this->Helpers->has('thing'));
@@ -215,7 +214,7 @@ class HelperRegistryTest extends TestCase
         $this->assertSame(
             $instance,
             $this->Helpers->EventListenerTest,
-            'Instance in registry should be the same as previously loaded',
+            'Instance in registry should be the same as previously loaded'
         );
         $this->assertCount(1, $this->Events->listeners('View.beforeRender'));
 
@@ -236,7 +235,7 @@ class HelperRegistryTest extends TestCase
         $this->assertSame(
             $instance,
             $this->Helpers->EventListenerTest,
-            'Instance in registry should be the same as previously loaded',
+            'Instance in registry should be the same as previously loaded'
         );
         $this->assertCount(1, $this->Events->listeners('View.beforeRender'));
 
@@ -250,7 +249,7 @@ class HelperRegistryTest extends TestCase
     public function testUnloadUnknown(): void
     {
         $this->expectException(MissingHelperException::class);
-        $this->expectExceptionMessage('Helper class `FooHelper` could not be found.');
+        $this->expectExceptionMessage('Helper class FooHelper could not be found.');
         $this->Helpers->unload('Foo');
     }
 
@@ -285,7 +284,7 @@ class HelperRegistryTest extends TestCase
      */
     public function testLoadMultipleTimesDefaultConfigValuesWorks(): void
     {
-        $this->Helpers->load('Number', ['engine' => Number::class]);
+        $this->Helpers->load('Number', ['engine' => 'Cake\I18n\Number']);
         $this->Helpers->load('Number');
         $this->addToAssertionCount(1);
     }
@@ -295,8 +294,8 @@ class HelperRegistryTest extends TestCase
      */
     public function testLoadMultipleTimesDifferentConfigured(): void
     {
-        $this->expectException(CakeException::class);
-        $this->expectExceptionMessage('The `Html` alias has already been loaded');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('The "Html" alias has already been loaded');
         $this->Helpers->load('Html');
         $this->Helpers->load('Html', ['same' => 'stuff']);
     }
@@ -306,8 +305,8 @@ class HelperRegistryTest extends TestCase
      */
     public function testLoadMultipleTimesDifferentConfigValues(): void
     {
-        $this->expectException(CakeException::class);
-        $this->expectExceptionMessage('The `Html` alias has already been loaded');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('The "Html" alias has already been loaded');
         $this->Helpers->load('Html', ['key' => 'value']);
         $this->Helpers->load('Html', ['key' => 'new value']);
     }
@@ -324,20 +323,25 @@ class HelperRegistryTest extends TestCase
                 'value2' => 2,
             ],
             'Plugin.SomeOtherHelper' => [
-                'value' => 3,
-                'value2' => 4,
+                'value' => 1,
+                'value2' => 2,
             ],
         ];
         $result = $this->Helpers->normalizeArray($config);
         $expected = [
             'SomeHelper' => [
-                'value' => 1,
-                'value2' => 2,
+                'class' => 'SomeHelper',
+                'config' => [
+                    'value' => 1,
+                    'value2' => 2,
+                ],
             ],
             'SomeOtherHelper' => [
-                'className' => 'Plugin.SomeOtherHelper',
-                'value' => 3,
-                'value2' => 4,
+                'class' => 'Plugin.SomeOtherHelper',
+                'config' => [
+                    'value' => 1,
+                    'value2' => 2,
+                ],
             ],
         ];
         $this->assertEquals($expected, $result);
@@ -359,7 +363,7 @@ class HelperRegistryTest extends TestCase
                 'value2' => 2,
             ],
             'SomeAliasesHelper' => [
-                'className' => 'Plugin.SomeHelper',
+                'class' => 'Plugin.SomeHelper',
             ],
         ];
 
@@ -367,16 +371,22 @@ class HelperRegistryTest extends TestCase
         $result2 = $this->Helpers->normalizeArray($result1);
         $expected = [
             'SomeHelper' => [
-                'value' => 1,
-                'value2' => 2,
+                'class' => 'SomeHelper',
+                'config' => [
+                    'value' => 1,
+                    'value2' => 2,
+                ],
             ],
             'SomeOtherHelper' => [
-                'className' => 'Plugin.SomeOtherHelper',
-                'value' => 1,
-                'value2' => 2,
+                'class' => 'Plugin.SomeOtherHelper',
+                'config' => [
+                    'value' => 1,
+                    'value2' => 2,
+                ],
             ],
             'SomeAliasesHelper' => [
-                'className' => 'Plugin.SomeHelper',
+                'class' => 'Plugin.SomeHelper',
+                'config' => [],
             ],
         ];
         $this->assertEquals($expected, $result2);

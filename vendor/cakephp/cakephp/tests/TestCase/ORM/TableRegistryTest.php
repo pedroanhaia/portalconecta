@@ -16,8 +16,6 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\ORM;
 
-use Cake\ORM\Locator\LocatorInterface;
-use Cake\ORM\Locator\TableLocator;
 use Cake\ORM\TableRegistry;
 use Cake\TestSuite\TestCase;
 
@@ -59,7 +57,7 @@ class TableRegistryTest extends TestCase
      */
     protected function _setMockLocator()
     {
-        $locator = $this->getMockBuilder(LocatorInterface::class)->getMock();
+        $locator = $this->getMockBuilder('Cake\ORM\Locator\LocatorInterface')->getMock();
         TableRegistry::setTableLocator($locator);
 
         return $locator;
@@ -80,7 +78,7 @@ class TableRegistryTest extends TestCase
      */
     public function testGetLocator(): void
     {
-        $this->assertInstanceOf(LocatorInterface::class, TableRegistry::getTableLocator());
+        $this->assertInstanceOf('Cake\ORM\Locator\LocatorInterface', TableRegistry::getTableLocator());
     }
 
     /**
@@ -89,6 +87,52 @@ class TableRegistryTest extends TestCase
     public function testLocatorDefault(): void
     {
         $locator = TableRegistry::getTableLocator();
-        $this->assertInstanceOf(TableLocator::class, $locator);
+        $this->assertInstanceOf('Cake\ORM\Locator\TableLocator', $locator);
+    }
+
+    /**
+     * Test the get() method.
+     */
+    public function testGet(): void
+    {
+        $locator = $this->_setMockLocator();
+        $locator->expects($this->once())->method('get')->with('Test', []);
+
+        TableRegistry::get('Test', []);
+    }
+
+    /**
+     * Test the get() method.
+     */
+    public function testSet(): void
+    {
+        $table = $this->getMockBuilder('Cake\ORM\Table')->getMock();
+
+        $locator = $this->_setMockLocator();
+        $locator->expects($this->once())->method('set')->with('Test', $table);
+
+        TableRegistry::set('Test', $table);
+    }
+
+    /**
+     * Test the remove() method.
+     */
+    public function testRemove(): void
+    {
+        $locator = $this->_setMockLocator();
+        $locator->expects($this->once())->method('remove')->with('Test');
+
+        TableRegistry::remove('Test');
+    }
+
+    /**
+     * Test the clear() method.
+     */
+    public function testClear(): void
+    {
+        $locator = $this->_setMockLocator();
+        $locator->expects($this->once())->method('clear');
+
+        TableRegistry::clear();
     }
 }

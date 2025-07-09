@@ -1,7 +1,7 @@
 <?php
 /**
  * @var \Bake\Test\App\View\AppView $this
- * @var iterable<\Bake\Test\App\Model\Entity\HiddenField> $hiddenFields
+ * @var \Bake\Test\App\Model\Entity\HiddenField[]|\Cake\Collection\CollectionInterface $hiddenFields
  */
 ?>
 <div class="hiddenFields index content">
@@ -22,14 +22,7 @@
                     <td class="actions">
                         <?= $this->Html->link(__('View'), ['action' => 'view', $hiddenField->id]) ?>
                         <?= $this->Html->link(__('Edit'), ['action' => 'edit', $hiddenField->id]) ?>
-                        <?= $this->Form->postLink(
-                            __('Delete'),
-                            ['action' => 'delete', $hiddenField->id],
-                            [
-                                'method' => 'delete',
-                                'confirm' => __('Are you sure you want to delete # {0}?', $hiddenField->id),
-                            ]
-                        ) ?>
+                        <?= $this->Form->postLink(__('Delete'), ['action' => 'delete', $hiddenField->id], ['confirm' => __('Are you sure you want to delete # {0}?', $hiddenField->id)]) ?>
                     </td>
                 </tr>
                 <?php endforeach; ?>

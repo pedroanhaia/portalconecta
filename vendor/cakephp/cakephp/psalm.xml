@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <psalm
-    errorLevel="4"
-    usePhpDocMethodsWithoutMagicCall="true"
+    errorLevel="5"
+    allowStringToStandInForClass="true"
     findUnusedPsalmSuppress="true"
     findUnusedBaselineEntry="true"
     findUnusedCode="false"
-    ignoreInternalFunctionFalseReturn="true"
     resolveFromConfigFile="true"
+    usePhpDocMethodsWithoutMagicCall="true"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="https://getpsalm.org/schema/config"
     xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
@@ -14,26 +14,42 @@
     errorBaseline="psalm-baseline.xml"
 >
     <projectFiles>
-        <directory name="src/"/>
+        <directory name="src"/>
         <ignoreFiles>
-            <directory name="vendor/"/>
-            <directory name="src/Database/tests/"/>
-            <directory name="src/Datasource/tests/"/>
-            <directory name="src/Http/tests/"/>
-            <directory name="src/ORM/tests/"/>
-            <directory name="src/Validation/tests/"/>
+            <directory name="src/Filesystem"/>
+            <directory name="src/Auth"/>
+            <directory name="vendor"/>
+            <file name="src/Controller/Component/AuthComponent.php"/>
         </ignoreFiles>
     </projectFiles>
 
-    <enableExtensions>
-        <extension name="apcu"/>
-        <extension name="redis"/>
-    </enableExtensions>
-
     <issueHandlers>
-        <RedundantPropertyInitializationCheck errorLevel="suppress"/>
-        <RedundantCast errorLevel="suppress"/>
-        <UndefinedAttributeClass errorLevel="suppress"/>
-        <UnsupportedPropertyReferenceUsage errorLevel="suppress"/>
+        <RedundantConditionGivenDocblockType errorLevel="suppress"/>
+        <RedundantCastGivenDocblockType errorLevel="suppress"/>
+        <DocblockTypeContradiction errorLevel="suppress"/>
+        <MissingClosureParamType errorLevel="suppress"/>
+        <MissingClosureReturnType errorLevel="suppress"/>
+        <UndefinedClass>
+            <errorLevel type="suppress">
+                <referencedClass name="Memcached"/>
+                <referencedClass name="Redis"/>
+                <referencedClass name="RedisException"/>
+            </errorLevel>
+        </UndefinedClass>
+        <UndefinedDocblockClass>
+            <errorLevel type="suppress">
+                <referencedClass name="Memcached"/>
+                <referencedClass name="Redis"/>
+            </errorLevel>
+        </UndefinedDocblockClass>
+        <UndefinedConstant>
+            <errorLevel type="suppress">
+                <file name="src/Cache/Engine/ApcuEngine.php" />
+                <file name="src/Database/Driver/Sqlserver.php" />
+            </errorLevel>
+        </UndefinedConstant>
+        <PropertyNotSetInConstructor errorLevel="suppress"/>
+        <UnresolvableInclude errorLevel="suppress"/>
+        <UnsafeInstantiation errorLevel="suppress"/>
     </issueHandlers>
 </psalm>

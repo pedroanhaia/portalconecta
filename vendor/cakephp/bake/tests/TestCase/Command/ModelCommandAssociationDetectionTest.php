@@ -2,22 +2,22 @@
 declare(strict_types=1);
 
 /**
- * CakePHP : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP Project
  * @since         1.1.4
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 namespace Bake\Test\TestCase\Command;
 
 use Bake\Test\TestCase\TestCase;
-use Cake\Console\CommandInterface;
+use Cake\Command\Command;
 use Cake\Core\Plugin;
 use Cake\Database\Driver\Mysql;
 use Cake\Database\Driver\Postgres;
@@ -36,9 +36,9 @@ class ModelCommandAssociationDetectionTest extends TestCase
      * Don't sort this list alphabetically - otherwise there are table constraints
      * which fail when using postgres
      *
-     * @var list<string>
+     * @var array
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'plugin.Bake.Categories',
         'plugin.Bake.CategoriesProducts',
         'plugin.Bake.OldProducts',
@@ -56,6 +56,7 @@ class ModelCommandAssociationDetectionTest extends TestCase
         parent::setUp();
         $this->_compareBasePath = Plugin::path('Bake') . 'tests' . DS . 'comparisons' . DS . 'Model' . DS;
         $this->setAppNamespace('Bake\Test\App');
+        $this->useCommandRunner();
 
         $this->getTableLocator()->clear();
     }
@@ -83,7 +84,7 @@ class ModelCommandAssociationDetectionTest extends TestCase
         ];
         $this->exec("bake model --no-entity --no-fixture --no-test --connection test {$name}");
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $contents = file_get_contents($this->generatedFiles[0]);
         $this->assertSameAsFile($comparisonFile . '.php', $contents);
     }
@@ -159,7 +160,6 @@ class ModelCommandAssociationDetectionTest extends TestCase
     {
         $driver = ConnectionManager::get('test')->getDriver();
         $this->skipIf($driver instanceof Mysql, 'Incompatible with mysql');
-        $this->skipIf($driver instanceof Sqlite, 'Incompatible with sqlite');
         $this->_compareBakeTableResult('ProductVersions', __FUNCTION__);
     }
 
@@ -171,6 +171,7 @@ class ModelCommandAssociationDetectionTest extends TestCase
     public function testBakeAssociationDetectionProductVersionsTableSigned()
     {
         $driver = ConnectionManager::get('test')->getDriver();
+        $this->skipIf($driver instanceof Sqlite, 'Incompatible with sqlite');
         $this->skipIf($driver instanceof Postgres, 'Incompatible with postgres');
         $this->skipIf($driver instanceof Sqlserver, 'Incompatible with sqlserver');
         $this->_compareBakeTableResult('ProductVersions', __FUNCTION__);

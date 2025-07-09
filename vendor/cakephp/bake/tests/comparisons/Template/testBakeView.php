@@ -14,13 +14,13 @@
             <?= $this->Html->link(__('New Author'), ['action' => 'add'], ['class' => 'side-nav-item']) ?>
         </div>
     </aside>
-    <div class="column column-80">
+    <div class="column-responsive column-80">
         <div class="authors view content">
             <h3><?= h($author->name) ?></h3>
             <table>
                 <tr>
                     <th><?= __('Role') ?></th>
-                    <td><?= $author->hasValue('role') ? $this->Html->link($author->role->name, ['controller' => 'Roles', 'action' => 'view', $author->role->id]) : '' ?></td>
+                    <td><?= $author->has('role') ? $this->Html->link($author->role->name, ['controller' => 'Roles', 'action' => 'view', $author->role->id]) : '' ?></td>
                 </tr>
                 <tr>
                     <th><?= __('Name') ?></th>
@@ -28,7 +28,7 @@
                 </tr>
                 <tr>
                     <th><?= __('Profile') ?></th>
-                    <td><?= $author->hasValue('profile') ? $this->Html->link($author->profile->nick, ['controller' => 'Profiles', 'action' => 'view', $author->profile->id]) : '' ?></td>
+                    <td><?= $author->has('profile') ? $this->Html->link($author->profile->id, ['controller' => 'Profiles', 'action' => 'view', $author->profile->id]) : '' ?></td>
                 </tr>
                 <tr>
                     <th><?= __('Id') ?></th>
@@ -36,11 +36,11 @@
                 </tr>
                 <tr>
                     <th><?= __('Member Number') ?></th>
-                    <td><?= $author->member_number === null ? '' : $this->Number->format($author->member_number) ?></td>
+                    <td><?= $this->Number->format($author->member_number) ?></td>
                 </tr>
                 <tr>
                     <th><?= __('Account Balance') ?></th>
-                    <td><?= $author->account_balance === null ? '' : $this->Number->format($author->account_balance) ?></td>
+                    <td><?= $this->Number->format($author->account_balance) ?></td>
                 </tr>
                 <tr>
                     <th><?= __('Created') ?></th>
@@ -74,24 +74,17 @@
                             <th><?= __('Published') ?></th>
                             <th class="actions"><?= __('Actions') ?></th>
                         </tr>
-                        <?php foreach ($author->articles as $article) : ?>
+                        <?php foreach ($author->articles as $articles) : ?>
                         <tr>
-                            <td><?= h($article->id) ?></td>
-                            <td><?= h($article->author_id) ?></td>
-                            <td><?= h($article->title) ?></td>
-                            <td><?= h($article->body) ?></td>
-                            <td><?= h($article->published) ?></td>
+                            <td><?= h($articles->id) ?></td>
+                            <td><?= h($articles->author_id) ?></td>
+                            <td><?= h($articles->title) ?></td>
+                            <td><?= h($articles->body) ?></td>
+                            <td><?= h($articles->published) ?></td>
                             <td class="actions">
-                                <?= $this->Html->link(__('View'), ['controller' => 'Articles', 'action' => 'view', $article->id]) ?>
-                                <?= $this->Html->link(__('Edit'), ['controller' => 'Articles', 'action' => 'edit', $article->id]) ?>
-                                <?= $this->Form->postLink(
-                                    __('Delete'),
-                                    ['controller' => 'Articles', 'action' => 'delete', $article->id],
-                                    [
-                                        'method' => 'delete',
-                                        'confirm' => __('Are you sure you want to delete # {0}?', $article->id),
-                                    ]
-                                ) ?>
+                                <?= $this->Html->link(__('View'), ['controller' => 'Articles', 'action' => 'view', $articles->id]) ?>
+                                <?= $this->Html->link(__('Edit'), ['controller' => 'Articles', 'action' => 'edit', $articles->id]) ?>
+                                <?= $this->Form->postLink(__('Delete'), ['controller' => 'Articles', 'action' => 'delete', $articles->id], ['confirm' => __('Are you sure you want to delete # {0}?', $articles->id)]) ?>
                             </td>
                         </tr>
                         <?php endforeach; ?>

@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace TestApp\Database\Type;
 
-use Cake\Database\Driver;
+use Cake\Database\DriverInterface;
 use Cake\Database\Expression\FunctionExpression;
 use Cake\Database\ExpressionInterface;
 use Cake\Database\Type\BaseType;
@@ -17,7 +17,7 @@ class OrderedUuidType extends BaseType implements ExpressionTypeInterface
     /**
      * @inheritDoc
      */
-    public function toPHP(mixed $value, Driver $driver): mixed
+    public function toPHP($value, DriverInterface $d)
     {
         return new UuidValue($value);
     }
@@ -25,7 +25,7 @@ class OrderedUuidType extends BaseType implements ExpressionTypeInterface
     /**
      * @inheritDoc
      */
-    public function toExpression(mixed $value): ExpressionInterface
+    public function toExpression($value): ExpressionInterface
     {
         if ($value instanceof UuidValue) {
             $value = $value->value;
@@ -34,20 +34,20 @@ class OrderedUuidType extends BaseType implements ExpressionTypeInterface
             return new FunctionExpression(
                 'SUBSTR',
                 $length === null ? [$value, $start] : [$value, $start, $length],
-                ['string', 'integer', 'integer'],
+                ['string', 'integer', 'integer']
             );
         };
 
         return new FunctionExpression(
             'CONCAT',
-            [$substr(15, 4), $substr(10, 4), $substr(1, 8), $substr(20, 4), $substr(25)],
+            [$substr(15, 4), $substr(10, 4), $substr(1, 8), $substr(20, 4), $substr(25)]
         );
     }
 
     /**
      * @inheritDoc
      */
-    public function marshal(mixed $value): mixed
+    public function marshal($value)
     {
         return $value;
     }
@@ -55,7 +55,7 @@ class OrderedUuidType extends BaseType implements ExpressionTypeInterface
     /**
      * @inheritDoc
      */
-    public function toDatabase(mixed $value, Driver $driver): mixed
+    public function toDatabase($value, DriverInterface $d)
     {
         return $value;
     }

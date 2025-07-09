@@ -37,7 +37,7 @@ class ArticlesCellTest extends TestCase
      *
      * @return void
      */
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
         $this->request = $this->getMockBuilder('Cake\Http\ServerRequest')->getMock();
@@ -50,7 +50,7 @@ class ArticlesCellTest extends TestCase
      *
      * @return void
      */
-    protected function tearDown(): void
+    public function tearDown(): void
     {
         unset($this->Articles);
 

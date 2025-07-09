@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace TestApp\Log\Engine;
 
 use Cake\Log\Engine\BaseLog;
-use Stringable;
 
 /**
  * Class BaseLogImpl
@@ -22,12 +21,12 @@ class TestBaseLog extends BaseLog
      * Logs with an arbitrary level.
      *
      * @param mixed $level
-     * @param \Stringable|string $message
+     * @param string $message
      * @param array $context
      */
-    public function log($level, Stringable|string $message, array $context = []): void
+    public function log($level, $message, array $context = []): void
     {
-        $this->message = $this->interpolate($message, $context);
+        $this->message = $this->_format($message, $context);
     }
 
     public function getMessage(): string

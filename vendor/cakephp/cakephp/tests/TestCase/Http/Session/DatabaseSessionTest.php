@@ -21,7 +21,6 @@ namespace Cake\Test\TestCase\Http\Session;
 use Cake\Datasource\ConnectionManager;
 use Cake\Http\Session\DatabaseSession;
 use Cake\ORM\Entity;
-use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
 
 /**
@@ -30,9 +29,11 @@ use Cake\TestSuite\TestCase;
 class DatabaseSessionTest extends TestCase
 {
     /**
-     * @var array
+     * fixtures
+     *
+     * @var string
      */
-    protected array $fixtures = ['core.Sessions'];
+    protected $fixtures = ['core.Sessions'];
 
     /**
      * @var \Cake\Http\Session\DatabaseSession
@@ -67,7 +68,7 @@ class DatabaseSessionTest extends TestCase
         new DatabaseSession();
 
         $session = $this->getTableLocator()->get('Sessions');
-        $this->assertInstanceOf(Table::class, $session);
+        $this->assertInstanceOf('Cake\ORM\Table', $session);
         $this->assertSame('Sessions', $session->getAlias());
         $this->assertEquals(ConnectionManager::get('test'), $session->getConnection());
         $this->assertSame('sessions', $session->getTable());
@@ -78,7 +79,7 @@ class DatabaseSessionTest extends TestCase
      */
     public function testOpen(): void
     {
-        $this->assertTrue($this->storage->open('', ''));
+        $this->assertTrue($this->storage->open(null, null));
     }
 
     /**
@@ -153,7 +154,7 @@ class DatabaseSessionTest extends TestCase
     {
         $entity = new Entity();
         $entity->value = 'something';
-        $this->storage->write('key', serialize($entity));
+        $result = $this->storage->write('key', serialize($entity));
         $data = $this->getTableLocator()->get('Sessions')->get('key')->data;
         $this->assertSame(serialize($entity), stream_get_contents($data));
     }

@@ -238,8 +238,8 @@ HTML;
             $this->fail('Assertion should fail');
         } catch (ExpectationFailedException $e) {
             $this->assertStringContainsString(
-                'Attribute did not match. Was expecting Attribute `clAss` == `active`',
-                $e->getMessage(),
+                'Attribute did not match. Was expecting Attribute "clAss" == "active"',
+                $e->getMessage()
             );
         }
     }
@@ -260,7 +260,7 @@ HTML;
         } catch (ExpectationFailedException $e) {
             $this->assertStringContainsString(
                 'Item #1 / regex #0 failed: Open <a tag',
-                $e->getMessage(),
+                $e->getMessage()
             );
         }
     }

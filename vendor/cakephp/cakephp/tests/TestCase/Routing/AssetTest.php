@@ -229,7 +229,7 @@ class AssetTest extends TestCase
     public function testAssetTimestampPluginsAndThemes(): void
     {
         Configure::write('Asset.timestamp', 'force');
-        $this->loadPlugins(['TestTheme', 'TestPlugin', 'Company/TestPluginThree']);
+        $this->loadPlugins(['TestPlugin', 'Company/TestPluginThree']);
 
         $result = Asset::assetTimestamp('/test_plugin/css/test_plugin_asset.css');
         $this->assertMatchesRegularExpression('#/test_plugin/css/test_plugin_asset.css\?[0-9]+$#', $result, 'Missing timestamp plugin');
@@ -410,6 +410,9 @@ class AssetTest extends TestCase
     public function testPluginAssetsPrependImageBaseUrl(): void
     {
         $cdnPrefix = 'https://cdn.example.com/';
+        $imageBaseUrl = Configure::read('App.imageBaseUrl');
+        $jsBaseUrl = Configure::read('App.jsBaseUrl');
+        $cssBaseUrl = Configure::read('App.cssBaseUrl');
         Configure::write('App.imageBaseUrl', $cdnPrefix . '{plugin}img/');
         $result = Asset::imageUrl('TestTheme.text.jpg');
         $expected = $cdnPrefix . 'test_theme/img/text.jpg';

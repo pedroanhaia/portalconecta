@@ -21,9 +21,9 @@ class ArticlesTableTest extends TestCase
     /**
      * Fixtures
      *
-     * @var list<string>
+     * @var array
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'app.Articles',
         'app.Authors',
         'app.Tags',
@@ -35,7 +35,7 @@ class ArticlesTableTest extends TestCase
      *
      * @return void
      */
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
         $config = $this->getTableLocator()->exists('Articles') ? [] : ['className' => ArticlesTable::class];
@@ -47,7 +47,7 @@ class ArticlesTableTest extends TestCase
      *
      * @return void
      */
-    protected function tearDown(): void
+    public function tearDown(): void
     {
         unset($this->Articles);
 

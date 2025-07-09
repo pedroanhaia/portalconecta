@@ -15,14 +15,10 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Core;
 
-use Cake\Cache\Engine\FileEngine;
 use Cake\Core\App;
 use Cake\Core\Configure;
-use Cake\Core\Exception\CakeException;
 use Cake\Database\Driver\Mysql;
 use Cake\TestSuite\TestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
-use TestApp\Controller\PagesController;
 use TestApp\Core\TestApp;
 
 /**
@@ -49,8 +45,8 @@ class AppTest extends TestCase
      * @param string $suffix Class suffix
      * @param bool $existsInBase Whether class exists in base.
      * @param mixed $expected Expected value.
+     * @dataProvider classNameProvider
      */
-    #[DataProvider('classNameProvider')]
     public function testClassName($class, $type, $suffix = '', $existsInBase = false, $expected = false): void
     {
         static::setAppNamespace();
@@ -94,8 +90,8 @@ class AppTest extends TestCase
      * @param string $type Class type
      * @param string $suffix Class suffix
      * @param mixed $expected Expected value.
+     * @dataProvider shortNameProvider
      */
-    #[DataProvider('shortNameProvider')]
     public function testShortName($class, $type, $suffix = '', $expected = false): void
     {
         static::setAppNamespace();
@@ -114,7 +110,7 @@ class AppTest extends TestCase
         $return = TestApp::shortName(
             'TestApp/Nested/Controller/PagesController',
             'Controller',
-            'Controller',
+            'Controller'
         );
         $this->assertSame('Pages', $return);
 
@@ -144,7 +140,7 @@ class AppTest extends TestCase
      *
      * @return array
      */
-    public static function classNameProvider(): array
+    public function classNameProvider(): array
     {
         return [
             ['Does', 'Not', 'Exist'],
@@ -179,12 +175,12 @@ class AppTest extends TestCase
             ['Unknown', 'Controller', 'Controller'],
 
             // Real examples returning class names
-            ['App', 'Core', '', false, App::class],
+            ['App', 'Core', '', false, 'Cake\Core\App'],
             ['Auth', 'Controller/Component', 'Component', false, 'Cake\Controller\Component\AuthComponent'],
-            ['File', 'Cache/Engine', 'Engine', false, FileEngine::class],
+            ['File', 'Cache/Engine', 'Engine', false, 'Cake\Cache\Engine\FileEngine'],
             ['Command', 'Shell/Task', 'Task', false, 'Cake\Shell\Task\CommandTask'],
             ['Upgrade/Locations', 'Shell/Task', 'Task', false, 'Cake\Shell\Task\Upgrade\LocationsTask'],
-            ['Pages', 'Controller', 'Controller', true, PagesController::class],
+            ['Pages', 'Controller', 'Controller', true, 'TestApp\Controller\PagesController'],
         ];
     }
 
@@ -199,7 +195,7 @@ class AppTest extends TestCase
      *
      * @return array
      */
-    public static function shortNameProvider(): array
+    public function shortNameProvider(): array
     {
         return [
             ['TestApp\In\ExistsApp', 'In', 'App', 'Exists'],
@@ -229,12 +225,12 @@ class AppTest extends TestCase
             ['Muffin\Webservice\Webservice\EndpointWebservice', 'Webservice', 'Webservice', 'Muffin/Webservice.Endpoint'],
 
             // Real examples returning class names
-            [App::class, 'Core', '', 'App'],
+            ['Cake\Core\App', 'Core', '', 'App'],
             ['Cake\Controller\Component\AuthComponent', 'Controller/Component', 'Component', 'Auth'],
-            [FileEngine::class, 'Cache/Engine', 'Engine', 'File'],
+            ['Cake\Cache\Engine\FileEngine', 'Cache/Engine', 'Engine', 'File'],
             ['Cake\Shell\Task\CommandTask', 'Shell/Task', 'Task', 'Command'],
             ['Cake\Shell\Task\Upgrade\LocationsTask', 'Shell/Task', 'Task', 'Upgrade/Locations'],
-            [PagesController::class, 'Controller', 'Controller', 'Pages'],
+            ['TestApp\Controller\PagesController', 'Controller', 'Controller', 'Pages'],
         ];
     }
 
@@ -256,6 +252,8 @@ class AppTest extends TestCase
 
     /**
      * test path() with a plugin.
+     *
+     * @deprecated
      */
     public function testPathWithPlugins(): void
     {
@@ -268,13 +266,15 @@ class AppTest extends TestCase
         $result = App::path('locales', 'Company/TestPluginThree');
         $expected = $basepath . 'Company' . DS . 'TestPluginThree' . DS . 'resources' . DS . 'locales' . DS;
         $this->assertPathEquals($expected, $result[0]);
-    }
 
-    public function testPathWithPluginsException(): void
-    {
-        $this->expectException(CakeException::class);
+        $this->deprecated(function () use ($basepath): void {
+            $result = App::path('Controller', 'TestPlugin');
+            $this->assertPathEquals($basepath . 'TestPlugin' . DS . 'src' . DS . 'Controller' . DS, $result[0]);
 
-        App::path('invalid', 'TestPlugin');
+            $result = App::path('Controller', 'Company/TestPluginThree');
+            $expected = $basepath . 'Company' . DS . 'TestPluginThree' . DS . 'src' . DS . 'Controller' . DS;
+            $this->assertPathEquals($expected, $result[0]);
+        });
     }
 
     /**

@@ -18,6 +18,7 @@ namespace Cake\Test\TestCase\Error;
 
 use Cake\Console\TestSuite\StubConsoleOutput;
 use Cake\Error\ErrorLogger;
+use Cake\Error\ExceptionRenderer;
 use Cake\Error\ExceptionTrap;
 use Cake\Error\Renderer\ConsoleExceptionRenderer;
 use Cake\Error\Renderer\TextExceptionRenderer;
@@ -29,10 +30,8 @@ use Cake\Log\Log;
 use Cake\TestSuite\TestCase;
 use Cake\Utility\Text;
 use InvalidArgumentException;
-use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\Attributes\PreserveGlobalState;
-use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use RuntimeException;
+use TestApp\Error\LegacyErrorLogger;
 use Throwable;
 
 class ExceptionTrapTest extends TestCase
@@ -57,7 +56,19 @@ class ExceptionTrapTest extends TestCase
         ini_set('memory_limit', $this->memoryLimit);
     }
 
-    public function testConfigExceptionRendererFallback(): void
+    public function testConfigExceptionRendererFallbackInCli()
+    {
+        $this->deprecated(function () {
+            $output = new StubConsoleOutput();
+            $trap = new ExceptionTrap(['exceptionRenderer' => ExceptionRenderer::class, 'stderr' => $output]);
+            $error = new InvalidArgumentException('nope');
+            // Even though we asked for ExceptionRenderer we should get a
+            // ConsoleExceptionRenderer as we're in a CLI context.
+            $this->assertInstanceOf(ConsoleExceptionRenderer::class, $trap->renderer($error));
+        });
+    }
+
+    public function testConfigExceptionRendererFallback()
     {
         $output = new StubConsoleOutput();
         $trap = new ExceptionTrap(['exceptionRenderer' => null, 'stderr' => $output]);
@@ -65,14 +76,14 @@ class ExceptionTrapTest extends TestCase
         $this->assertInstanceOf(ConsoleExceptionRenderer::class, $trap->renderer($error));
     }
 
-    public function testConfigExceptionRenderer(): void
+    public function testConfigExceptionRenderer()
     {
         $trap = new ExceptionTrap(['exceptionRenderer' => WebExceptionRenderer::class]);
         $error = new InvalidArgumentException('nope');
         $this->assertInstanceOf(WebExceptionRenderer::class, $trap->renderer($error));
     }
 
-    public function testConfigExceptionRendererFactory(): void
+    public function testConfigExceptionRendererFactory()
     {
         $trap = new ExceptionTrap(['exceptionRenderer' => function ($err, $req) {
             return new WebExceptionRenderer($err, $req);
@@ -81,7 +92,7 @@ class ExceptionTrapTest extends TestCase
         $this->assertInstanceOf(WebExceptionRenderer::class, $trap->renderer($error));
     }
 
-    public function testConfigRendererHandleUnsafeOverwrite(): void
+    public function testConfigRendererHandleUnsafeOverwrite()
     {
         $output = new StubConsoleOutput();
         $trap = new ExceptionTrap(['stderr' => $output]);
@@ -90,20 +101,20 @@ class ExceptionTrapTest extends TestCase
         $this->assertInstanceOf(ConsoleExceptionRenderer::class, $trap->renderer($error));
     }
 
-    public function testLoggerConfig(): void
+    public function testLoggerConfig()
     {
         $trap = new ExceptionTrap(['logger' => ErrorLogger::class]);
         $this->assertInstanceOf(ErrorLogger::class, $trap->logger());
     }
 
-    public function testLoggerHandleUnsafeOverwrite(): void
+    public function testLoggerHandleUnsafeOverwrite()
     {
         $trap = new ExceptionTrap();
         $trap->setConfig('logger', null);
         $this->assertInstanceOf(ErrorLogger::class, $trap->logger());
     }
 
-    public function testHandleExceptionText(): void
+    public function testHandleExceptionText()
     {
         $trap = new ExceptionTrap([
             'exceptionRenderer' => TextExceptionRenderer::class,
@@ -118,7 +129,7 @@ class ExceptionTrapTest extends TestCase
         $this->assertStringContainsString('ExceptionTrapTest', $out);
     }
 
-    public function testHandleExceptionConsoleRenderingNoStack(): void
+    public function testHandleExceptionConsoleRenderingNoStack()
     {
         $output = new StubConsoleOutput();
         $trap = new ExceptionTrap([
@@ -134,7 +145,7 @@ class ExceptionTrapTest extends TestCase
         $this->assertStringNotContainsString('Stack', $out[0]);
     }
 
-    public function testHandleExceptionConsoleRenderingWithStack(): void
+    public function testHandleExceptionConsoleRenderingWithStack()
     {
         $output = new StubConsoleOutput();
         $trap = new ExceptionTrap([
@@ -152,7 +163,7 @@ class ExceptionTrapTest extends TestCase
         $this->assertStringContainsString('->testHandleExceptionConsoleRenderingWithStack', $out[0]);
     }
 
-    public function testHandleExceptionConsoleRenderingWithPrevious(): void
+    public function testHandleExceptionConsoleRenderingWithPrevious()
     {
         $output = new StubConsoleOutput();
         $trap = new ExceptionTrap([
@@ -171,7 +182,7 @@ class ExceptionTrapTest extends TestCase
         $this->assertEquals(2, substr_count($out[0], 'Stack Trace'));
     }
 
-    public function testHandleExceptionConsoleWithAttributes(): void
+    public function testHandleExceptionConsoleWithAttributes()
     {
         $output = new StubConsoleOutput();
         $trap = new ExceptionTrap([
@@ -183,7 +194,7 @@ class ExceptionTrapTest extends TestCase
         $trap->handleException($error);
         $out = $output->messages();
 
-        $this->assertStringContainsString('Controller class `Articles`', $out[0]);
+        $this->assertStringContainsString('Controller class Articles', $out[0]);
         $this->assertStringContainsString('Exception Attributes', $out[0]);
         $this->assertStringContainsString('Articles', $out[0]);
     }
@@ -192,10 +203,11 @@ class ExceptionTrapTest extends TestCase
      * Test integration with HTML exception rendering
      *
      * Run in a separate process because HTML output writes headers.
+     *
+     * @preserveGlobalState disabled
+     * @runInSeparateProcess
      */
-    #[PreserveGlobalState(false)]
-    #[RunInSeparateProcess]
-    public function testHandleExceptionHtmlRendering(): void
+    public function testHandleExceptionHtmlRendering()
     {
         $trap = new ExceptionTrap([
             'exceptionRenderer' => WebExceptionRenderer::class,
@@ -213,7 +225,7 @@ class ExceptionTrapTest extends TestCase
         $this->assertStringContainsString('Toggle Arguments', $out);
     }
 
-    public function testLogException(): void
+    public function testLogException()
     {
         Log::setConfig('test_error', [
             'className' => 'Array',
@@ -226,7 +238,7 @@ class ExceptionTrapTest extends TestCase
         $this->assertStringContainsString('nope', $logs[0]);
     }
 
-    public function testLogExceptionConfigOff(): void
+    public function testLogExceptionConfigOff()
     {
         Log::setConfig('test_error', [
             'className' => 'Array',
@@ -239,8 +251,32 @@ class ExceptionTrapTest extends TestCase
         $this->assertEmpty($logs);
     }
 
-    #[PreserveGlobalState(false)]
-    #[RunInSeparateProcess]
+    public function testLogExceptionDeprecatedLoggerMethods()
+    {
+        Log::setConfig('test_error', [
+            'className' => 'Array',
+        ]);
+        $trap = new ExceptionTrap([
+            'log' => true,
+            'logger' => LegacyErrorLogger::class,
+            'trace' => true,
+        ]);
+        $error = new InvalidArgumentException('nope');
+        $request = new ServerRequest(['url' => '/articles/view/1']);
+        $this->deprecated(function () use ($trap, $error, $request) {
+            $trap->logException($error, $request);
+        });
+
+        $logs = Log::engine('test_error')->read();
+        $this->assertStringContainsString('nope', $logs[0]);
+        $this->assertStringContainsString('IncludeTrace', $logs[0]);
+        $this->assertStringContainsString('URL=http://localhost/articles/view/1', $logs[0]);
+    }
+
+    /**
+     * @preserveGlobalState disabled
+     * @runInSeparateProcess
+     */
     public function testSkipLogException(): void
     {
         Log::setConfig('test_error', [
@@ -251,7 +287,7 @@ class ExceptionTrapTest extends TestCase
             'skipLog' => [InvalidArgumentException::class],
         ]);
 
-        $trap->getEventManager()->on('Exception.beforeRender', function (): void {
+        $trap->getEventManager()->on('Exception.beforeRender', function () {
             $this->triggered = true;
         });
 
@@ -260,15 +296,14 @@ class ExceptionTrapTest extends TestCase
         ob_get_clean();
 
         $logs = Log::engine('test_error')->read();
-        $this->assertCount(1, $logs);
-        $this->assertStringContainsString('MissingTemplateException - Failed to render', $logs[0]);
+        $this->assertEmpty($logs);
         $this->assertTrue($this->triggered, 'Should have triggered event when skipping logging.');
     }
 
-    public function testEventTriggered(): void
+    public function testEventTriggered()
     {
         $trap = new ExceptionTrap(['exceptionRenderer' => TextExceptionRenderer::class]);
-        $trap->getEventManager()->on('Exception.beforeRender', function ($event, Throwable $error): void {
+        $trap->getEventManager()->on('Exception.beforeRender', function ($event, Throwable $error) {
             $this->assertEquals(100, $error->getCode());
             $this->assertStringContainsString('nope', $error->getMessage());
         });
@@ -284,7 +319,7 @@ class ExceptionTrapTest extends TestCase
     public function testBeforeRenderEventAborted(): void
     {
         $trap = new ExceptionTrap(['exceptionRenderer' => TextExceptionRenderer::class]);
-        $trap->getEventManager()->on('Exception.beforeRender', function ($event, Throwable $error, ?ServerRequest $req): void {
+        $trap->getEventManager()->on('Exception.beforeRender', function ($event, Throwable $error, ?ServerRequest $req) {
             $this->assertEquals(100, $error->getCode());
             $this->assertStringContainsString('nope', $error->getMessage());
             $event->stopPropagation();
@@ -301,7 +336,7 @@ class ExceptionTrapTest extends TestCase
     public function testBeforeRenderEventExceptionChanged(): void
     {
         $trap = new ExceptionTrap(['exceptionRenderer' => TextExceptionRenderer::class]);
-        $trap->getEventManager()->on('Exception.beforeRender', function ($event, Throwable $error, ?ServerRequest $req): void {
+        $trap->getEventManager()->on('Exception.beforeRender', function ($event, Throwable $error, ?ServerRequest $req) {
             $event->setData('exception', new NotFoundException());
         });
         $error = new InvalidArgumentException('nope', 100);
@@ -327,7 +362,7 @@ class ExceptionTrapTest extends TestCase
         $this->assertSame('Here B Erroz', $out);
     }
 
-    public function testHandleShutdownNoOp(): void
+    public function testHandleShutdownNoOp()
     {
         $trap = new ExceptionTrap([
             'exceptionRenderer' => TextExceptionRenderer::class,
@@ -339,7 +374,7 @@ class ExceptionTrapTest extends TestCase
         $this->assertEmpty($out);
     }
 
-    public function testHandleFatalShutdownNoError(): void
+    public function testHandleFatalShutdownNoError()
     {
         $trap = new ExceptionTrap([
             'exceptionRenderer' => TextExceptionRenderer::class,
@@ -352,7 +387,7 @@ class ExceptionTrapTest extends TestCase
         $this->assertSame('', $out);
     }
 
-    public function testHandleFatalErrorText(): void
+    public function testHandleFatalErrorText()
     {
         $trap = new ExceptionTrap([
             'exceptionRenderer' => TextExceptionRenderer::class,
@@ -370,10 +405,11 @@ class ExceptionTrapTest extends TestCase
      * Test integration with HTML rendering for fatal errors
      *
      * Run in a separate process because HTML output writes headers.
+     *
+     * @preserveGlobalState disabled
+     * @runInSeparateProcess
      */
-    #[PreserveGlobalState(false)]
-    #[RunInSeparateProcess]
-    public function testHandleFatalErrorHtmlRendering(): void
+    public function testHandleFatalErrorHtmlRendering()
     {
         $trap = new ExceptionTrap([
             'exceptionRenderer' => WebExceptionRenderer::class,
@@ -400,8 +436,10 @@ class ExceptionTrapTest extends TestCase
         ];
     }
 
-    #[DataProvider('initialMemoryProvider')]
-    public function testIncreaseMemoryLimit($initial): void
+    /**
+     * @dataProvider initialMemoryProvider
+     */
+    public function testIncreaseMemoryLimit($initial)
     {
         ini_set('memory_limit', $initial);
         $this->assertEquals($initial, ini_get('memory_limit'));
@@ -415,7 +453,7 @@ class ExceptionTrapTest extends TestCase
         $this->assertWithinRange($initialBytes + (4 * 1024 * 1024), $result, 1024);
     }
 
-    public function testSingleton(): void
+    public function testSingleton()
     {
         $trap = new ExceptionTrap();
         $trap->register();

@@ -20,7 +20,6 @@ use Cake\Http\FlashMessage;
 use Cake\Http\Session;
 use Cake\TestSuite\TestCase;
 use Exception;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * FlashMessageTest class
@@ -71,7 +70,7 @@ class FlashMessageTest extends TestCase
 
         $this->Flash->set(
             'This is a test message',
-            ['element' => 'test', 'params' => ['foo' => 'bar']],
+            ['element' => 'test', 'params' => ['foo' => 'bar']]
         );
         $expected[] = [
             'message' => 'This is a test message',
@@ -109,12 +108,12 @@ class FlashMessageTest extends TestCase
     {
         $this->Flash = new FlashMessage(
             $this->Session,
-            ['params' => ['foo' => 'bar']],
+            ['params' => ['foo' => 'bar']]
         );
 
         $this->Flash->set(
             'This is a test message',
-            ['params' => ['username' => 'ADmad']],
+            ['params' => ['username' => 'ADmad']]
         );
         $expected[] = [
             'message' => 'This is a test message',
@@ -143,7 +142,7 @@ class FlashMessageTest extends TestCase
 
         $this->Flash->set(
             'This is a <b>test</b> message',
-            ['escape' => false, 'params' => ['foo' => 'bar']],
+            ['escape' => false, 'params' => ['foo' => 'bar']]
         );
         $expected = [
             [
@@ -158,7 +157,7 @@ class FlashMessageTest extends TestCase
 
         $this->Flash->set(
             'This is a test message',
-            ['key' => 'escaped', 'escape' => false, 'params' => ['foo' => 'bar', 'escape' => true]],
+            ['key' => 'escaped', 'escape' => false, 'params' => ['foo' => 'bar', 'escape' => true]]
         );
         $expected = [
             [
@@ -251,7 +250,7 @@ class FlashMessageTest extends TestCase
 
         $this->Flash->setExceptionMessage(
             new Exception('This is a test message'),
-            ['element' => 'default', 'clear' => true],
+            ['element' => 'default', 'clear' => true]
         );
         $expected = [
             [
@@ -283,7 +282,9 @@ class FlashMessageTest extends TestCase
         $this->assertEquals($expected, $result);
     }
 
-    #[DataProvider('convenienceMethods')]
+    /**
+     * @dataProvider convenienceMethods
+     */
     public function testConvenienceMethods(string $type): void
     {
         $this->assertNull($this->Session->read('Flash.flash'));
@@ -301,7 +302,7 @@ class FlashMessageTest extends TestCase
         $this->assertEquals($expected, $result);
     }
 
-    public static function convenienceMethods(): array
+    public function convenienceMethods(): array
     {
         return [
             ['success'],

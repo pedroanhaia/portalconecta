@@ -19,8 +19,6 @@ namespace TestApp\Controller;
 use Cake\Event\EventInterface;
 use Cake\Http\Cookie\Cookie;
 use Cake\Http\Exception\RedirectException;
-use Cake\Http\Response;
-use Cake\View\JsonView;
 use OutOfBoundsException;
 use RuntimeException;
 
@@ -35,6 +33,7 @@ class PostsController extends AppController
     public function initialize(): void
     {
         $this->loadComponent('Flash');
+        $this->loadComponent('RequestHandler');
         $this->loadComponent('FormProtection');
 
         $this->middleware(function ($request, $handler) {
@@ -67,11 +66,6 @@ class PostsController extends AppController
         }
     }
 
-    public function viewClasses(): array
-    {
-        return [JsonView::class];
-    }
-
     /**
      * Index method.
      *
@@ -89,7 +83,7 @@ class PostsController extends AppController
     /**
      * @return \Cake\Http\Response|null
      */
-    public function someRedirect(): ?Response
+    public function someRedirect()
     {
         $this->Flash->success('A success message');
 
@@ -101,7 +95,7 @@ class PostsController extends AppController
      *
      * @return \Cake\Http\Response
      */
-    public function flashNoRender(): ?Response
+    public function flashNoRender()
     {
         $this->Flash->error('An error message');
 
@@ -227,7 +221,7 @@ class PostsController extends AppController
     /**
      * @return \Cake\Http\Response
      */
-    public function throw_exception(): never
+    public function throw_exception()
     {
         $this->Flash->error('Error 1');
         throw new OutOfBoundsException('oh no!');
@@ -236,7 +230,7 @@ class PostsController extends AppController
     /**
      * @return \Cake\Http\Response
      */
-    public function throw_chained(): never
+    public function throw_chained()
     {
         $inner = new RuntimeException('inner badness');
         throw new OutOfBoundsException('oh no!', 1, $inner);

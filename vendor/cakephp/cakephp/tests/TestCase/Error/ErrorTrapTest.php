@@ -25,10 +25,11 @@ use Cake\Error\PhpError;
 use Cake\Error\Renderer\ConsoleErrorRenderer;
 use Cake\Error\Renderer\HtmlErrorRenderer;
 use Cake\Error\Renderer\TextErrorRenderer;
+use Cake\Http\ServerRequest;
 use Cake\Log\Log;
 use Cake\Routing\Router;
 use Cake\TestSuite\TestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
+use TestApp\Error\LegacyErrorLogger;
 
 class ErrorTrapTest extends TestCase
 {
@@ -40,39 +41,47 @@ class ErrorTrapTest extends TestCase
         Router::reload();
     }
 
-    public function testConfigErrorRendererFallback(): void
+    public function testConfigErrorRendererFallback()
     {
         $trap = new ErrorTrap(['errorRenderer' => null]);
         $this->assertInstanceOf(ConsoleErrorRenderer::class, $trap->renderer());
     }
 
-    public function testConfigErrorRenderer(): void
+    public function testConfigErrorRenderer()
     {
         $trap = new ErrorTrap(['errorRenderer' => HtmlErrorRenderer::class]);
         $this->assertInstanceOf(HtmlErrorRenderer::class, $trap->renderer());
     }
 
-    public function testConfigRendererHandleUnsafeOverwrite(): void
+    public function testConfigRendererHandleUnsafeOverwrite()
     {
         $trap = new ErrorTrap();
         $trap->setConfig('errorRenderer', null);
         $this->assertInstanceOf(ConsoleErrorRenderer::class, $trap->renderer());
     }
 
-    public function testLoggerConfig(): void
+    public function testLoggerConfig()
     {
         $trap = new ErrorTrap(['logger' => ErrorLogger::class]);
         $this->assertInstanceOf(ErrorLogger::class, $trap->logger());
     }
 
-    public function testLoggerHandleUnsafeOverwrite(): void
+    public function testLoggerConfigCompatibility()
+    {
+        $this->deprecated(function () {
+            $trap = new ErrorTrap(['errorLogger' => ErrorLogger::class]);
+            $this->assertInstanceOf(ErrorLogger::class, $trap->logger());
+        });
+    }
+
+    public function testLoggerHandleUnsafeOverwrite()
     {
         $trap = new ErrorTrap();
         $trap->setConfig('logger', null);
         $this->assertInstanceOf(ErrorLogger::class, $trap->logger());
     }
 
-    public function testRegisterAndRendering(): void
+    public function testRegisterAndRendering()
     {
         $trap = new ErrorTrap(['errorRenderer' => TextErrorRenderer::class]);
         $trap->register();
@@ -84,7 +93,7 @@ class ErrorTrapTest extends TestCase
         $this->assertStringContainsString('Oh no it was bad', $output);
     }
 
-    public function testRegisterAndHandleFatalUserError(): void
+    public function testRegisterAndHandleFatalUserError()
     {
         $trap = new ErrorTrap(['errorRenderer' => TextErrorRenderer::class]);
         $trap->register();
@@ -99,19 +108,20 @@ class ErrorTrapTest extends TestCase
         }
     }
 
-    public static function logLevelProvider(): array
+    public function logLevelProvider(): array
     {
         return [
             // PHP error level, expected log level
             [E_USER_WARNING, 'warning'],
             [E_USER_NOTICE, 'notice'],
-            // Log level is notice on windows because windows log levels are different.
-            [E_USER_DEPRECATED, DS === '\\' ? 'notice' : 'debug'],
+            [E_USER_DEPRECATED, 'notice'],
         ];
     }
 
-    #[DataProvider('logLevelProvider')]
-    public function testHandleErrorLoggingLevel($level, $logLevel): void
+    /**
+     * @dataProvider logLevelProvider
+     */
+    public function testHandleErrorLoggingLevel($level, $logLevel)
     {
         Log::setConfig('test_error', [
             'className' => 'Array',
@@ -131,7 +141,7 @@ class ErrorTrapTest extends TestCase
         $this->assertStringContainsString($logLevel, $logs[0]);
     }
 
-    public function testHandleErrorLogTrace(): void
+    public function testHandleErrorLogTrace()
     {
         Log::setConfig('test_error', [
             'className' => 'Array',
@@ -153,7 +163,7 @@ class ErrorTrapTest extends TestCase
         $this->assertStringContainsString('ErrorTrapTest->testHandleErrorLogTrace', $logs[0]);
     }
 
-    public function testHandleErrorNoLog(): void
+    public function testHandleErrorNoLog()
     {
         Log::setConfig('test_error', [
             'className' => 'Array',
@@ -173,7 +183,38 @@ class ErrorTrapTest extends TestCase
         $this->assertEmpty($logs);
     }
 
-    public function testConsoleRenderingNoTrace(): void
+    public function testHandleErrorLogDeprecatedLoggerMethods()
+    {
+        $request = new ServerRequest([
+            'url' => '/articles/view/1',
+        ]);
+        Router::setRequest($request);
+
+        Log::setConfig('test_error', [
+            'className' => 'Array',
+        ]);
+        $trap = new ErrorTrap([
+            'errorRenderer' => TextErrorRenderer::class,
+            'logger' => LegacyErrorLogger::class,
+            'log' => true,
+            'trace' => true,
+        ]);
+
+        $this->deprecated(function () use ($trap) {
+            // Calling this method directly as deprecated() interferes with registering
+            // an error handler.
+            ob_start();
+            $trap->handleError(E_USER_WARNING, 'Oh no it was bad', __FILE__, __LINE__);
+            ob_get_clean();
+        });
+
+        $logs = Log::engine('test_error')->read();
+        $this->assertStringContainsString('Oh no it was bad', $logs[0]);
+        $this->assertStringContainsString('IncludeTrace', $logs[0]);
+        $this->assertStringContainsString('URL=http://localhost/articles/view/1', $logs[0]);
+    }
+
+    public function testConsoleRenderingNoTrace()
     {
         $stub = new StubConsoleOutput();
         $trap = new ErrorTrap([
@@ -193,7 +234,7 @@ class ErrorTrapTest extends TestCase
         $this->assertStringNotContainsString('Trace', $out[0]);
     }
 
-    public function testConsoleRenderingWithTrace(): void
+    public function testConsoleRenderingWithTrace()
     {
         $stub = new StubConsoleOutput();
         $trap = new ErrorTrap([
@@ -214,7 +255,7 @@ class ErrorTrapTest extends TestCase
         $this->assertStringContainsString('ErrorTrapTest->testConsoleRenderingWithTrace', $out[0]);
     }
 
-    public function testRegisterNoOutputDebug(): void
+    public function testRegisterNoOutputDebug()
     {
         Log::setConfig('test_error', [
             'className' => 'Array',
@@ -230,7 +271,7 @@ class ErrorTrapTest extends TestCase
         $this->assertSame('', $output);
     }
 
-    public function testRegisterIgnoredDeprecations(): void
+    public function testRegisterIgnoredDeprecations()
     {
         $trap = new ErrorTrap([
             'errorRenderer' => TextErrorRenderer::class,
@@ -254,11 +295,11 @@ class ErrorTrapTest extends TestCase
         $this->assertStringContainsString('Not ignored', $output);
     }
 
-    public function testEventTriggered(): void
+    public function testEventTriggered()
     {
         $trap = new ErrorTrap(['errorRenderer' => TextErrorRenderer::class]);
         $trap->register();
-        $trap->getEventManager()->on('Error.beforeRender', function ($event, PhpError $error): void {
+        $trap->getEventManager()->on('Error.beforeRender', function ($event, PhpError $error) {
             $this->assertEquals(E_USER_NOTICE, $error->getCode());
             $this->assertStringContainsString('Oh no it was bad', $error->getMessage());
         });
@@ -270,11 +311,11 @@ class ErrorTrapTest extends TestCase
         $this->assertNotEmpty($out);
     }
 
-    public function testEventTriggeredAbortRender(): void
+    public function testEventTriggeredAbortRender()
     {
         $trap = new ErrorTrap(['errorRenderer' => TextErrorRenderer::class]);
         $trap->register();
-        $trap->getEventManager()->on('Error.beforeRender', function ($event, PhpError $error): void {
+        $trap->getEventManager()->on('Error.beforeRender', function ($event, PhpError $error) {
             $this->assertEquals(E_USER_NOTICE, $error->getCode());
             $this->assertStringContainsString('Oh no it was bad', $error->getMessage());
             $event->stopPropagation();

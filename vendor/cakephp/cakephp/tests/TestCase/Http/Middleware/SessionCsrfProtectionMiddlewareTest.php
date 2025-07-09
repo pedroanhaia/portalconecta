@@ -21,7 +21,6 @@ use Cake\Http\Middleware\SessionCsrfProtectionMiddleware;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use TestApp\Http\TestRequestHandler;
@@ -101,8 +100,9 @@ class SessionCsrfProtectionMiddlewareTest extends TestCase
 
     /**
      * Test that the CSRF tokens are not required for idempotent operations
+     *
+     * @dataProvider safeHttpMethodProvider
      */
-    #[DataProvider('safeHttpMethodProvider')]
     public function testSafeMethodNoCsrfRequired(string $method): void
     {
         $request = new ServerRequest([
@@ -123,8 +123,9 @@ class SessionCsrfProtectionMiddlewareTest extends TestCase
      * Test that the X-CSRF-Token works with the various http methods.
      *
      * Ensure unsalted tokens work.
+     *
+     * @dataProvider httpMethodProvider
      */
-    #[DataProvider('httpMethodProvider')]
     public function testValidTokenInHeaderBackwardsCompat(string $method): void
     {
         $middleware = new SessionCsrfProtectionMiddleware();
@@ -146,8 +147,9 @@ class SessionCsrfProtectionMiddlewareTest extends TestCase
 
     /**
      * Test that the X-CSRF-Token works with the various http methods.
+     *
+     * @dataProvider httpMethodProvider
      */
-    #[DataProvider('httpMethodProvider')]
     public function testValidTokenInHeader(string $method): void
     {
         $middleware = new SessionCsrfProtectionMiddleware();
@@ -170,8 +172,9 @@ class SessionCsrfProtectionMiddlewareTest extends TestCase
 
     /**
      * Test that the X-CSRF-Token works with the various http methods.
+     *
+     * @dataProvider httpMethodProvider
      */
-    #[DataProvider('httpMethodProvider')]
     public function testInvalidTokenInHeader(string $method): void
     {
         $request = new ServerRequest([
@@ -189,7 +192,7 @@ class SessionCsrfProtectionMiddlewareTest extends TestCase
             $middleware->process($request, $this->_getRequestHandler());
 
             $this->fail();
-        } catch (InvalidCsrfTokenException) {
+        } catch (InvalidCsrfTokenException $exception) {
             $token = $request->getSession()->read('csrfToken');
             $this->assertSame('testing123', $token, 'session token should not change.');
         }
@@ -199,8 +202,9 @@ class SessionCsrfProtectionMiddlewareTest extends TestCase
      * Test that request data works with the various http methods.
      *
      * Ensure unsalted tokens are still accepted.
+     *
+     * @dataProvider httpMethodProvider
      */
-    #[DataProvider('httpMethodProvider')]
     public function testValidTokenInRequestDataBackwardsCompat(string $method): void
     {
         $middleware = new SessionCsrfProtectionMiddleware();
@@ -228,8 +232,9 @@ class SessionCsrfProtectionMiddlewareTest extends TestCase
      * Test that request data works with the various http methods.
      *
      * Ensure salted tokens are accepted.
+     *
+     * @dataProvider httpMethodProvider
      */
-    #[DataProvider('httpMethodProvider')]
     public function testValidTokenInRequestData(string $method): void
     {
         $middleware = new SessionCsrfProtectionMiddleware();
@@ -256,8 +261,9 @@ class SessionCsrfProtectionMiddlewareTest extends TestCase
 
     /**
      * Test that request data works with the various http methods.
+     *
+     * @dataProvider httpMethodProvider
      */
-    #[DataProvider('httpMethodProvider')]
     public function testInvalidTokenRequestData(string $method): void
     {
         $middleware = new SessionCsrfProtectionMiddleware();
@@ -296,8 +302,9 @@ class SessionCsrfProtectionMiddlewareTest extends TestCase
 
     /**
      * Test that missing session key fails
+     *
+     * @dataProvider httpMethodProvider
      */
-    #[DataProvider('httpMethodProvider')]
     public function testInvalidTokenMissingSession(string $method): void
     {
         $request = new ServerRequest([
@@ -314,7 +321,7 @@ class SessionCsrfProtectionMiddlewareTest extends TestCase
             $middleware->process($request, $this->_getRequestHandler());
 
             $this->fail();
-        } catch (InvalidCsrfTokenException) {
+        } catch (InvalidCsrfTokenException $exception) {
             $token = $request->getSession()->read('csrfToken');
             $this->assertNotEmpty($token, 'Should set a token in the session on failure.');
         }

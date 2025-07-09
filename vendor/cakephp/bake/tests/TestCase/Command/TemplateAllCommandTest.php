@@ -2,23 +2,23 @@
 declare(strict_types=1);
 
 /**
- * CakePHP : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP Project
  * @since         2.0.0
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 namespace Bake\Test\TestCase\Command;
 
 use Bake\Test\TestCase\TestCase;
 use Bake\Utility\SubsetSchemaCollection;
-use Cake\Console\CommandInterface;
+use Cake\Command\Command;
 use Cake\Core\Plugin;
 use Cake\Datasource\ConnectionManager;
 
@@ -30,17 +30,17 @@ class TemplateAllCommandTest extends TestCase
     /**
      * Fixtures
      *
-     * @var list<string>
+     * @var array
      */
-    protected array $fixtures = [
-        'plugin.Bake.Articles',
-        'plugin.Bake.Comments',
+    protected $fixtures = [
+        'core.Articles',
+        'core.Comments',
     ];
 
     /**
-     * @var list<string>
+     * @var array
      */
-    protected array $tables = ['articles', 'comments'];
+    protected $tables = ['articles', 'comments'];
 
     /**
      * setUp method
@@ -55,6 +55,7 @@ class TemplateAllCommandTest extends TestCase
         $this->_compareBasePath = Plugin::path('Bake') . 'tests' . DS . 'comparisons' . DS . 'Template' . DS;
 
         $this->setAppNamespace('Bake\Test\App');
+        $this->useCommandRunner();
 
         $connection = ConnectionManager::get('test');
         $subsetCollection = new SubsetSchemaCollection($connection->getSchemaCollection(), $this->tables);
@@ -94,7 +95,7 @@ class TemplateAllCommandTest extends TestCase
         ];
         $this->exec('bake template all');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
     }
 
@@ -117,7 +118,7 @@ class TemplateAllCommandTest extends TestCase
         ];
         $this->exec('bake template all --index-columns 3');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertFileContains('title', $this->generatedFiles[0]);
         $this->assertFileNotContains('published', $this->generatedFiles[0]);

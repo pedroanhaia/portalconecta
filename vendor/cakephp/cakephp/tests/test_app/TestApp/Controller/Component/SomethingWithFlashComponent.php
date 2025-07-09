@@ -29,5 +29,5 @@ class SomethingWithFlashComponent extends Component
      *
      * @var array
      */
-    protected array $components = ['Flash'];
+    protected $components = ['Flash'];
 }

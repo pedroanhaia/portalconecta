@@ -24,5 +24,5 @@ use Cake\Controller\Component;
 
 class PluginsComponent extends Component
 {
-    protected array $components = ['TestPlugin.Other'];
+    protected $components = ['TestPlugin.Other'];
 }

@@ -1,22 +1,22 @@
 includes:
 	- phpstan-baseline.neon
 
-rules:
-	- Symplify\PHPStanRules\Rules\Explicit\NoMixedPropertyFetcherRule
-	- Symplify\PHPStanRules\Rules\Explicit\NoMixedMethodCallerRule
-
 parameters:
-	level: 8
+	level: 6
+	checkMissingIterableValueType: false
+	checkGenericClassInNonGenericObjectType: false
 	treatPhpDocTypesAsCertain: false
 	bootstrapFiles:
 		- tests/bootstrap.php
 	paths:
 		- src/
-	ignoreErrors:
-		-
-			identifier: missingType.iterableValue
-		-
-			identifier: missingType.generics
+	earlyTerminatingMethodCalls:
+		Cake\Console\Shell:
+			- abort
+		Cake\Command\BaseCommand:
+			- abort
+	excludePaths:
+		- src/I18n/FrozenDate
 
 services:
 	-
@@ -24,3 +24,8 @@ services:
 		tags:
 			- phpstan.broker.methodsClassReflectionExtension
 			- phpstan.broker.propertiesClassReflectionExtension
+
+	-
+		class: Cake\PHPStan\PhpDoc\TableAssociationTypeNodeResolverExtension
+		tags:
+			- phpstan.phpDoc.typeNodeResolverExtension

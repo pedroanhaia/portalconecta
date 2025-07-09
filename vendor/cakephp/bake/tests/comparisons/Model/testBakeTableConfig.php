@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Bake\Test\App\Model\Table;
 
-use Cake\ORM\Query\SelectQuery;
+use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -12,23 +12,22 @@ use Cake\Validation\Validator;
  * Items Model
  *
  * @property \Bake\Test\App\Model\Table\UsersTable&\Cake\ORM\Association\BelongsTo $Users
- * @property \Bake\Test\App\Model\Table\TodoRemindersTable&\Cake\ORM\Association\HasOne $TodoReminders
  * @property \Bake\Test\App\Model\Table\TodoTasksTable&\Cake\ORM\Association\HasMany $TodoTasks
  * @property \Bake\Test\App\Model\Table\TodoLabelsTable&\Cake\ORM\Association\BelongsToMany $TodoLabels
  *
  * @method \Bake\Test\App\Model\Entity\Item newEmptyEntity()
  * @method \Bake\Test\App\Model\Entity\Item newEntity(array $data, array $options = [])
- * @method array<\Bake\Test\App\Model\Entity\Item> newEntities(array $data, array $options = [])
- * @method \Bake\Test\App\Model\Entity\Item get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
- * @method \Bake\Test\App\Model\Entity\Item findOrCreate($search, ?callable $callback = null, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\Item[] newEntities(array $data, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\Item get($primaryKey, $options = [])
+ * @method \Bake\Test\App\Model\Entity\Item findOrCreate($search, ?callable $callback = null, $options = [])
  * @method \Bake\Test\App\Model\Entity\Item patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
- * @method array<\Bake\Test\App\Model\Entity\Item> patchEntities(iterable $entities, array $data, array $options = [])
- * @method \Bake\Test\App\Model\Entity\Item|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method \Bake\Test\App\Model\Entity\Item saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\Item>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\Item>|false saveMany(iterable $entities, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\Item>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\Item> saveManyOrFail(iterable $entities, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\Item>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\Item>|false deleteMany(iterable $entities, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\Item>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\Item> deleteManyOrFail(iterable $entities, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\Item[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\Item|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \Bake\Test\App\Model\Entity\Item saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \Bake\Test\App\Model\Entity\Item[]|\Cake\Datasource\ResultSetInterface|false saveMany(iterable $entities, $options = [])
+ * @method \Bake\Test\App\Model\Entity\Item[]|\Cake\Datasource\ResultSetInterface saveManyOrFail(iterable $entities, $options = [])
+ * @method \Bake\Test\App\Model\Entity\Item[]|\Cake\Datasource\ResultSetInterface|false deleteMany(iterable $entities, $options = [])
+ * @method \Bake\Test\App\Model\Entity\Item[]|\Cake\Datasource\ResultSetInterface deleteManyOrFail(iterable $entities, $options = [])
  *
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  */
@@ -37,7 +36,7 @@ class ItemsTable extends Table
     /**
      * Initialize method
      *
-     * @param array<string, mixed> $config The configuration for the Table.
+     * @param array $config The configuration for the Table.
      * @return void
      */
     public function initialize(array $config): void
@@ -53,9 +52,6 @@ class ItemsTable extends Table
         $this->belongsTo('Users', [
             'foreignKey' => 'user_id',
             'joinType' => 'INNER',
-        ]);
-        $this->hasOne('TodoReminders', [
-            'foreignKey' => 'todo_item_id',
         ]);
         $this->hasMany('TodoTasks', [
             'foreignKey' => 'todo_item_id',
@@ -76,8 +72,8 @@ class ItemsTable extends Table
     public function validationDefault(Validator $validator): Validator
     {
         $validator
-            ->integer('user_id')
-            ->notEmptyString('user_id');
+            ->integer('id')
+            ->allowEmptyString('id', null, 'create');
 
         $validator
             ->scalar('title')
@@ -113,7 +109,7 @@ class ItemsTable extends Table
      */
     public function buildRules(RulesChecker $rules): RulesChecker
     {
-        $rules->add($rules->existsIn(['user_id'], 'Users'), ['errorField' => 'user_id']);
+        $rules->add($rules->existsIn('user_id', 'Users'), ['errorField' => 'user_id']);
 
         return $rules;
     }

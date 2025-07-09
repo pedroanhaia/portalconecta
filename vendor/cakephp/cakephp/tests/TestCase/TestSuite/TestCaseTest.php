@@ -17,7 +17,6 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\TestSuite;
 
 use Cake\Core\Configure;
-use Cake\Database\Connection;
 use Cake\Datasource\ConnectionManager;
 use Cake\Event\Event;
 use Cake\Event\EventList;
@@ -28,17 +27,8 @@ use Cake\Routing\Exception\MissingRouteException;
 use Cake\Routing\Router;
 use Cake\Test\Fixture\FixturizedTestCase;
 use Cake\TestSuite\TestCase;
-use Exception;
 use PHPUnit\Framework\AssertionFailedError;
-use PHPUnit\Framework\Attributes\WithoutErrorHandler;
-use PHPUnit\Framework\TestStatus\Skipped;
-use PHPUnit\Framework\TestStatus\Success;
-use TestApp\Model\Entity\Tag;
-use TestApp\Model\Table\PostsTable;
 use TestApp\Model\Table\SecondaryPostsTable;
-use TestPlugin\Model\Entity\Author;
-use TestPlugin\Model\Table\AuthorsTable;
-use TestPlugin\Model\Table\TestPluginCommentsTable;
 use function Cake\Core\deprecationWarning;
 
 /**
@@ -46,12 +36,6 @@ use function Cake\Core\deprecationWarning;
  */
 class TestCaseTest extends TestCase
 {
-    public function setUp(): void
-    {
-        parent::setUp();
-        $this->clearPlugins();
-    }
-
     /**
      * tests trying to assertEventFired without configuring an event list
      */
@@ -126,14 +110,12 @@ class TestCaseTest extends TestCase
     public function testSkipIf(): void
     {
         $test = new FixturizedTestCase('testSkipIfTrue');
-        $test->run();
-        $result = $test->status();
-        $this->assertInstanceOf(Skipped::class, $result);
+        $result = $test->run();
+        $this->assertSame(1, $result->skippedCount());
 
         $test = new FixturizedTestCase('testSkipIfFalse');
-        $test->run();
-        $result = $test->status();
-        $this->assertInstanceOf(Success::class, $result);
+        $result = $test->run();
+        $this->assertSame(0, $result->skippedCount());
     }
 
     /**
@@ -195,7 +177,7 @@ class TestCaseTest extends TestCase
      */
     public function testDeprecated(): void
     {
-        $this->deprecated(function (): void {
+        $this->deprecated(function () {
             trigger_error('deprecation message', E_USER_DEPRECATED);
         });
     }
@@ -206,13 +188,13 @@ class TestCaseTest extends TestCase
     public function testDeprecatedWithAssertAfterTriggerWarning(): void
     {
         try {
-            $this->deprecated(function (): void {
+            $this->deprecated(function () {
                 trigger_error('deprecation message', E_USER_DEPRECATED);
-                $this->fail('A random message');
+                $this->assertTrue(false, 'A random message');
             });
 
             $this->fail();
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $this->assertStringContainsString('A random message', $e->getMessage());
         }
     }
@@ -223,11 +205,11 @@ class TestCaseTest extends TestCase
     public function testDeprecatedWithNoDeprecation(): void
     {
         try {
-            $this->deprecated(function (): void {
+            $this->deprecated(function () {
             });
 
             $this->fail();
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             $this->assertStringStartsWith('Should have at least one deprecation warning', $e->getMessage());
         }
     }
@@ -235,20 +217,19 @@ class TestCaseTest extends TestCase
     /**
      * test deprecated() with duplicate deprecation with same messsage and line
      */
-    #[WithoutErrorHandler]
     public function testDeprecatedWithDuplicatedDeprecation(): void
     {
         /**
          * setting stackframe = 0 and having same method
          * to have same deprecation message and same line for all cases
          */
-        $fun = function (): void {
-            deprecationWarning('5.0.0', 'Test same deprecation message', 0);
+        $fun = function () {
+            deprecationWarning('Test same deprecation message', 0);
         };
-        $this->deprecated(function () use ($fun): void {
+        $this->deprecated(function () use ($fun) {
             $fun();
         });
-        $this->deprecated(function () use ($fun): void {
+        $this->deprecated(function () use ($fun) {
             $fun();
         });
     }
@@ -379,36 +360,34 @@ class TestCaseTest extends TestCase
         $Posts = $this->getMockForModel('Posts');
         $entity = new Entity([]);
 
-        $this->assertInstanceOf(PostsTable::class, $Posts);
+        $this->assertInstanceOf('TestApp\Model\Table\PostsTable', $Posts);
         $this->assertSame('posts', $Posts->getTable());
 
         $Posts = $this->getMockForModel('Posts', ['save']);
         $Posts->expects($this->once())
             ->method('save')
-            ->willReturn(false);
-        $this->assertSame(false, $Posts->save($entity));
-        $this->assertSame(Entity::class, $Posts->getEntityClass());
-        $this->assertInstanceOf(Connection::class, $Posts->getConnection());
+            ->will($this->returnValue('mocked'));
+        $this->assertSame('mocked', $Posts->save($entity));
+        $this->assertSame('Cake\ORM\Entity', $Posts->getEntityClass());
+        $this->assertInstanceOf('Cake\Database\Connection', $Posts->getConnection());
         $this->assertSame('test', $Posts->getConnection()->configName());
 
         $Tags = $this->getMockForModel('Tags', ['save']);
-        $this->assertSame(Tag::class, $Tags->getEntityClass());
+        $this->assertSame('TestApp\Model\Entity\Tag', $Tags->getEntityClass());
 
-        $this->deprecated(function (): void {
-            $SluggedPosts = $this->getMockForModel('SluggedPosts', ['slugify']);
-            $SluggedPosts->expects($this->once())
-                ->method('slugify')
-                ->with('some value')
-                ->willReturn('mocked');
-            $this->assertSame('mocked', $SluggedPosts->slugify('some value'));
+        $SluggedPosts = $this->getMockForModel('SluggedPosts', ['slugify']);
+        $SluggedPosts->expects($this->once())
+            ->method('slugify')
+            ->with('some value')
+            ->will($this->returnValue('mocked'));
+        $this->assertSame('mocked', $SluggedPosts->slugify('some value'));
 
-            $SluggedPosts = $this->getMockForModel('SluggedPosts', ['save', 'slugify']);
-            $SluggedPosts->expects($this->once())
-                ->method('slugify')
-                ->with('some value two')
-                ->willReturn('mocked');
-            $this->assertSame('mocked', $SluggedPosts->slugify('some value two'));
-        });
+        $SluggedPosts = $this->getMockForModel('SluggedPosts', ['save', 'slugify']);
+        $SluggedPosts->expects($this->once())
+            ->method('slugify')
+            ->with('some value two')
+            ->will($this->returnValue('mocked'));
+        $this->assertSame('mocked', $SluggedPosts->slugify('some value two'));
     }
 
     /**
@@ -432,23 +411,27 @@ class TestCaseTest extends TestCase
         $TestPluginComment = $this->getMockForModel('TestPlugin.TestPluginComments');
 
         $result = $this->getTableLocator()->get('TestPlugin.TestPluginComments');
-        $this->assertInstanceOf(TestPluginCommentsTable::class, $result);
+        $this->assertInstanceOf('TestPlugin\Model\Table\TestPluginCommentsTable', $result);
         $this->assertSame($TestPluginComment, $result);
 
         $TestPluginComment = $this->getMockForModel('TestPlugin.TestPluginComments', ['save']);
 
-        $this->assertInstanceOf(TestPluginCommentsTable::class, $TestPluginComment);
-        $this->assertSame(Entity::class, $TestPluginComment->getEntityClass());
-        $TestPluginComment->expects($this->exactly(1))
+        $this->assertInstanceOf('TestPlugin\Model\Table\TestPluginCommentsTable', $TestPluginComment);
+        $this->assertSame('Cake\ORM\Entity', $TestPluginComment->getEntityClass());
+        $TestPluginComment->expects($this->exactly(2))
             ->method('save')
-            ->willReturn(false);
+            ->will($this->onConsecutiveCalls(
+                $this->returnValue(true),
+                $this->returnValue(false)
+            ));
 
         $entity = new Entity([]);
+        $this->assertTrue($TestPluginComment->save($entity));
         $this->assertFalse($TestPluginComment->save($entity));
 
         $TestPluginAuthors = $this->getMockForModel('TestPlugin.Authors', ['save']);
-        $this->assertInstanceOf(AuthorsTable::class, $TestPluginAuthors);
-        $this->assertSame(Author::class, $TestPluginAuthors->getEntityClass());
+        $this->assertInstanceOf('TestPlugin\Model\Table\AuthorsTable', $TestPluginAuthors);
+        $this->assertSame('TestPlugin\Model\Entity\Author', $TestPluginAuthors->getEntityClass());
         $this->clearPlugins();
     }
 
@@ -460,24 +443,28 @@ class TestCaseTest extends TestCase
         $Mock = $this->getMockForModel(
             'Table',
             ['save'],
-            ['alias' => 'Comments', 'className' => Table::class],
+            ['alias' => 'Comments', 'className' => Table::class]
         );
 
         $result = $this->getTableLocator()->get('Comments');
         $this->assertInstanceOf(Table::class, $result);
         $this->assertSame('Comments', $Mock->getAlias());
 
-        $Mock->expects($this->exactly(1))
+        $Mock->expects($this->exactly(2))
             ->method('save')
-            ->willReturn(false);
+            ->will($this->onConsecutiveCalls(
+                $this->returnValue(true),
+                $this->returnValue(false)
+            ));
 
         $entity = new Entity([]);
+        $this->assertTrue($Mock->save($entity));
         $this->assertFalse($Mock->save($entity));
 
         $allMethodsStubs = $this->getMockForModel(
             'Table',
             [],
-            ['alias' => 'Comments', 'className' => Table::class],
+            ['alias' => 'Comments', 'className' => Table::class]
         );
         $result = $this->getTableLocator()->get('Comments');
         $this->assertInstanceOf(Table::class, $result);
@@ -509,7 +496,7 @@ class TestCaseTest extends TestCase
         try {
             Router::url($url);
             $this->fail('Missing URL should throw an exception');
-        } catch (MissingRouteException) {
+        } catch (MissingRouteException $e) {
         }
         Configure::write('App.namespace', 'TestApp');
         $this->loadRoutes();

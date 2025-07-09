@@ -18,7 +18,6 @@ namespace Cake\Test\TestCase\Http\Client;
 use Cake\Http\Client\Response;
 use Cake\Http\Cookie\CookieCollection;
 use Cake\TestSuite\TestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * HTTP response test.
@@ -42,11 +41,11 @@ class ResponseTest extends TestCase
         $this->assertSame('OK', $response->getReasonPhrase());
         $this->assertSame(
             'text/html;charset="UTF-8"',
-            $response->getHeaderLine('content-type'),
+            $response->getHeaderLine('content-type')
         );
         $this->assertSame(
             'Tue, 25 Dec 2012 04:43:47 GMT',
-            $response->getHeaderLine('Date'),
+            $response->getHeaderLine('Date')
         );
         $this->assertSame('winner!', '' . $response->getBody());
     }
@@ -67,16 +66,16 @@ class ResponseTest extends TestCase
         $this->assertSame('1.0', $response->getProtocolVersion());
         $this->assertSame(
             'text/html;charset="UTF-8"',
-            $response->getHeaderLine('content-type'),
+            $response->getHeaderLine('content-type')
         );
         $this->assertSame(
             'Tue, 25 Dec 2012 04:43:47 GMT',
-            $response->getHeaderLine('Date'),
+            $response->getHeaderLine('Date')
         );
 
         $this->assertSame(
             'text/html;charset="UTF-8"',
-            $response->getHeaderLine('Content-Type'),
+            $response->getHeaderLine('Content-Type')
         );
 
         $headers = [
@@ -281,8 +280,9 @@ XML;
 
     /**
      * Test isSuccess()
+     *
+     * @dataProvider isSuccessProvider
      */
-    #[DataProvider('isSuccessProvider')]
     public function testIsSuccess(bool $expected, Response $response): void
     {
         $this->assertEquals($expected, $response->isSuccess());
@@ -339,7 +339,7 @@ XML;
         $this->assertTrue($result['secure']);
         $this->assertSame(
             strtotime('Wed, 09-Jun-2021 10:18:14 GMT'),
-            $result['expires'],
+            $result['expires']
         );
         $this->assertSame('/', $result['path']);
 

@@ -2,23 +2,23 @@
 declare(strict_types=1);
 
 /**
- * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP(tm) Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
  * @since         0.1.0
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 namespace Bake\Test\TestCase\Command;
 
 use Bake\Test\App\Model\Table\BakeArticlesTable;
 use Bake\Test\TestCase\TestCase;
-use Cake\Console\CommandInterface;
+use Cake\Command\Command;
 use Cake\Core\Plugin;
 use Cake\Utility\Inflector;
 
@@ -30,17 +30,17 @@ class ControllerAllCommandTest extends TestCase
     /**
      * fixtures
      *
-     * @var list<string>
+     * @var array
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'plugin.Bake.BakeArticles',
         'plugin.Bake.BakeComments',
     ];
 
     /**
-     * @var list<string>
+     * @var array
      */
-    protected array $tables = ['bake_articles', 'bake_comments'];
+    protected $tables = ['bake_articles', 'bake_comments'];
 
     /**
      * setUp method
@@ -51,6 +51,7 @@ class ControllerAllCommandTest extends TestCase
     {
         parent::setUp();
         $this->_compareBasePath = Plugin::path('Bake') . 'tests' . DS . 'comparisons' . DS . 'Controller' . DS;
+        $this->useCommandRunner();
         $this->setAppNamespace('Bake\Test\App');
 
         $this->getTableLocator()->get('BakeArticles', [
@@ -81,14 +82,14 @@ class ControllerAllCommandTest extends TestCase
 
             $this->generatedFiles[] = APP . "Controller/{$plural}Controller.php";
         }
-        $this->exec('bake controller all --connection test --no-test --quiet');
+        $this->exec('bake controller all --connection test --no-test');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
 
         $this->assertFileDoesNotExist(
             ROOT . 'tests/TestCase/Controller/BakeArticlesControllerTest.php',
-            'Test should not be created as options should be forwarded',
+            'Test should not be created as options should be forwarded'
         );
     }
 }

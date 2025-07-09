@@ -7,7 +7,7 @@ use Cake\ORM\Entity;
 
 class VirtualUser extends Entity
 {
-    protected array $_virtual = [
+    protected $_virtual = [
         'bonus',
     ];
 

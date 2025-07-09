@@ -14,9 +14,9 @@ class ExampleCell extends Cell
      * List of valid options that can be passed into this
      * cell's constructor.
      *
-     * @var array<string, mixed>
+     * @var array
      */
-    protected array $_validCellOptions = [];
+    protected $_validCellOptions = [];
 
     /**
      * Initialization logic run at the end of object construction.

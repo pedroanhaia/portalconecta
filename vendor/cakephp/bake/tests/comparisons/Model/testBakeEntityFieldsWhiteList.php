@@ -15,11 +15,10 @@ use Cake\ORM\Entity;
  * @property string $effort
  * @property bool $completed
  * @property int $todo_task_count
- * @property \Cake\I18n\DateTime|null $created
- * @property \Cake\I18n\DateTime|null $updated
+ * @property \Cake\I18n\FrozenTime|null $created
+ * @property \Cake\I18n\FrozenTime|null $updated
  *
  * @property \Bake\Test\App\Model\Entity\User $user
- * @property \Bake\Test\App\Model\Entity\TodoReminder $todo_reminder
  * @property \Bake\Test\App\Model\Entity\TodoTask[] $todo_tasks
  * @property \Bake\Test\App\Model\Entity\TodoLabel[] $todo_labels
  */
@@ -32,9 +31,9 @@ class TodoItem extends Entity
      * be mass assigned. For security purposes, it is advised to set '*' to false
      * (or remove it), and explicitly make individual fields accessible as needed.
      *
-     * @var array<string, bool>
+     * @var array
      */
-    protected array $_accessible = [
+    protected $_accessible = [
         'id' => true,
         'title' => true,
         'body' => true,

@@ -36,7 +36,8 @@ class TestAppLibSession implements SessionHandlerInterface
     /**
      * @inheritDoc
      */
-    public function read($id): string|false
+    #[\ReturnTypeWillChange]
+    public function read($id)
     {
     }
 
@@ -59,7 +60,8 @@ class TestAppLibSession implements SessionHandlerInterface
     /**
      * @inheritDoc
      */
-    public function gc($max_lifetime): int|false
+    #[\ReturnTypeWillChange]
+    public function gc($maxlifetime)
     {
         return 0;
     }

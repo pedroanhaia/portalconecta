@@ -16,12 +16,11 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Database\Type;
 
-use Cake\Database\Driver;
-use Cake\Database\Exception\DatabaseException;
 use Cake\Database\Type\FloatType;
 use Cake\I18n\I18n;
 use Cake\TestSuite\TestCase;
 use PDO;
+use RuntimeException;
 
 /**
  * Test for the Float type.
@@ -50,7 +49,7 @@ class FloatTypeTest extends TestCase
     {
         parent::setUp();
         $this->type = new FloatType();
-        $this->driver = $this->getMockBuilder(Driver::class)->getMock();
+        $this->driver = $this->getMockBuilder('Cake\Database\Driver')->getMock();
         $this->numberClass = FloatType::$numberClass;
     }
 
@@ -97,7 +96,7 @@ class FloatTypeTest extends TestCase
         ];
         $this->assertEquals(
             $expected,
-            $this->type->manyToPHP($values, array_keys($values), $this->driver),
+            $this->type->manyToPHP($values, array_keys($values), $this->driver)
         );
     }
 
@@ -180,7 +179,7 @@ class FloatTypeTest extends TestCase
      */
     public function testUseLocaleParsingInvalid(): void
     {
-        $this->expectException(DatabaseException::class);
+        $this->expectException(RuntimeException::class);
         FloatType::$numberClass = 'stdClass';
         $this->type->useLocaleParser();
     }

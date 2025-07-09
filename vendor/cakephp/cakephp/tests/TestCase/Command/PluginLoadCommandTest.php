@@ -15,10 +15,8 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Command;
 
-use Cake\Console\CommandInterface;
+use Cake\Command\Command;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
-use Cake\Core\Plugin;
-use Cake\Routing\Router;
 use Cake\TestSuite\TestCase;
 
 /**
@@ -31,12 +29,12 @@ class PluginLoadCommandTest extends TestCase
     /**
      * @var string
      */
-    protected $configFile;
+    protected $app;
 
     /**
      * @var string
      */
-    protected $originalContent;
+    protected $originalAppContent;
 
     /**
      * setUp method
@@ -45,9 +43,10 @@ class PluginLoadCommandTest extends TestCase
     {
         parent::setUp();
 
-        $this->configFile = CONFIG . 'plugins.php';
-        $this->originalContent = file_get_contents($this->configFile);
+        $this->app = APP . DS . 'Application.php';
+        $this->originalAppContent = file_get_contents($this->app);
 
+        $this->useCommandRunner();
         $this->setAppNamespace();
     }
 
@@ -58,7 +57,7 @@ class PluginLoadCommandTest extends TestCase
     {
         parent::tearDown();
 
-        file_put_contents($this->configFile, $this->originalContent);
+        file_put_contents($this->app, $this->originalAppContent);
     }
 
     /**
@@ -67,39 +66,65 @@ class PluginLoadCommandTest extends TestCase
     public function testHelp(): void
     {
         $this->exec('plugin load --help');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertOutputContains('plugin load');
     }
 
     /**
-     * Test loading a plugin modifies the config file
+     * Test loading a plugin modifies the app
      */
-    public function testLoad(): void
+    public function testLoadModifiesApplication(): void
     {
         $this->exec('plugin load TestPlugin');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
-        Plugin::getCollection()->remove('TestPlugin');
+        $this->assertExitCode(Command::CODE_SUCCESS);
 
-        // Needed to not have duplicate named routes
-        Router::reload();
-        $this->exec('plugin load TestPluginTwo --no-bootstrap --no-console --no-middleware --no-routes --no-services');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
-        Plugin::getCollection()->remove('TestPlugin');
+        $contents = file_get_contents($this->app);
+        $this->assertMatchesRegularExpression('/Check plugins added here\n {8}\$this->addPlugin\(\'TestPlugin\'\);\n {4}\}\n/u', $contents);
+    }
 
-        // Needed to not have duplicate named routes
-        Router::reload();
-        $this->exec('plugin load Company/TestPluginThree --only-debug --only-cli');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+    /**
+     * Test loading a plugin twice prevents it being added twice
+     */
+    public function testPreventDuplicatePluginLoad(): void
+    {
+        $this->exec('plugin load TestPlugin');
+        $this->assertExitCode(Command::CODE_SUCCESS);
 
-        $config = include $this->configFile;
-        $this->assertTrue(isset($config['TestPlugin']));
-        $this->assertTrue(isset($config['TestPluginTwo']));
-        $this->assertTrue(isset($config['Company/TestPluginThree']));
-        $this->assertSame(['onlyDebug' => true, 'onlyCli' => true], $config['Company/TestPluginThree']);
-        $this->assertSame(
-            ['bootstrap' => false, 'console' => false, 'middleware' => false, 'routes' => false, 'services' => false],
-            $config['TestPluginTwo'],
-        );
+        $contents = file_get_contents($this->app);
+        $this->assertMatchesRegularExpression('/Check plugins added here\n {8}\$this->addPlugin\(\'TestPlugin\'\);\n {4}\}\n/u', $contents);
+
+        $this->exec('plugin load TestPlugin');
+        $this->assertExitCode(Command::CODE_SUCCESS);
+        $this->assertOutputContains('The specified plugin is already loaded!');
+
+        $this->exec('plugin load Company/TestPluginThree');
+        $this->assertExitCode(Command::CODE_SUCCESS);
+
+        $contents = file_get_contents($this->app);
+        $this->assertMatchesRegularExpression('#\$this->addPlugin\(\'Company/TestPluginThree\'\);\n {4}\}\n#u', $contents);
+
+        $this->exec('plugin load Company/TestPluginThree');
+        $this->assertExitCode(Command::CODE_SUCCESS);
+        $this->assertOutputContains('The specified plugin is already loaded!');
+    }
+
+    /**
+     * Test loading a plugin twice prevents it being added twice if it has config
+     */
+    public function testPreventDuplicatePluginLoadWithConfig(): void
+    {
+        $this->exec('plugin load TestPlugin');
+        $this->assertExitCode(Command::CODE_SUCCESS);
+
+        $contents = file_get_contents($this->app);
+        $this->assertMatchesRegularExpression('/Check plugins added here\n {8}\$this->addPlugin\(\'TestPlugin\'\);\n {4}\}\n/u', $contents);
+
+        $contents = str_replace("->addPlugin('TestPlugin')", "->addPlugin('TestPlugin', ['bootstrap' => false])", $contents);
+        file_put_contents($this->app, $contents);
+
+        $this->exec('plugin load TestPlugin');
+        $this->assertExitCode(Command::CODE_SUCCESS);
+        $this->assertOutputContains('The specified plugin is already loaded!');
     }
 
     /**
@@ -108,22 +133,10 @@ class PluginLoadCommandTest extends TestCase
     public function testLoadUnknownPlugin(): void
     {
         $this->exec('plugin load NopeNotThere');
-        $this->assertExitCode(CommandInterface::CODE_ERROR);
-        $this->assertErrorContains('Plugin `NopeNotThere` could not be found');
+        $this->assertExitCode(Command::CODE_ERROR);
+        $this->assertErrorContains('Plugin NopeNotThere could not be found');
 
-        $config = include $this->configFile;
-        $this->assertFalse(isset($config['NopeNotThere']));
-    }
-
-    /**
-     * Test loading optional plugin
-     */
-    public function testLoadOptionalPlugin(): void
-    {
-        $this->exec('plugin load NopeNotThere --optional');
-
-        $config = include $this->configFile;
-        $this->assertTrue(isset($config['NopeNotThere']));
-        $this->assertSame(['optional' => true], $config['NopeNotThere']);
+        $contents = file_get_contents($this->app);
+        $this->assertStringNotContainsString("\$this->addPlugin('NopeNotThere');", $contents);
     }
 }

@@ -25,11 +25,11 @@ Help us keep CakePHP open and inclusive. Please read and follow our [Code of Con
 ## Making Changes
 
 * Create a topic branch from where you want to base your work.
-  * This is usually the current default branch - `5.x` right now.
-  * To quickly create a topic branch based on `5.x`
-    `git branch 5.x/my_contribution 5.x` then checkout the new branch with `git
-    checkout 5.x/my_contribution`. Better avoid working directly on the
-    `5.x` branch, to avoid conflicts if you pull in updates from origin.
+  * This is usually the current default branch - `4.x` right now.
+  * To quickly create a topic branch based on `4.x`
+    `git branch 4.x/my_contribution 4.x` then checkout the new branch with `git
+    checkout 4.x/my_contribution`. Better avoid working directly on the
+    `4.x` branch, to avoid conflicts if you pull in updates from origin.
 * Make commits of logical units.
 * Check for unnecessary whitespace with `git diff --check` before committing.
 * Use descriptive commit messages and reference the #issue number.
@@ -38,8 +38,8 @@ Help us keep CakePHP open and inclusive. Please read and follow our [Code of Con
 
 ## Which branch to base the work
 
-* Bugfix branches will be based on the current default branch - `5.x` right now.
-* New features that are **backwards compatible** will be based on the appropriate `next` branch. For example if you want to contribute to the next 5.x branch, you should base your changes on `5.next`.
+* Bugfix branches will be based on the current default branch - `4.x` right now.
+* New features that are **backwards compatible** will be based on the appropriate `next` branch. For example if you want to contribute to the next 4.x branch, you should base your changes on `4.next`.
 * New features or other **non backwards compatible** changes will go in the next major release branch.
 
 ## What is "backwards compatible" (BC)
@@ -80,9 +80,7 @@ To run static analysis tools [PHPStan](https://github.com/phpstan/phpstan) and [
 
     composer stan-setup
 
-The currently used PHPStan and Psalm versions can be found in `.phive/phars.xml`.
-
-After that you can perform the checks via:
+And after that perform the checks via:
 
     composer stan
 

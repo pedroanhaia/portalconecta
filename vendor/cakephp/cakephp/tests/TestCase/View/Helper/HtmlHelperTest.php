@@ -18,15 +18,14 @@ namespace Cake\Test\TestCase\View\Helper;
 
 use Cake\Core\Configure;
 use Cake\Core\Plugin;
+use Cake\Filesystem\Filesystem;
 use Cake\Http\ServerRequest;
-use Cake\I18n\Date;
+use Cake\I18n\FrozenDate;
 use Cake\Routing\Route\DashedRoute;
 use Cake\Routing\Router;
 use Cake\TestSuite\TestCase;
-use Cake\Utility\Filesystem;
 use Cake\View\Helper\HtmlHelper;
 use Cake\View\View;
-use PHPUnit\Framework\Attributes\DataProvider;
 use function Cake\Core\h;
 
 /**
@@ -72,7 +71,6 @@ class HtmlHelperTest extends TestCase
         $request = new ServerRequest([
             'webroot' => '',
         ]);
-        $request = $request->withAttribute('csrfToken', 'test');
         Router::reload();
         Router::setRequest($request);
 
@@ -300,7 +298,7 @@ class HtmlHelperTest extends TestCase
         $expected = ['a' => ['href' => 'http://www.example.org?param1=value1&amp;param2=value2'], 'http://www.example.org?param1=value1&amp;param2=value2', '/a'];
         $this->assertHtml($expected, $result);
 
-        $result = $this->Html->link('alert', "javascript:alert('cakephp');");
+        $result = $this->Html->link('alert', 'javascript:alert(\'cakephp\');');
         $expected = ['a' => ['href' => 'javascript:alert(&#039;cakephp&#039;);'], 'alert', '/a'];
         $this->assertHtml($expected, $result);
 
@@ -640,11 +638,9 @@ class HtmlHelperTest extends TestCase
 
         $this->View->expects($this->exactly(2))
             ->method('append')
-            ->with(
-                ...self::withConsecutive(
-                    ['css', $this->matchesRegularExpression('/css_in_head.css/')],
-                    ['css', $this->matchesRegularExpression('/more_css_in_head.css/')],
-                ),
+            ->withConsecutive(
+                ['css', $this->matchesRegularExpression('/css_in_head.css/')],
+                ['css', $this->matchesRegularExpression('/more_css_in_head.css/')]
             );
 
         $result = $this->Html->css('css_in_head', ['block' => true]);
@@ -741,7 +737,7 @@ class HtmlHelperTest extends TestCase
 
         $result = explode("\n", trim($this->Html->css(
             ['TestPlugin.test_plugin_asset', 'TestPlugin.vendor.generic'],
-            ['once' => false],
+            ['once' => false]
         )));
         $expected['link']['href'] = 'preg:/.*test_plugin\/css\/test_plugin_asset\.css/';
         $this->assertHtml($expected, $result[0]);
@@ -849,11 +845,9 @@ class HtmlHelperTest extends TestCase
     {
         $this->View->expects($this->exactly(2))
             ->method('append')
-            ->with(
-                ...self::withConsecutive(
-                    ['css', $this->stringContains('test.min.css')],
-                    ['script', $this->stringContains('test.min.js')],
-                ),
+            ->withConsecutive(
+                ['css', $this->stringContains('test.min.css')],
+                ['script', $this->stringContains('test.min.js')]
             );
         $this->Html->css('test.min', ['block' => true]);
         $this->Html->script('test.min', ['block' => true]);
@@ -1022,12 +1016,6 @@ class HtmlHelperTest extends TestCase
             'script' => ['src' => 'js/jquery-1.3.2.js', 'defer' => 'defer', 'encoding' => 'utf-8'],
         ];
         $this->assertHtml($expected, $result);
-
-        $result = $this->Html->script('defered', ['defer']);
-        $expected = [
-            'script' => ['src' => 'js/defered.js', 'defer' => 'defer'],
-        ];
-        $this->assertHtml($expected, $result);
     }
 
     /**
@@ -1120,11 +1108,9 @@ class HtmlHelperTest extends TestCase
     {
         $this->View->expects($this->exactly(2))
             ->method('append')
-            ->with(
-                ...self::withConsecutive(
-                    ['script', $this->matchesRegularExpression('/script_in_head.js/')],
-                    ['headScripts', $this->matchesRegularExpression('/second_script.js/')],
-                ),
+            ->withConsecutive(
+                ['script', $this->matchesRegularExpression('/script_in_head.js/')],
+                ['headScripts', $this->matchesRegularExpression('/second_script.js/')]
             );
 
         $result = $this->Html->script('script_in_head', ['block' => true]);
@@ -1212,11 +1198,9 @@ class HtmlHelperTest extends TestCase
 
         $this->View->expects($this->exactly(2))
             ->method('append')
-            ->with(
-                ...self::withConsecutive(
-                    ['script', $this->matchesRegularExpression('/window\.foo\s\=\s2;/')],
-                    ['scriptTop', $this->stringContains('alert(')],
-                ),
+            ->withConsecutive(
+                ['script', $this->matchesRegularExpression('/window\.foo\s\=\s2;/')],
+                ['scriptTop', $this->stringContains('alert(')]
             );
 
         $result = $this->Html->scriptBlock('window.foo = 2;', ['block' => true]);
@@ -1577,18 +1561,12 @@ class HtmlHelperTest extends TestCase
             'link' => ['href' => 'http://example.com/manifest', 'rel' => 'manifest'],
         ];
         $this->assertHtml($expected, $result);
-
-        $result = $this->Html->meta('csrf-token');
-        $expected = [
-            'meta' => ['name' => 'csrf-token', 'content' => 'test'],
-        ];
-        $this->assertHtml($expected, $result);
     }
 
     /**
      * @return array
      */
-    public static function dataMetaLinksProvider(): array
+    public function dataMetaLinksProvider(): array
     {
         return [
             ['canonical', ['controller' => 'Posts', 'action' => 'show'], '/posts/show'],
@@ -1605,8 +1583,8 @@ class HtmlHelperTest extends TestCase
      * @param string $type
      * @param array $url
      * @param string $expectedUrl
+     * @dataProvider dataMetaLinksProvider
      */
-    #[DataProvider('dataMetaLinksProvider')]
     public function testMetaLinks($type, array $url, $expectedUrl): void
     {
         $result = $this->Html->meta($type, $url);
@@ -1717,11 +1695,9 @@ class HtmlHelperTest extends TestCase
     {
         $this->View->expects($this->exactly(2))
             ->method('append')
-            ->with(
-                ...self::withConsecutive(
-                    ['meta', $this->stringContains('robots')],
-                    ['metaTags', $this->stringContains('favicon.ico')],
-                ),
+            ->withConsecutive(
+                ['meta', $this->stringContains('robots')],
+                ['metaTags', $this->stringContains('favicon.ico')]
             );
 
         $result = $this->Html->meta('robots', 'ALL', ['block' => true]);
@@ -1738,11 +1714,9 @@ class HtmlHelperTest extends TestCase
     {
         $this->View->expects($this->exactly(2))
             ->method('append')
-            ->with(
-                ...self::withConsecutive(
-                    ['meta', $this->stringContains('og:site_name')],
-                    ['meta', $this->stringContains('og:description')],
-                ),
+            ->withConsecutive(
+                ['meta', $this->stringContains('og:site_name')],
+                ['meta', $this->stringContains('og:description')]
             );
         $result = $this->Html->meta(['property' => 'og:site_name', 'content' => 'CakePHP', 'block' => true]);
         $this->assertNull($result, 'compact style should work');
@@ -1878,7 +1852,7 @@ class HtmlHelperTest extends TestCase
         $this->assertHtml($expected, $result);
 
         $tr = [
-            new Date('2020-08-27'),
+            new FrozenDate('2020-08-27'),
         ];
         $result = $this->Html->tableCells($tr);
         $expected = [
@@ -1984,7 +1958,7 @@ class HtmlHelperTest extends TestCase
         $expected = ['video' => ['src' => 'files/video.webm'], 'Your browser does not support the HTML5 Video element.', '/video'];
         $this->assertHtml($expected, $result);
 
-        $result = $this->Html->media('video.webm', ['autoload' => true, 'muted' => 'muted']);
+        $result = $this->Html->media('video.webm', ['autoload', 'muted' => 'muted']);
         $expected = [
             'video' => [
                 'src' => 'files/video.webm',
@@ -1997,7 +1971,7 @@ class HtmlHelperTest extends TestCase
 
         $result = $this->Html->media(
             ['video.webm', ['src' => 'video.ogv', 'type' => "video/ogg; codecs='theora, vorbis'"]],
-            ['pathPrefix' => 'videos/', 'poster' => 'poster.jpg', 'text' => 'Your browser does not support the HTML5 Video element.'],
+            ['pathPrefix' => 'videos/', 'poster' => 'poster.jpg', 'text' => 'Your browser does not support the HTML5 Video element.']
         );
         $expected = [
             'video' => ['poster' => Configure::read('App.imageBaseUrl') . 'poster.jpg'],
@@ -2017,7 +1991,7 @@ class HtmlHelperTest extends TestCase
         $this->assertHtml($expected, $result);
 
         $result = $this->Html->media(
-            [['src' => 'video.mov', 'type' => 'video/mp4'], 'video.webm'],
+            [['src' => 'video.mov', 'type' => 'video/mp4'], 'video.webm']
         );
         $expected = [
             '<video',

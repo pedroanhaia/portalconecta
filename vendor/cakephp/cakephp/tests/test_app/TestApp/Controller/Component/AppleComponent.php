@@ -30,7 +30,7 @@ class AppleComponent extends Component
      *
      * @var array
      */
-    protected array $components = ['Orange'];
+    protected $components = ['Orange'];
 
     /**
      * startup method

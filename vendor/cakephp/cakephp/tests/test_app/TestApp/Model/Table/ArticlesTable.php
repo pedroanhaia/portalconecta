@@ -14,9 +14,8 @@ declare(strict_types=1);
  */
 namespace TestApp\Model\Table;
 
-use Cake\ORM\Query\SelectQuery;
+use Cake\ORM\Query;
 use Cake\ORM\Table;
-use Cake\Utility\Text;
 
 /**
  * Article table class
@@ -33,15 +32,15 @@ class ArticlesTable extends Table
     /**
      * Find published
      *
-     * @param \Cake\ORM\Query\SelectQuery $query The query
+     * @param \Cake\ORM\Query $query The query
      * @param array<string, mixed> $options The options
      */
-    public function findPublished($query, ?string $title = null): SelectQuery
+    public function findPublished($query, array $options = []): Query
     {
         $query = $query->where([$this->aliasField('published') => 'Y']);
 
-        if ($title !== null) {
-            $query->andWhere([$this->aliasField('title') => $title]);
+        if (isset($options['title'])) {
+            $query->andWhere([$this->aliasField('title') => $options['title']]);
         }
 
         return $query;
@@ -50,33 +49,12 @@ class ArticlesTable extends Table
     /**
      * Find articles and eager load authors.
      *
-     * @param \Cake\ORM\Query\SelectQuery $query The query
+     * @param \Cake\ORM\Query $query The query
      * @param array<string, mixed> $options The options
      */
-    public function findWithAuthors($query, array $options = []): SelectQuery
+    public function findWithAuthors($query, array $options = []): Query
     {
         return $query->contain('Authors');
-    }
-
-    /**
-     * Finder for testing named parameter compatibility
-     */
-    public function findTitled(SelectQuery $query, array $options): SelectQuery
-    {
-        if (!empty($options['title'])) {
-            $query->where(['Articles.title' => $options['title']]);
-        }
-
-        return $query;
-    }
-
-    public function findSlugged(SelectQuery $query): SelectQuery
-    {
-        return $query->formatResults(function ($results) {
-            return $results->indexBy(function ($row) {
-                return Text::slug($row['title']);
-            });
-        });
     }
 
     /**

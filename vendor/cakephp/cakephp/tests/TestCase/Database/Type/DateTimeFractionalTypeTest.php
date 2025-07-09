@@ -16,12 +16,12 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Database\Type;
 
-use Cake\Database\Driver;
+use Cake\Core\Configure;
 use Cake\Database\Type\DateTimeFractionalType;
-use Cake\I18n\DateTime;
+use Cake\I18n\FrozenTime;
+use Cake\I18n\Time;
 use Cake\TestSuite\TestCase;
 use DateTimeZone;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Test for the DateTime type.
@@ -45,7 +45,11 @@ class DateTimeFractionalTypeTest extends TestCase
     {
         parent::setUp();
         $this->type = new DateTimeFractionalType();
-        $this->driver = $this->getMockBuilder(Driver::class)->getMock();
+        $this->driver = $this->getMockBuilder('Cake\Database\Driver')->getMock();
+
+        Configure::write('Error.ignoredDeprecationPaths', [
+            'src/I18n/Time.php',
+        ]);
     }
 
     /**
@@ -64,7 +68,7 @@ class DateTimeFractionalTypeTest extends TestCase
     public function testToPHPString(): void
     {
         $result = $this->type->toPHP('2001-01-04 12:13:14.123456', $this->driver);
-        $this->assertInstanceOf(DateTime::class, $result);
+        $this->assertInstanceOf(FrozenTime::class, $result);
         $this->assertSame('2001', $result->format('Y'));
         $this->assertSame('01', $result->format('m'));
         $this->assertSame('04', $result->format('d'));
@@ -75,22 +79,12 @@ class DateTimeFractionalTypeTest extends TestCase
 
         // test extra fractional second past microseconds being ignored
         $result = $this->type->toPHP('2001-01-04 12:13:14.1234567', $this->driver);
-        $this->assertInstanceOf(DateTime::class, $result);
-        $this->assertSame('123456', $result->format('u'));
-
-        $result = $this->type->toPHP('1401906995.123456', $this->driver);
-        $this->assertInstanceOf(DateTime::class, $result);
-        $this->assertSame('2014', $result->format('Y'));
-        $this->assertSame('06', $result->format('m'));
-        $this->assertSame('04', $result->format('d'));
-        $this->assertSame('18', $result->format('H'));
-        $this->assertSame('36', $result->format('i'));
-        $this->assertSame('35', $result->format('s'));
+        $this->assertInstanceOf(FrozenTime::class, $result);
         $this->assertSame('123456', $result->format('u'));
 
         $this->type->setDatabaseTimezone('Asia/Kolkata'); // UTC+5:30
         $result = $this->type->toPHP('2001-01-04 12:00:00.123456', $this->driver);
-        $this->assertInstanceOf(DateTime::class, $result);
+        $this->assertInstanceOf(FrozenTime::class, $result);
         $this->assertSame('2001', $result->format('Y'));
         $this->assertSame('01', $result->format('m'));
         $this->assertSame('04', $result->format('d'));
@@ -115,14 +109,14 @@ class DateTimeFractionalTypeTest extends TestCase
         ];
         $expected = [
             'a' => null,
-            'b' => new DateTime('2001-01-04 12:13:14'),
-            'c' => new DateTime('2001-01-04 12:13:14.123'),
-            'd' => new DateTime('2001-01-04 12:13:14.123456'),
-            'e' => new DateTime('2001-01-04 12:13:14.123456'),
+            'b' => new FrozenTime('2001-01-04 12:13:14'),
+            'c' => new FrozenTime('2001-01-04 12:13:14.123'),
+            'd' => new FrozenTime('2001-01-04 12:13:14.123456'),
+            'e' => new FrozenTime('2001-01-04 12:13:14.123456'),
         ];
         $this->assertEquals(
             $expected,
-            $this->type->manyToPHP($values, array_keys($values), $this->driver),
+            $this->type->manyToPHP($values, array_keys($values), $this->driver)
         );
 
         $this->type->setDatabaseTimezone('Asia/Kolkata'); // UTC+5:30
@@ -134,13 +128,13 @@ class DateTimeFractionalTypeTest extends TestCase
         ];
         $expected = [
             'a' => null,
-            'b' => new DateTime('2001-01-04 06:43:14'),
-            'c' => new DateTime('2001-01-04 06:43:14.123'),
-            'd' => new DateTime('2001-01-04 06:43:14.123456'),
+            'b' => new FrozenTime('2001-01-04 06:43:14'),
+            'c' => new FrozenTime('2001-01-04 06:43:14.123'),
+            'd' => new FrozenTime('2001-01-04 06:43:14.123456'),
         ];
         $this->assertEquals(
             $expected,
-            $this->type->manyToPHP($values, array_keys($values), $this->driver),
+            $this->type->manyToPHP($values, array_keys($values), $this->driver)
         );
     }
 
@@ -154,11 +148,11 @@ class DateTimeFractionalTypeTest extends TestCase
         $this->assertSame($value, $result);
 
         // test extra fractional second past microseconds being ignored
-        $date = new DateTime('2013-08-12 15:16:17.1234567');
+        $date = new Time('2013-08-12 15:16:17.1234567');
         $result = $this->type->toDatabase($date, $this->driver);
         $this->assertSame('2013-08-12 15:16:17.123456', $result);
 
-        $date = new DateTime('2013-08-12 15:16:17.123456');
+        $date = new Time('2013-08-12 15:16:17.123456');
         $result = $this->type->toDatabase($date, $this->driver);
         $this->assertSame('2013-08-12 15:16:17.123456', $result);
 
@@ -173,7 +167,7 @@ class DateTimeFractionalTypeTest extends TestCase
         $this->assertSame('2013-08-12 20:46:17.123456', $result);
         $this->type->setDatabaseTimezone(null);
 
-        $date = new DateTime('2013-08-12 15:16:17.123456');
+        $date = new FrozenTime('2013-08-12 15:16:17.123456');
         $result = $this->type->toDatabase($date, $this->driver);
         $this->assertSame('2013-08-12 15:16:17.123456', $result);
 
@@ -181,10 +175,6 @@ class DateTimeFractionalTypeTest extends TestCase
         $result = $this->type->toDatabase($date, $this->driver);
         $this->assertSame('2013-08-12 20:46:17.123456', $result);
         $this->type->setDatabaseTimezone(null);
-
-        $date = 1401906995.123;
-        $result = $this->type->toDatabase($date, $this->driver);
-        $this->assertSame('2014-06-04 18:36:35.123000', $result);
     }
 
     /**
@@ -192,7 +182,7 @@ class DateTimeFractionalTypeTest extends TestCase
      */
     public function testToDatabaseNoMicroseconds(): void
     {
-        $date = new DateTime('2013-08-12 15:16:17');
+        $date = new Time('2013-08-12 15:16:17');
         $result = $this->type->toDatabase($date, $this->driver);
         $this->assertSame('2013-08-12 15:16:17.000000', $result);
 
@@ -207,7 +197,7 @@ class DateTimeFractionalTypeTest extends TestCase
         $this->assertSame('2013-08-12 20:46:17.000000', $result);
         $this->type->setDatabaseTimezone(null);
 
-        $date = new DateTime('2013-08-12 15:16:17');
+        $date = new FrozenTime('2013-08-12 15:16:17');
         $result = $this->type->toDatabase($date, $this->driver);
         $this->assertSame('2013-08-12 15:16:17.000000', $result);
 
@@ -226,9 +216,13 @@ class DateTimeFractionalTypeTest extends TestCase
      *
      * @return array
      */
-    public static function marshalProvider(): array
+    public function marshalProvider(): array
     {
-        return [
+        Configure::write('Error.ignoredDeprecationPaths', [
+            'src/I18n/Time.php',
+        ]);
+
+        $data = [
             // invalid types.
             [null, null],
             [false, null],
@@ -240,14 +234,14 @@ class DateTimeFractionalTypeTest extends TestCase
             ['2017-04-05T17:18:00.1234567+00:00', null],
 
             // valid string types
-            ['2014-02-14 12:02', new DateTime('2014-02-14 12:02')],
-            ['2014-02-14 12:02:12', new DateTime('2014-02-14 12:02:12')],
-            ['2014-02-14 00:00:00.123456', new DateTime('2014-02-14 00:00:00.123456')],
-            ['2014-02-14 13:14:15.123456', new DateTime('2014-02-14 13:14:15.123456')],
-            ['2014-02-14T13:14', new DateTime('2014-02-14T13:14:00')],
-            ['2014-02-14T13:14:12', new DateTime('2014-02-14T13:14:12')],
-            ['2014-02-14T13:14:15.123456', new DateTime('2014-02-14T13:14:15.123456')],
-            ['2017-04-05T17:18:00.123456+00:00', new DateTime('2017-04-05T17:18:00.123456+00:00')],
+            ['2014-02-14 12:02', new Time('2014-02-14 12:02')],
+            ['2014-02-14 12:02:12', new Time('2014-02-14 12:02:12')],
+            ['2014-02-14 00:00:00.123456', new FrozenTime('2014-02-14 00:00:00.123456')],
+            ['2014-02-14 13:14:15.123456', new FrozenTime('2014-02-14 13:14:15.123456')],
+            ['2014-02-14T13:14', new Time('2014-02-14T13:14:00')],
+            ['2014-02-14T13:14:12', new Time('2014-02-14T13:14:12')],
+            ['2014-02-14T13:14:15.123456', new FrozenTime('2014-02-14T13:14:15.123456')],
+            ['2017-04-05T17:18:00.123456+00:00', new FrozenTime('2017-04-05T17:18:00.123456+00:00')],
 
             // valid array types
             [
@@ -256,7 +250,7 @@ class DateTimeFractionalTypeTest extends TestCase
             ],
             [
                 ['year' => 2014, 'month' => 2, 'day' => 14, 'hour' => 13, 'minute' => 14, 'second' => 15, 'microsecond' => 123456],
-                new DateTime('2014-02-14 13:14:15.123456'),
+                new FrozenTime('2014-02-14 13:14:15.123456'),
             ],
             [
                 [
@@ -264,7 +258,7 @@ class DateTimeFractionalTypeTest extends TestCase
                     'hour' => 1, 'minute' => 14, 'second' => 15, 'microsecond' => 123456,
                     'meridian' => 'am',
                 ],
-                new DateTime('2014-02-14 01:14:15.123456'),
+                new FrozenTime('2014-02-14 01:14:15.123456'),
             ],
             [
                 [
@@ -272,7 +266,7 @@ class DateTimeFractionalTypeTest extends TestCase
                     'hour' => 12, 'minute' => 04, 'second' => 15, 'microsecond' => 123456,
                     'meridian' => 'pm',
                 ],
-                new DateTime('2014-02-14 12:04:15.123456'),
+                new FrozenTime('2014-02-14 12:04:15.123456'),
             ],
             [
                 [
@@ -280,24 +274,28 @@ class DateTimeFractionalTypeTest extends TestCase
                     'hour' => 1, 'minute' => 14, 'second' => 15, 'microsecond' => 123456,
                     'meridian' => 'pm',
                 ],
-                new DateTime('2014-02-14 13:14:15.123456'),
+                new FrozenTime('2014-02-14 13:14:15.123456'),
             ],
             [
                 [
                     'year' => 2014, 'month' => 2, 'day' => 14, 'hour' => 12, 'minute' => 30, 'microsecond' => 123456, 'timezone' => 'Europe/Paris',
                 ],
-                new DateTime('2014-02-14 11:30:00.123456', 'UTC'),
+                new FrozenTime('2014-02-14 11:30:00.123456', 'UTC'),
             ],
         ];
+
+        Configure::delete('Error.ignoredDeprecationPaths');
+
+        return $data;
     }
 
     /**
      * test marshalling data.
      *
+     * @dataProvider marshalProvider
      * @param mixed $value
      * @param mixed $expected
      */
-    #[DataProvider('marshalProvider')]
     public function testMarshal($value, $expected): void
     {
         $result = $this->type->marshal($value);
@@ -313,7 +311,7 @@ class DateTimeFractionalTypeTest extends TestCase
      *
      * @return array
      */
-    public static function marshalProviderWithoutMicroseconds(): array
+    public function marshalProviderWithoutMicroseconds(): array
     {
         return [
             // invalid types.
@@ -325,12 +323,12 @@ class DateTimeFractionalTypeTest extends TestCase
             ['2013-nope!', null],
 
             // valid string types
-            ['1392387900', new DateTime('@1392387900')],
-            [1392387900, new DateTime('@1392387900')],
-            ['2014-02-14 00:00:00', new DateTime('2014-02-14 00:00:00')],
-            ['2014-02-14 13:14:15', new DateTime('2014-02-14 13:14:15')],
-            ['2014-02-14T13:14:15', new DateTime('2014-02-14T13:14:15')],
-            ['2017-04-05T17:18:00+00:00', new DateTime('2017-04-05T17:18:00+00:00')],
+            ['1392387900', new FrozenTime('@1392387900')],
+            [1392387900, new FrozenTime('@1392387900')],
+            ['2014-02-14 00:00:00', new FrozenTime('2014-02-14 00:00:00')],
+            ['2014-02-14 13:14:15', new FrozenTime('2014-02-14 13:14:15')],
+            ['2014-02-14T13:14:15', new FrozenTime('2014-02-14T13:14:15')],
+            ['2017-04-05T17:18:00+00:00', new FrozenTime('2017-04-05T17:18:00+00:00')],
 
             // valid array types
             [
@@ -339,7 +337,7 @@ class DateTimeFractionalTypeTest extends TestCase
             ],
             [
                 ['year' => 2014, 'month' => 2, 'day' => 14, 'hour' => 13, 'minute' => 14, 'second' => 15],
-                new DateTime('2014-02-14 13:14:15'),
+                new FrozenTime('2014-02-14 13:14:15'),
             ],
             [
                 [
@@ -347,7 +345,7 @@ class DateTimeFractionalTypeTest extends TestCase
                     'hour' => 1, 'minute' => 14, 'second' => 15,
                     'meridian' => 'am',
                 ],
-                new DateTime('2014-02-14 01:14:15'),
+                new FrozenTime('2014-02-14 01:14:15'),
             ],
             [
                 [
@@ -355,7 +353,7 @@ class DateTimeFractionalTypeTest extends TestCase
                     'hour' => 12, 'minute' => 04, 'second' => 15,
                     'meridian' => 'pm',
                 ],
-                new DateTime('2014-02-14 12:04:15'),
+                new FrozenTime('2014-02-14 12:04:15'),
             ],
             [
                 [
@@ -363,36 +361,40 @@ class DateTimeFractionalTypeTest extends TestCase
                     'hour' => 1, 'minute' => 14, 'second' => 15,
                     'meridian' => 'pm',
                 ],
-                new DateTime('2014-02-14 13:14:15'),
+                new FrozenTime('2014-02-14 13:14:15'),
             ],
             [
                 [
                     'year' => 2014, 'month' => 2, 'day' => 14,
                 ],
-                new DateTime('2014-02-14 00:00:00'),
+                new FrozenTime('2014-02-14 00:00:00'),
             ],
             [
                 [
                     'year' => 2014, 'month' => 2, 'day' => 14, 'hour' => 12, 'minute' => 30, 'timezone' => 'Europe/Paris',
                 ],
-                new DateTime('2014-02-14 11:30:00', 'UTC'),
+                new FrozenTime('2014-02-14 11:30:00', 'UTC'),
             ],
 
             // Invalid array types
             [
                 ['year' => 'farts', 'month' => 'derp'],
-                null,
+                new FrozenTime(date('Y-m-d 00:00:00')),
             ],
             [
                 ['year' => 'farts', 'month' => 'derp', 'day' => 'farts'],
-                null,
+                new FrozenTime(date('Y-m-d 00:00:00')),
             ],
             [
                 [
                     'year' => '2014', 'month' => '02', 'day' => '14',
                     'hour' => 'farts', 'minute' => 'farts',
                 ],
-                null,
+                new FrozenTime('2014-02-14 00:00:00'),
+            ],
+            [
+                FrozenTime::now(),
+                FrozenTime::now(),
             ],
         ];
     }
@@ -400,10 +402,10 @@ class DateTimeFractionalTypeTest extends TestCase
     /**
      * test marshalling data.
      *
+     * @dataProvider marshalProviderWithoutMicroseconds
      * @param mixed $value
      * @param mixed $expected
      */
-    #[DataProvider('marshalProvider')]
     public function testMarshalWithoutMicroseconds($value, $expected): void
     {
         $result = $this->type->marshal($value);

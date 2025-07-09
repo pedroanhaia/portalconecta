@@ -23,7 +23,6 @@ use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
 use Cake\Utility\CookieCryptTrait;
-use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Http\TestRequestHandler;
 
 /**
@@ -33,9 +32,7 @@ class EncryptedCookieMiddlewareTest extends TestCase
 {
     use CookieCryptTrait;
 
-    protected EncryptedCookieMiddleware $middleware;
-
-    protected static string $encryptedString = '';
+    protected $middleware;
 
     protected function _getCookieEncryptionKey(): string
     {
@@ -47,14 +44,10 @@ class EncryptedCookieMiddlewareTest extends TestCase
      */
     public function setUp(): void
     {
-        parent::setup();
-
-        static::$encryptedString = $this->_encrypt('secret data', 'aes');
-
         $this->middleware = new EncryptedCookieMiddleware(
             ['secret', 'ninja'],
             $this->_getCookieEncryptionKey(),
-            'aes',
+            'aes'
         );
     }
 
@@ -83,9 +76,9 @@ class EncryptedCookieMiddlewareTest extends TestCase
     /**
      * Test decoding malformed cookies
      *
+     * @dataProvider malformedCookies
      * @param string $cookie
      */
-    #[DataProvider('malformedCookies')]
     public function testDecodeMalformedCookies($cookie): void
     {
         $request = new ServerRequest(['url' => '/cookies/nom']);
@@ -99,7 +92,7 @@ class EncryptedCookieMiddlewareTest extends TestCase
         $middleware = new EncryptedCookieMiddleware(
             ['secret'],
             $this->_getCookieEncryptionKey(),
-            'aes',
+            'aes'
         );
         $middleware->process($request, $handler);
     }
@@ -109,13 +102,15 @@ class EncryptedCookieMiddlewareTest extends TestCase
      *
      * @return array
      */
-    public static function malformedCookies(): array
+    public function malformedCookies(): array
     {
+        $encrypted = $this->_encrypt('secret data', 'aes');
+
         return [
             'empty' => [''],
-            'wrong prefix' => [substr_replace(static::$encryptedString, 'foo', 0, 3)],
-            'altered' => [str_replace('M', 'A', static::$encryptedString)],
-            'invalid chars' => [str_replace('M', 'M#', static::$encryptedString)],
+            'wrong prefix' => [substr_replace($encrypted, 'foo', 0, 3)],
+            'altered' => [str_replace('M', 'A', $encrypted)],
+            'invalid chars' => [str_replace('M', 'M#', $encrypted)],
         ];
     }
 
@@ -138,7 +133,7 @@ class EncryptedCookieMiddlewareTest extends TestCase
         $this->assertTrue($cookies->has('ninja'));
         $this->assertSame(
             'shuriken',
-            $this->_decrypt($cookies->get('ninja')->getValue(), 'aes'),
+            $this->_decrypt($cookies->get('ninja')->getValue(), 'aes')
         );
     }
 
@@ -157,7 +152,7 @@ class EncryptedCookieMiddlewareTest extends TestCase
         $this->assertNotSame('shuriken', $response->getCookie('ninja'));
         $this->assertSame(
             'shuriken',
-            $this->_decrypt($response->getCookie('ninja')['value'], 'aes'),
+            $this->_decrypt($response->getCookie('ninja')['value'], 'aes')
         );
     }
 }

@@ -247,6 +247,20 @@ class ConsoleOutputTest extends TestCase
         $this->output->write('<error>Bad</error> Regular <b>Left</b> <i>behind</i> <name>', 0);
     }
 
+    public function testWithInvalidStreamNum(): void
+    {
+        $this->expectException(\Cake\Console\Exception\ConsoleException::class);
+        $this->expectExceptionMessage('Invalid stream in constructor. It is not a valid resource.');
+        $output = new StubConsoleOutput(1);
+    }
+
+    public function testWithInvalidStreamArray(): void
+    {
+        $this->expectException(\Cake\Console\Exception\ConsoleException::class);
+        $this->expectExceptionMessage('Invalid stream in constructor. It is not a valid resource.');
+        $output = new StubConsoleOutput([]);
+    }
+
     public function testWorkingWithStub(): void
     {
         $output = new StubConsoleOutput();

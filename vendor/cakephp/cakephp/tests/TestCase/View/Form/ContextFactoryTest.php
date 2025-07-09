@@ -16,10 +16,10 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\View\Form;
 
-use Cake\Core\Exception\CakeException;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
 use Cake\View\Form\ContextFactory;
+use RuntimeException;
 
 /**
  * ContextFactory test case.
@@ -28,10 +28,10 @@ class ContextFactoryTest extends TestCase
 {
     public function testGetException(): void
     {
-        $this->expectException(CakeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
-            'No context provider found for value of type `bool`.'
-            . ' Use `null` as 1st argument of FormHelper::create() to create a context-less form.',
+            'No context provider found for value of type `boolean`.'
+            . ' Use `null` as 1st argument of FormHelper::create() to create a context-less form.'
         );
 
         $factory = new ContextFactory();

@@ -7,8 +7,8 @@ namespace Bake\Test\App\Controller;
  * BakeArticles Controller
  *
  * @property \Bake\Test\App\Model\Table\BakeArticlesTable $BakeArticles
- * @property \Cake\Controller\Component\FormProtectionComponent $FormProtection
- * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \Cake\Controller\Component\RequestHandlerComponent $RequestHandler
+ * @property \Cake\Controller\Component\AuthComponent $Auth
  */
 class BakeArticlesController extends AppController
 {
@@ -21,8 +21,8 @@ class BakeArticlesController extends AppController
     {
         parent::initialize();
 
-        $this->loadComponent('FormProtection');
-        $this->loadComponent('Flash');
+        $this->loadComponent('RequestHandler');
+        $this->loadComponent('Auth');
         $this->viewBuilder()->setHelpers(['Html', 'Time']);
     }
 }

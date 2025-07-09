@@ -16,9 +16,7 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\Log;
 
 use Cake\Log\Log;
-use Cake\Log\LogTrait;
 use Cake\TestSuite\TestCase;
-use Psr\Log\LoggerInterface;
 
 /**
  * Test case for LogTrait
@@ -36,20 +34,16 @@ class LogTraitTest extends TestCase
      */
     public function testLog(): void
     {
-        $mock = $this->getMockBuilder(LoggerInterface::class)->getMock();
+        $mock = $this->getMockBuilder('Psr\Log\LoggerInterface')->getMock();
         $mock->expects($this->exactly(2))
             ->method('log')
-            ->with(
-                ...self::withConsecutive(
-                    ['error', 'Testing'],
-                    ['debug', 'message'],
-                ),
+            ->withConsecutive(
+                ['error', 'Testing'],
+                ['debug', 'message']
             );
 
         Log::setConfig('trait_test', ['engine' => $mock]);
-        $subject = new class {
-            use LogTrait;
-        };
+        $subject = $this->getObjectForTrait('Cake\Log\LogTrait');
 
         $subject->log('Testing');
         $subject->log('message', 'debug');

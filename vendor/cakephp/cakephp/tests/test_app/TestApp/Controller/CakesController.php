@@ -16,7 +16,7 @@ class CakesController extends Controller
      *
      * @var string
      */
-    protected ?string $modelClass = 'Posts';
+    protected $modelClass = 'Posts';
 
     /**
      * index method
@@ -44,7 +44,7 @@ class CakesController extends Controller
      *
      * @return string
      */
-    public function invalid(): string
+    public function invalid()
     {
         return 'Some string';
     }

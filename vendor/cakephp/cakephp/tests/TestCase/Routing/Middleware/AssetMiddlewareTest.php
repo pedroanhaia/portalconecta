@@ -19,7 +19,6 @@ namespace Cake\Test\TestCase\Routing\Middleware;
 use Cake\Http\ServerRequestFactory;
 use Cake\Routing\Middleware\AssetMiddleware;
 use Cake\TestSuite\TestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Http\TestRequestHandler;
 
 /**
@@ -85,7 +84,7 @@ class AssetMiddlewareTest extends TestCase
      *
      * @return array
      */
-    public static function assetProvider(): array
+    public function assetProvider(): array
     {
         return [
             // In plugin root.
@@ -113,8 +112,9 @@ class AssetMiddlewareTest extends TestCase
 
     /**
      * Test assets in a plugin.
+     *
+     * @dataProvider assetProvider
      */
-    #[DataProvider('assetProvider')]
     public function testPluginAsset(string $url, string $expectedFile): void
     {
         $request = ServerRequestFactory::fromGlobals(['REQUEST_URI' => $url]);
@@ -144,23 +144,23 @@ class AssetMiddlewareTest extends TestCase
 
         $this->assertSame(
             'application/javascript',
-            $res->getHeaderLine('Content-Type'),
+            $res->getHeaderLine('Content-Type')
         );
         $this->assertSame(
             gmdate(DATE_RFC7231, $time),
-            $res->getHeaderLine('Date'),
+            $res->getHeaderLine('Date')
         );
         $this->assertSame(
             'public,max-age=' . ($expires - $time),
-            $res->getHeaderLine('Cache-Control'),
+            $res->getHeaderLine('Cache-Control')
         );
         $this->assertSame(
             gmdate(DATE_RFC7231, $modified),
-            $res->getHeaderLine('Last-Modified'),
+            $res->getHeaderLine('Last-Modified')
         );
         $this->assertSame(
             gmdate(DATE_RFC7231, $expires),
-            $res->getHeaderLine('Expires'),
+            $res->getHeaderLine('Expires')
         );
     }
 

@@ -22,8 +22,6 @@ use Cake\Event\EventManager;
 use Cake\Http\BaseApplication;
 use Cake\Http\CallbackStream;
 use Cake\Http\MiddlewareQueue;
-use Cake\Http\Response;
-use Cake\Http\ResponseEmitter;
 use Cake\Http\Server;
 use Cake\Http\ServerRequest;
 use Cake\Http\Session;
@@ -31,9 +29,7 @@ use Cake\TestSuite\TestCase;
 use InvalidArgumentException;
 use Laminas\Diactoros\Response as LaminasResponse;
 use Laminas\Diactoros\ServerRequest as LaminasServerRequest;
-use Mockery;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use TestApp\Http\MiddlewareApplication;
 
 require_once __DIR__ . '/server_mocks.php';
@@ -65,7 +61,7 @@ class ServerTest extends TestCase
     {
         parent::setUp();
         $this->server = $_SERVER;
-        $this->config = dirname(__DIR__, 2) . '/test_app/config';
+        $this->config = dirname(dirname(__DIR__)) . '/test_app/config';
         $GLOBALS['mockedHeaders'] = [];
         $GLOBALS['mockedHeadersSent'] = true;
     }
@@ -85,14 +81,14 @@ class ServerTest extends TestCase
      */
     public function testAppGetSet(): void
     {
-        $eventManager = new EventManager();
-        $app = new class ($this->config, $eventManager) extends BaseApplication
-        {
-            public function middleware(MiddlewareQueue $middlewareQueue): MiddlewareQueue
-            {
-                return $middlewareQueue;
-            }
-        };
+        /** @var \Cake\Http\BaseApplication|\PHPUnit\Framework\MockObject\MockObject $app */
+        $app = $this->getMockBuilder(BaseApplication::class)
+            ->setConstructorArgs([$this->config])
+            ->getMock();
+
+        $manager = new EventManager();
+        $app->method('getEventManager')
+            ->willReturn($manager);
 
         $server = new Server($app);
         $this->assertSame($app, $server->getApp());
@@ -113,12 +109,12 @@ class ServerTest extends TestCase
         $this->assertSame(
             'source header',
             $res->getHeaderLine('X-testing'),
-            'Input response is carried through out middleware',
+            'Input response is carried through out middleware'
         );
         $this->assertSame(
             'request header',
             $res->getHeaderLine('X-pass'),
-            'Request is used in middleware',
+            'Request is used in middleware'
         );
     }
 
@@ -130,27 +126,32 @@ class ServerTest extends TestCase
         $request = new ServerRequest();
         $request = $request->withHeader('X-pass', 'request header');
 
-        /** @var \TestApp\Http\MiddlewareApplication|\Mockery\MockInterface $app */
-        $app = Mockery::mock(MiddlewareApplication::class, [$this->config])
-            ->shouldAllowMockingMethod('pluginEvents')
-            ->makePartial();
-        $app->shouldReceive('pluginBootstrap', 'pluginMiddleware')
-            ->with(Mockery::type(MiddlewareQueue::class))
-            ->andReturnUsing(function ($middleware) {
+        /** @var \TestApp\Http\MiddlewareApplication|\PHPUnit\Framework\MockObject\MockObject $app */
+        $app = $this->getMockBuilder(MiddlewareApplication::class)
+            ->onlyMethods(['pluginBootstrap', 'pluginMiddleware'])
+            ->addMethods(['pluginEvents'])
+            ->setConstructorArgs([$this->config])
+            ->getMock();
+        $app->expects($this->once())
+            ->method('pluginBootstrap');
+        $app->expects($this->once())
+            ->method('pluginMiddleware')
+            ->with($this->isInstanceOf(MiddlewareQueue::class))
+            ->will($this->returnCallback(function ($middleware) {
                 return $middleware;
-            });
+            }));
 
         $server = new Server($app);
         $res = $server->run($request);
         $this->assertSame(
             'source header',
             $res->getHeaderLine('X-testing'),
-            'Input response is carried through out middleware',
+            'Input response is carried through out middleware'
         );
         $this->assertSame(
             'request header',
             $res->getHeaderLine('X-pass'),
-            'Request is used in middleware',
+            'Request is used in middleware'
         );
     }
 
@@ -168,7 +169,7 @@ class ServerTest extends TestCase
         $this->assertSame(
             'globalvalue',
             $res->getHeaderLine('X-pass'),
-            'Default request is made from server',
+            'Default request is made from server'
         );
     }
 
@@ -203,12 +204,12 @@ class ServerTest extends TestCase
         $this->assertSame(
             200,
             $res->getStatusCode(),
-            'Application was expected to be executed',
+            'Application was expected to be executed'
         );
         $this->assertSame(
             'source header',
             $res->getHeaderLine('X-testing'),
-            'Application was expected to be executed',
+            'Application was expected to be executed'
         );
     }
 
@@ -227,12 +228,12 @@ class ServerTest extends TestCase
         $this->assertSame(
             200,
             $res->getStatusCode(),
-            'Application was expected to be executed',
+            'Application was expected to be executed'
         );
         $this->assertSame(
             'source header',
             $res->getHeaderLine('X-testing'),
-            'Application was expected to be executed',
+            'Application was expected to be executed'
         );
     }
 
@@ -248,7 +249,7 @@ class ServerTest extends TestCase
             ->withHeader('X-First', 'first')
             ->withHeader('X-Second', 'second');
 
-        $emitter = $this->getMockBuilder(ResponseEmitter::class)->getMock();
+        $emitter = $this->getMockBuilder('Laminas\HttpHandlerRunner\Emitter\EmitterInterface')->getMock();
         $emitter->expects($this->once())
             ->method('emit')
             ->with($final);
@@ -303,13 +304,11 @@ class ServerTest extends TestCase
      */
     public function testEventManagerProxies(): void
     {
-        $app = new class ($this->config) extends BaseApplication
-        {
-            public function middleware(MiddlewareQueue $middlewareQueue): MiddlewareQueue
-            {
-                return $middlewareQueue;
-            }
-        };
+        /** @var \Cake\Http\BaseApplication|\PHPUnit\Framework\MockObject\MockObject $app */
+        $app = $this->getMockForAbstractClass(
+            BaseApplication::class,
+            [$this->config]
+        );
 
         $server = new Server($app);
         $this->assertSame($app->getEventManager(), $server->getEventManager());
@@ -320,21 +319,8 @@ class ServerTest extends TestCase
      */
     public function testGetEventManagerNonEventedApplication(): void
     {
-        $app = new class implements HttpApplicationInterface {
-            public function bootstrap(): void
-            {
-            }
-
-            public function middleware(MiddlewareQueue $middlewareQueue): MiddlewareQueue
-            {
-                return $middlewareQueue;
-            }
-
-            public function handle(ServerRequestInterface $request): ResponseInterface
-            {
-                return new Response();
-            }
-        };
+        /** @var \Cake\Core\HttpApplicationInterface|\PHPUnit\Framework\MockObject\MockObject $app */
+        $app = $this->createMock(HttpApplicationInterface::class);
 
         $server = new Server($app);
         $this->assertSame(EventManager::instance(), $server->getEventManager());
@@ -345,21 +331,8 @@ class ServerTest extends TestCase
      */
     public function testSetEventManagerNonEventedApplication(): void
     {
-        $app = new class implements HttpApplicationInterface {
-            public function bootstrap(): void
-            {
-            }
-
-            public function middleware(MiddlewareQueue $middlewareQueue): MiddlewareQueue
-            {
-                return $middlewareQueue;
-            }
-
-            public function handle(ServerRequestInterface $request): ResponseInterface
-            {
-                return new Response();
-            }
-        };
+        /** @var \Cake\Core\HttpApplicationInterface|\PHPUnit\Framework\MockObject\MockObject $app */
+        $app = $this->createMock(HttpApplicationInterface::class);
 
         $events = new EventManager();
         $server = new Server($app);
@@ -374,52 +347,11 @@ class ServerTest extends TestCase
      */
     public function testAppWithoutContainerApplicationInterface(): void
     {
-        $app = new class implements HttpApplicationInterface {
-            public function bootstrap(): void
-            {
-            }
-
-            public function middleware(MiddlewareQueue $middlewareQueue): MiddlewareQueue
-            {
-                return $middlewareQueue;
-            }
-
-            public function handle(ServerRequestInterface $request): ResponseInterface
-            {
-                return new Response();
-            }
-        };
+        /** @var \Cake\Core\HttpApplicationInterface|\PHPUnit\Framework\MockObject\MockObject $app */
+        $app = $this->createMock(HttpApplicationInterface::class);
         $server = new Server($app);
 
         $request = new ServerRequest();
         $this->assertInstanceOf(ResponseInterface::class, $server->run($request));
-    }
-
-    public function testTerminateEvent(): void
-    {
-        $request = new ServerRequest();
-        $app = new MiddlewareApplication($this->config);
-        $app->getContainer()->add(ServerRequest::class, $request);
-        $server = new Server($app);
-
-        $triggered = false;
-        $server->getEventManager()->on(
-            'Server.terminate',
-            function ($event, $request, $response) use (&$triggered): void {
-                $triggered = true;
-                $this->assertInstanceOf(ServerRequest::class, $request);
-                $this->assertInstanceOf(Response::class, $response);
-            },
-        );
-
-        $emitter = new class extends ResponseEmitter {
-            public function emit(ResponseInterface $response, $stream = null): bool
-            {
-                return true;
-            }
-        };
-        $server->emit(new Response(), $emitter);
-
-        $this->assertTrue($triggered);
     }
 }

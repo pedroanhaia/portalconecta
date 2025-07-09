@@ -15,5 +15,5 @@ class ControllerTestAppController extends Controller
      *
      * @var string
      */
-    protected ?string $modelClass = 'Posts';
+    protected $modelClass = 'Posts';
 }

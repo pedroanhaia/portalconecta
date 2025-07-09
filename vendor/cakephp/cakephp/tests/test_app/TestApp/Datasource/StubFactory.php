@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace TestApp\Datasource;
 
-use Cake\Datasource\Exception\MissingModelException;
 use Cake\Datasource\Locator\LocatorInterface;
 use Cake\Datasource\RepositoryInterface;
 
@@ -14,13 +13,10 @@ class StubFactory implements LocatorInterface
     /**
      * @inheritDoc
      */
-    public function get(string $alias, array $options = []): RepositoryInterface
+    public function get(string $alias, array $options = [])
     {
         if (!isset($this->instances[$alias])) {
-            throw new MissingModelException(sprintf(
-                'Model class "%s" of type "Test" could not be found.',
-                $alias,
-            ));
+            return false;
         }
 
         return $this->instances[$alias];
@@ -29,11 +25,9 @@ class StubFactory implements LocatorInterface
     /**
      * @inheritDoc
      */
-    public function set(string $alias, RepositoryInterface $repository): RepositoryInterface
+    public function set(string $alias, RepositoryInterface $repository)
     {
         $this->instances[$alias] = $repository;
-
-        return $repository;
     }
 
     /**

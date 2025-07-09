@@ -22,7 +22,6 @@ use Cake\Database\Exception\DatabaseException;
 use Cake\Database\Schema\Collection;
 use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\TestCase;
-use PHPUnit\Framework\Attributes\DoesNotPerformAssertions;
 
 /**
  * Test case for Collection
@@ -35,9 +34,9 @@ class CollectionTest extends TestCase
     protected $connection;
 
     /**
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'core.Users',
     ];
 
@@ -95,8 +94,10 @@ class CollectionTest extends TestCase
         $this->assertEquals($table, $result);
     }
 
-    #[DoesNotPerformAssertions]
-    public function testListTables(): void
+    /**
+     * @doesNotPerformAssertions
+     */
+    public function testListTables()
     {
         $config = $this->connection->config();
         $driver = new $config['driver']($config);

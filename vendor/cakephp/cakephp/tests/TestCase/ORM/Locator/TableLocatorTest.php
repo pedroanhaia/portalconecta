@@ -16,26 +16,17 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\ORM\Locator;
 
-use Cake\Core\Exception\CakeException;
-use Cake\Database\Exception\DatabaseException;
 use Cake\Datasource\ConnectionManager;
 use Cake\ORM\Exception\MissingTableClassException;
 use Cake\ORM\Locator\TableLocator;
-use Cake\ORM\Query\QueryFactory;
 use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
 use Cake\Validation\Validator;
-use ReflectionProperty;
+use RuntimeException;
 use TestApp\Infrastructure\Table\AddressesTable;
-use TestApp\Model\Entity\Article;
 use TestApp\Model\Table\ArticlesTable;
-use TestApp\Model\Table\AuthorsTable;
 use TestApp\Model\Table\MyUsersTable;
 use TestPlugin\Infrastructure\Table\AddressesTable as PluginAddressesTable;
-use TestPlugin\Model\Entity\Comment;
-use TestPlugin\Model\Table\CommentsTable;
-use TestPlugin\Model\Table\TestPluginCommentsTable;
-use TestPluginTwo\Model\Table\CommentsTable as PluginTwoCommentsTable;
 
 /**
  * Test case for TableLocator
@@ -78,7 +69,7 @@ class TableLocatorTest extends TestCase
 
         $data = [
             'connection' => 'testing',
-            'entityClass' => Article::class,
+            'entityClass' => 'TestApp\Model\Entity\Article',
         ];
         $result = $this->_locator->setConfig('Tests', $data);
         $this->assertSame($this->_locator, $result, 'Returns locator');
@@ -97,7 +88,7 @@ class TableLocatorTest extends TestCase
 
         $data = [
             'connection' => 'testing',
-            'entityClass' => Comment::class,
+            'entityClass' => 'TestPlugin\Model\Entity\Comment',
         ];
 
         $result = $this->_locator->setConfig('TestPlugin.TestPluginComments', $data);
@@ -112,8 +103,8 @@ class TableLocatorTest extends TestCase
         $users = $this->_locator->get('Users');
         $this->assertNotEmpty($users);
 
-        $this->expectException(DatabaseException::class);
-        $this->expectExceptionMessage('You cannot configure `Users`, it has already been constructed.');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('You cannot configure "Users", it has already been constructed.');
 
         $this->_locator->setConfig('Users', ['table' => 'my_users']);
     }
@@ -248,7 +239,7 @@ class TableLocatorTest extends TestCase
     /**
      * Test that get() uses config data set with getConfig()
      */
-    public function testGetWithGetConfig(): void
+    public function testGetWithgetConfig(): void
     {
         $this->_locator->setConfig('Articles', [
             'table' => 'my_articles',
@@ -290,8 +281,8 @@ class TableLocatorTest extends TestCase
         $users = $this->_locator->get('Users');
         $this->assertNotEmpty($users);
 
-        $this->expectException(CakeException::class);
-        $this->expectExceptionMessage('You cannot configure `Users`, it already exists in the registry.');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('You cannot configure "Users", it already exists in the registry.');
 
         $this->_locator->get('Users', ['table' => 'my_users']);
     }
@@ -313,11 +304,15 @@ class TableLocatorTest extends TestCase
      */
     public function testGetWithConventions(): void
     {
+        $table = $this->_locator->get('articles');
+        $this->assertInstanceOf('TestApp\Model\Table\ArticlesTable', $table);
         $table = $this->_locator->get('Articles');
-        $this->assertInstanceOf(ArticlesTable::class, $table);
+        $this->assertInstanceOf('TestApp\Model\Table\ArticlesTable', $table);
 
+        $table = $this->_locator->get('authors');
+        $this->assertInstanceOf('TestApp\Model\Table\AuthorsTable', $table);
         $table = $this->_locator->get('Authors');
-        $this->assertInstanceOf(AuthorsTable::class, $table);
+        $this->assertInstanceOf('TestApp\Model\Table\AuthorsTable', $table);
     }
 
     /**
@@ -328,14 +323,14 @@ class TableLocatorTest extends TestCase
         $this->loadPlugins(['TestPlugin']);
         $table = $this->_locator->get('TestPlugin.TestPluginComments');
 
-        $this->assertInstanceOf(TestPluginCommentsTable::class, $table);
+        $this->assertInstanceOf('TestPlugin\Model\Table\TestPluginCommentsTable', $table);
         $this->assertFalse(
             $this->_locator->exists('TestPluginComments'),
-            'Short form should NOT exist',
+            'Short form should NOT exist'
         );
         $this->assertTrue(
             $this->_locator->exists('TestPlugin.TestPluginComments'),
-            'Long form should exist',
+            'Long form should exist'
         );
 
         $second = $this->_locator->get('TestPlugin.TestPluginComments');
@@ -356,16 +351,16 @@ class TableLocatorTest extends TestCase
         $plugin2 = $this->_locator->get('TestPluginTwo.Comments');
 
         $this->assertInstanceOf(Table::class, $app, 'Should be an app table instance');
-        $this->assertInstanceOf(CommentsTable::class, $plugin1, 'Should be a plugin 1 table instance');
-        $this->assertInstanceOf(PluginTwoCommentsTable::class, $plugin2, 'Should be a plugin 2 table instance');
+        $this->assertInstanceOf('TestPlugin\Model\Table\CommentsTable', $plugin1, 'Should be a plugin 1 table instance');
+        $this->assertInstanceOf('TestPluginTwo\Model\Table\CommentsTable', $plugin2, 'Should be a plugin 2 table instance');
 
         $plugin2 = $this->_locator->get('TestPluginTwo.Comments');
         $plugin1 = $this->_locator->get('TestPlugin.Comments');
         $app = $this->_locator->get('Comments');
 
         $this->assertInstanceOf(Table::class, $app, 'Should still be an app table instance');
-        $this->assertInstanceOf(CommentsTable::class, $plugin1, 'Should still be a plugin 1 table instance');
-        $this->assertInstanceOf(PluginTwoCommentsTable::class, $plugin2, 'Should still be a plugin 2 table instance');
+        $this->assertInstanceOf('TestPlugin\Model\Table\CommentsTable', $plugin1, 'Should still be a plugin 1 table instance');
+        $this->assertInstanceOf('TestPluginTwo\Model\Table\CommentsTable', $plugin2, 'Should still be a plugin 2 table instance');
     }
 
     /**
@@ -377,7 +372,7 @@ class TableLocatorTest extends TestCase
         $table = $this->_locator->get('Comments', [
             'className' => 'TestPlugin.TestPluginComments',
         ]);
-        $class = TestPluginCommentsTable::class;
+        $class = 'TestPlugin\Model\Table\TestPluginCommentsTable';
         $this->assertInstanceOf($class, $table);
         $this->assertFalse($this->_locator->exists('TestPluginComments'), 'Class name should not exist');
         $this->assertFalse($this->_locator->exists('TestPlugin.TestPluginComments'), 'Full class alias should not exist');
@@ -393,7 +388,7 @@ class TableLocatorTest extends TestCase
     public function testGetPluginWithFullNamespaceName(): void
     {
         $this->loadPlugins(['TestPlugin']);
-        $class = TestPluginCommentsTable::class;
+        $class = 'TestPlugin\Model\Table\TestPluginCommentsTable';
         $table = $this->_locator->get('Comments', [
             'className' => $class,
         ]);
@@ -497,7 +492,7 @@ class TableLocatorTest extends TestCase
     {
         $this->loadPlugins(['TestPlugin']);
 
-        $mock = $this->getMockBuilder(CommentsTable::class)->getMock();
+        $mock = $this->getMockBuilder('TestPlugin\Model\Table\CommentsTable')->getMock();
 
         $this->assertSame($mock, $this->_locator->set('TestPlugin.Comments', $mock));
         $this->assertSame($mock, $this->_locator->get('TestPlugin.Comments'));
@@ -683,21 +678,5 @@ class TableLocatorTest extends TestCase
         $table = $this->_locator->get('Articles', ['className' => ArticlesTable::class]);
 
         $this->assertSame($table, $mock);
-    }
-
-    public function testQueryFactoryInstance(): void
-    {
-        $articles = $this->_locator->get(ArticlesTable::class);
-        $prop1 = new ReflectionProperty($articles, 'queryFactory');
-
-        $users = $this->_locator->get(MyUsersTable::class);
-        $prop2 = new ReflectionProperty($users, 'queryFactory');
-
-        $this->assertInstanceOf(QueryFactory::class, $prop1->getValue($articles));
-        $this->assertSame($prop1->getValue($articles), $prop2->getValue($users));
-
-        $addresses = $this->_locator->get(AddressesTable::class, ['queryFactory' => new QueryFactory()]);
-        $prop3 = new ReflectionProperty($addresses, 'queryFactory');
-        $this->assertNotSame($prop1->getValue($articles), $prop3->getValue($addresses));
     }
 }

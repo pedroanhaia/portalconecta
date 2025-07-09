@@ -2,27 +2,24 @@
 declare(strict_types=1);
 
 /**
- * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP(tm) Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
  * @since         0.1.0
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 namespace Bake\Test\TestCase\Command;
 
 use Bake\Command\FixtureCommand;
 use Bake\Test\TestCase\TestCase;
-use Cake\Command\Command;
-use Cake\Console\ConsoleIo;
 use Cake\Console\Exception\StopException;
-use Cake\Console\TestSuite\StubConsoleInput;
-use Cake\Console\TestSuite\StubConsoleOutput;
+use Cake\Console\Shell;
 use Cake\Core\Plugin;
 use Cake\Database\Driver\Postgres;
 use Cake\Datasource\ConnectionManager;
@@ -35,11 +32,11 @@ class FixtureCommandTest extends TestCase
     /**
      * fixtures
      *
-     * @var list<string>
+     * @var array
      */
-    protected array $fixtures = [
-        'plugin.Bake.Articles',
-        'plugin.Bake.Comments',
+    protected $fixtures = [
+        'core.Articles',
+        'core.Comments',
         'plugin.Bake.Datatypes',
         'plugin.Bake.BinaryTests',
         'plugin.Bake.BakeCar',
@@ -57,33 +54,13 @@ class FixtureCommandTest extends TestCase
 
         $this->_compareBasePath = Plugin::path('Bake') . 'tests' . DS . 'comparisons' . DS . 'Fixture' . DS;
         $this->setAppNamespace('Bake\Test\App');
+        $this->useCommandRunner();
     }
 
     /**
      * Tests validating supported table and column names.
      */
-    public function testValidateNamesWithValid(): void
-    {
-        $command = new FixtureCommand();
-        $command->connection = 'test';
-
-        $schema = $command->readSchema('Car', 'car');
-        $schema->addColumn('_valid', ['type' => 'string', 'length' => null]);
-
-        $abortCalled = false;
-        try {
-            $io = new ConsoleIo(new StubConsoleOutput(), new StubConsoleOutput(), new StubConsoleInput([]));
-            $command->validateNames($schema, $io);
-        } catch (StopException) {
-            $abortCalled = true;
-        }
-        $this->assertFalse($abortCalled);
-    }
-
-    /**
-     * Tests validating supported table and column names.
-     */
-    public function testValidateNamesWithInvalid(): void
+    public function testValidateNames(): void
     {
         $command = new FixtureCommand();
         $command->connection = 'test';
@@ -92,24 +69,8 @@ class FixtureCommandTest extends TestCase
         $schema->addColumn('0invalid', ['type' => 'string', 'length' => null]);
 
         $this->expectException(StopException::class);
-        $io = new ConsoleIo(new StubConsoleOutput(), new StubConsoleOutput(), new StubConsoleInput([]));
-        $command->validateNames($schema, $io);
-    }
-
-    /**
-     * Tests validating supported table and column names.
-     */
-    public function testValidateNamesWithInvalidSpecialChars(): void
-    {
-        $command = new FixtureCommand();
-        $command->connection = 'test';
-
-        $schema = $command->readSchema('Car', 'car');
-        $schema->addColumn('invalid:column', ['type' => 'string', 'length' => null]);
-
-        $this->expectException(StopException::class);
-        $io = new ConsoleIo(new StubConsoleOutput(), new StubConsoleOutput(), new StubConsoleInput([]));
-        $command->validateNames($schema, $io);
+        $this->expectExceptionMessage('Unable to bake table with integer column names or names that start with digits. Found `0invalid`');
+        $command->validateNames($schema);
     }
 
     /**
@@ -125,7 +86,7 @@ class FixtureCommandTest extends TestCase
 
         $this->assertSameAsFile(
             __FUNCTION__ . '.php',
-            file_get_contents($this->generatedFile),
+            file_get_contents($this->generatedFile)
         );
     }
 
@@ -138,7 +99,7 @@ class FixtureCommandTest extends TestCase
     {
         $this->generatedFile = ROOT . 'tests/Fixture/ArticleFixture.php';
         $this->exec('bake fixture --connection test --schema Article');
-        $this->assertExitCode(Command::CODE_SUCCESS);
+        $this->assertExitCode(Shell::CODE_SUCCESS);
 
         $this->assertStringContainsString("'connection' => 'test'", file_get_contents($this->generatedFile));
     }
@@ -156,11 +117,11 @@ class FixtureCommandTest extends TestCase
         $this->generatedFile = ROOT . 'tests/Fixture/ArticleFixture.php';
         $this->exec('bake fixture --connection test --schema --records Article');
 
-        $this->assertExitCode(Command::CODE_SUCCESS);
+        $this->assertExitCode(Shell::CODE_SUCCESS);
         $this->assertFileContains(
             "'body' => 'Body \"value\"'",
             $this->generatedFile,
-            'Data has bad escaping',
+            'Data has bad escaping'
         );
     }
 
@@ -174,8 +135,8 @@ class FixtureCommandTest extends TestCase
         $this->generatedFile = ROOT . 'tests/Fixture/ArticlesFixture.php';
         $this->exec('bake fixture --connection test --table comments Articles');
 
-        $this->assertExitCode(Command::CODE_SUCCESS);
-        $this->assertFileContains("public string \$table = 'comments';", $this->generatedFile);
+        $this->assertExitCode(Shell::CODE_SUCCESS);
+        $this->assertFileContains("public \$table = 'comments';", $this->generatedFile);
     }
 
     /**
@@ -188,9 +149,8 @@ class FixtureCommandTest extends TestCase
         $this->generatedFile = ROOT . 'tests/Fixture/CarFixture.php';
         $this->exec('bake fixture --connection test car');
 
-        $this->assertExitCode(Command::CODE_SUCCESS);
-        $this->assertFileContains('class CarFixture ', $this->generatedFile);
-        $this->assertFileContains('$this->records', $this->generatedFile);
+        $this->assertExitCode(Shell::CODE_SUCCESS);
+        $this->assertFileContains("public \$table = 'car';", $this->generatedFile);
     }
 
     /**
@@ -205,7 +165,7 @@ class FixtureCommandTest extends TestCase
         $this->generatedFile = APP . 'Plugin/FixtureTest/tests/Fixture/ArticlesFixture.php';
         $this->exec('bake fixture --connection test FixtureTest.Articles');
 
-        $this->assertExitCode(Command::CODE_SUCCESS);
+        $this->assertExitCode(Shell::CODE_SUCCESS);
         $this->assertFileContains('class ArticlesFixture', $this->generatedFile);
     }
 
@@ -218,7 +178,7 @@ class FixtureCommandTest extends TestCase
     {
         $this->exec('bake fixture --connection test');
 
-        $this->assertExitCode(Command::CODE_SUCCESS);
+        $this->assertExitCode(Shell::CODE_SUCCESS);
         $this->assertOutputContains('- Articles');
         $this->assertOutputContains('- Comments');
     }
@@ -233,10 +193,11 @@ class FixtureCommandTest extends TestCase
         $this->generatedFile = ROOT . 'tests/Fixture/ArticlesFixture.php';
         $this->exec('bake fixture --connection test --fields Articles');
 
-        $this->assertExitCode(Command::CODE_SUCCESS);
+        $this->assertExitCode(Shell::CODE_SUCCESS);
         $this->assertFileContains('class ArticlesFixture extends TestFixture', $this->generatedFile);
+        $this->assertFileContains('public $fields', $this->generatedFile);
         $this->assertFileContains('$this->records =', $this->generatedFile);
-        $this->assertFileNotContains('public array $import', $this->generatedFile);
+        $this->assertFileNotContains('public $import', $this->generatedFile);
     }
 
     /**
@@ -249,7 +210,7 @@ class FixtureCommandTest extends TestCase
         $this->generatedFile = ROOT . 'tests/Fixture/ArticlesFixture.php';
         $this->exec('bake fixture --connection test Articles');
 
-        $this->assertExitCode(Command::CODE_SUCCESS);
+        $this->assertExitCode(Shell::CODE_SUCCESS);
         $this->assertFileContains('class ArticlesFixture extends TestFixture', $this->generatedFile);
         $this->assertFileNotContains('public $fields', $this->generatedFile);
         $this->assertFileNotContains('public $import', $this->generatedFile);
@@ -266,7 +227,7 @@ class FixtureCommandTest extends TestCase
         $this->generatedFile = ROOT . 'tests/Fixture/CommentsFixture.php';
         $this->exec('bake fixture --connection test --schema Comments');
 
-        $importString = "public array \$import = ['table' => 'comments', 'connection' => 'test'];";
+        $importString = "public \$import = ['table' => 'comments', 'connection' => 'test'];";
         $this->assertFileContains($importString, $this->generatedFile);
         $this->assertFileContains('$this->records =', $this->generatedFile);
         $this->assertFileNotContains('public $fields', $this->generatedFile);
@@ -296,7 +257,7 @@ class FixtureCommandTest extends TestCase
         $this->assertStringContainsString("'uuid' => ['type' => 'uuid'", $result);
         $this->assertMatchesRegularExpression(
             "/(\s+)('uuid' => ')([a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89aAbB][a-f0-9]{3}-[a-f0-9]{12})(')/",
-            $result,
+            $result
         );
     }
 

@@ -18,7 +18,6 @@ namespace Cake\Test\TestCase\ORM\Behavior;
 
 use Cake\Database\Driver\Sqlserver;
 use Cake\Datasource\ConnectionManager;
-use Cake\ORM\Behavior\Translate\EavStrategy;
 use Cake\TestSuite\TestCase;
 use TestApp\Model\Entity\NumberTree;
 
@@ -30,9 +29,9 @@ class BehaviorRegressionTest extends TestCase
     /**
      * fixtures
      *
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'core.NumberTrees',
         'core.Translates',
     ];
@@ -47,16 +46,13 @@ class BehaviorRegressionTest extends TestCase
         $connection = ConnectionManager::get('test');
         $this->skipIf(
             $connection->getDriver() instanceof Sqlserver,
-            'This test fails sporadically in SQLServer',
+            'This test fails sporadically in SQLServer'
         );
 
         $table = $this->getTableLocator()->get('NumberTrees');
         $table->setPrimaryKey(['id']);
         $table->addBehavior('Tree');
-        $table->addBehavior('Translate', [
-            'fields' => ['name'],
-            'strategyClass' => EavStrategy::class,
-        ]);
+        $table->addBehavior('Translate', ['fields' => ['name']]);
         $table->setEntityClass(NumberTree::class);
 
         /** @var \TestApp\Model\Entity\NumberTree[] $all */

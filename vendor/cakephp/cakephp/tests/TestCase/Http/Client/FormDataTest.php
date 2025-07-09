@@ -60,6 +60,7 @@ class FormDataTest extends TestCase
             ->add('password', '@secret');
 
         $this->assertCount(5, $data);
+        $boundary = $data->boundary();
         $result = (string)$data;
         $expected = 'test=value&empty=&int=1&float=2.3&password=%40secret';
         $this->assertSame($expected, $result);
@@ -191,7 +192,7 @@ class FormDataTest extends TestCase
             filesize(CORE_PATH . 'VERSION.txt'),
             0,
             'VERSION.txt',
-            'text/plain',
+            'text/plain'
         );
 
         $data = new FormData();

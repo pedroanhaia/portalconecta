@@ -16,25 +16,18 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Console;
 
-use AssertionError;
 use Cake\Command\Command;
-use Cake\Console\CommandFactory;
-use Cake\Console\CommandFactoryInterface;
-use Cake\Console\CommandInterface;
 use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
 use Cake\Console\Exception\StopException;
 use Cake\Console\TestSuite\StubConsoleOutput;
-use Cake\Core\Container;
 use Cake\ORM\Locator\TableLocator;
 use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
-use Mockery;
-use stdClass;
+use InvalidArgumentException;
 use TestApp\Command\AbortCommand;
 use TestApp\Command\AutoLoadModelCommand;
 use TestApp\Command\DemoCommand;
-use TestApp\Command\DependencyCommand;
 use TestApp\Command\NonInteractiveCommand;
 
 /**
@@ -55,11 +48,23 @@ class CommandTest extends TestCase
     /**
      * test loadModel is configured properly
      */
+    public function testConstructorLoadModelDynamicProperty(): void
+    {
+        $this->deprecated(function () {
+            $command = new Command();
+            $command->loadModel('Comments');
+            $this->assertInstanceOf(Table::class, $command->Comments);
+        });
+    }
+
+    /**
+     * test loadModel is configured properly
+     */
     public function testConstructorAutoLoadModel(): void
     {
         // No deprecation as AutoLoadModelCommand class defines Posts property
         $command = new AutoLoadModelCommand();
-        $this->assertInstanceOf(Table::class, $command->fetchTable());
+        $this->assertInstanceOf(Table::class, $command->Posts);
     }
 
     /**
@@ -78,8 +83,8 @@ class CommandTest extends TestCase
      */
     public function testSetNameInvalid(): void
     {
-        $this->expectException(AssertionError::class);
-        $this->expectExceptionMessage("The name 'routes_show' is missing a space. Names should look like `cake routes`");
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('The name \'routes_show\' is missing a space. Names should look like `cake routes`');
 
         $command = new Command();
         $command->setName('routes_show');
@@ -90,7 +95,7 @@ class CommandTest extends TestCase
      */
     public function testSetNameInvalidLeadingSpace(): void
     {
-        $this->expectException(AssertionError::class);
+        $this->expectException(InvalidArgumentException::class);
 
         $command = new Command();
         $command->setName(' routes_show');
@@ -113,17 +118,13 @@ class CommandTest extends TestCase
      */
     public function testRunCallsInitialize(): void
     {
-        $command = new class extends Command {
-            public bool $initializeCalled = false;
-
-            public function initialize(): void
-            {
-                $this->initializeCalled = true;
-            }
-        };
+        /** @var \Cake\Console\Command|\PHPUnit\Framework\MockObject\MockObject $command */
+        $command = $this->getMockBuilder(Command::class)
+            ->onlyMethods(['initialize'])
+            ->getMock();
         $command->setName('cake example');
+        $command->expects($this->once())->method('initialize');
         $command->run([], $this->getMockIo(new StubConsoleOutput()));
-        $this->assertTrue($command->initializeCalled);
     }
 
     /**
@@ -136,8 +137,8 @@ class CommandTest extends TestCase
         $output = new StubConsoleOutput();
 
         $this->assertSame(
-            CommandInterface::CODE_SUCCESS,
-            $command->run(['-h'], $this->getMockIo($output)),
+            Command::CODE_SUCCESS,
+            $command->run(['-h'], $this->getMockIo($output))
         );
         $messages = implode("\n", $output->messages());
         $this->assertStringNotContainsString('Demo', $messages);
@@ -154,8 +155,8 @@ class CommandTest extends TestCase
         $output = new StubConsoleOutput();
 
         $this->assertSame(
-            CommandInterface::CODE_SUCCESS,
-            $command->run(['--help'], $this->getMockIo($output)),
+            Command::CODE_SUCCESS,
+            $command->run(['--help'], $this->getMockIo($output))
         );
         $messages = implode("\n", $output->messages());
         $this->assertStringNotContainsString('Demo', $messages);
@@ -200,24 +201,23 @@ class CommandTest extends TestCase
      */
     public function testRunOptionParserFailure(): void
     {
-        $command = new class extends Command {
-            public function getOptionParser(): ConsoleOptionParser
-            {
-                $parser = new ConsoleOptionParser('cake example');
-                $parser->addArgument('name', ['required' => true]);
+        /** @var \Cake\Console\Command|\PHPUnit\Framework\MockObject\MockObject $command */
+        $command = $this->getMockBuilder(Command::class)
+            ->onlyMethods(['getOptionParser'])
+            ->getMock();
+        $parser = new ConsoleOptionParser('cake example');
+        $parser->addArgument('name', ['required' => true]);
 
-                return $parser;
-            }
-        };
+        $command->method('getOptionParser')->will($this->returnValue($parser));
 
         $output = new StubConsoleOutput();
         $result = $command->run([], $this->getMockIo($output));
-        $this->assertSame(CommandInterface::CODE_ERROR, $result);
+        $this->assertSame(Command::CODE_ERROR, $result);
 
         $messages = implode("\n", $output->messages());
         $this->assertStringContainsString(
             'Error: Missing required argument. The `name` argument is required',
-            $messages,
+            $messages
         );
     }
 
@@ -255,6 +255,18 @@ class CommandTest extends TestCase
         $result = $command->executeCommand(DemoCommand::class, [], $this->getMockIo($output));
         $this->assertNull($result);
         $this->assertEquals(['Quiet!', 'Demo Command!'], $output->messages());
+    }
+
+    /**
+     * test executeCommand with an invalid string class
+     */
+    public function testExecuteCommandStringInvalid(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Command class 'Nope' does not exist");
+
+        $command = new Command();
+        $command->executeCommand('Nope', [], $this->getMockIo(new StubConsoleOutput()));
     }
 
     /**
@@ -304,6 +316,18 @@ class CommandTest extends TestCase
     }
 
     /**
+     * test executeCommand with an invalid instance
+     */
+    public function testExecuteCommandInstanceInvalid(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage("Command 'stdClass' is not a subclass");
+
+        $command = new Command();
+        $command->executeCommand(new \stdClass(), [], $this->getMockIo(new StubConsoleOutput()));
+    }
+
+    /**
      * Test that noninteractive commands use defaults where applicable.
      */
     public function testExecuteCommandNonInteractive(): void
@@ -314,32 +338,17 @@ class CommandTest extends TestCase
         $this->assertEquals(['Result: Default!'], $output->messages());
     }
 
-    public function testExecuteCommandWithDI(): void
-    {
-        $output = new StubConsoleOutput();
-        $container = new Container();
-        $factory = new CommandFactory($container);
-
-        $container->add(CommandFactoryInterface::class, $factory);
-        $container->add(Command::class)
-            ->addArgument(CommandFactoryInterface::class);
-        $container->add(stdClass::class);
-        $container->add(DependencyCommand::class)
-            ->addArgument(stdClass::class);
-
-        $command = $factory->create(Command::class);
-        $result = $command->executeCommand(DependencyCommand::class, [], $this->getMockIo($output));
-
-        $this->assertSame(Command::CODE_SUCCESS, $result);
-        $this->assertEquals(['Dependency Command', 'constructor inject: {}'], $output->messages());
-    }
-
     /**
      * @param \Cake\Console\ConsoleOutput $output
-     * @return \Cake\Console\ConsoleIo|\Mockery\MockInterface
+     * @return \Cake\Console\ConsoleIo|\PHPUnit\Framework\MockObject\MockObject
      */
     protected function getMockIo($output)
     {
-        return Mockery::mock(ConsoleIo::class, [$output, $output, null, null])->makePartial();
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->setConstructorArgs([$output, $output, null, null])
+            ->addMethods(['in'])
+            ->getMock();
+
+        return $io;
     }
 }

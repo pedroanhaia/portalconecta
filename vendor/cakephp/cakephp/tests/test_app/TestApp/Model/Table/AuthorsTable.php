@@ -14,7 +14,7 @@ declare(strict_types=1);
  */
 namespace TestApp\Model\Table;
 
-use Cake\ORM\Query\SelectQuery;
+use Cake\ORM\Query;
 use Cake\ORM\Table;
 
 /**
@@ -28,18 +28,18 @@ class AuthorsTable extends Table
      */
     public function initialize(array $config): void
     {
-        $this->hasMany('Articles');
+        $this->hasMany('articles');
     }
 
     /**
-     * @param \Cake\ORM\Query\SelectQuery $query
-     * @param int|null $authorId
-     * @return \Cake\ORM\Query\SelectQuery
+     * @param \Cake\ORM\Query $query
+     * @param array<string, mixed> $options
+     * @return \Cake\ORM\Query
      */
-    public function findByAuthor(SelectQuery $query, ?int $authorId = null): SelectQuery
+    public function findByAuthor(Query $query, array $options = []): Query
     {
-        if ($authorId !== null) {
-            $query->where(['Articles.id' => $authorId]);
+        if (isset($options['author_id'])) {
+            $query->where(['Articles.id' => $options['author_id']]);
         }
 
         return $query;
@@ -48,11 +48,10 @@ class AuthorsTable extends Table
     /**
      * Finder that applies a formatter to test dirty associations
      *
-     * @param \Cake\ORM\Query\SelectQuery $query The query
+     * @param \Cake\ORM\Query $query The query
      * @param array<string, mixed> $options The options
-     * @return \Cake\ORM\Query\SelectQuery
      */
-    public function findFormatted(SelectQuery $query, array $options = []): SelectQuery
+    public function findFormatted(Query $query, array $options = []): Query
     {
         return $query->formatResults(function ($results) {
             return $results->map(function ($author) {
@@ -61,17 +60,5 @@ class AuthorsTable extends Table
                 return $author;
             });
         });
-    }
-
-    /**
-     * Finder that accepts an option via a typed parameter.
-     *
-     * @param \Cake\ORM\Query\SelectQuery $query The query
-     * @param int $id Author ID
-     * @return \Cake\ORM\Query\SelectQuery
-     */
-    public function findWithIdArgument(SelectQuery $query, int $id): SelectQuery
-    {
-        return $query->where(['id' => $id]);
     }
 }

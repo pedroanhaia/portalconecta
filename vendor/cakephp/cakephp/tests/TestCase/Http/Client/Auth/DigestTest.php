@@ -20,8 +20,6 @@ use Cake\Http\Client\Auth\Digest;
 use Cake\Http\Client\Request;
 use Cake\Http\Client\Response;
 use Cake\TestSuite\TestCase;
-use InvalidArgumentException;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Digest authentication test
@@ -34,7 +32,7 @@ class DigestTest extends TestCase
     protected $client;
 
     /**
-     * @var \Cake\Http\Client\Auth\Digest
+     * @var \PHPUnit\Framework\MockObject\MockObject|\Cake\Http\Client\Auth\Digest
      */
     protected $auth;
 
@@ -50,17 +48,19 @@ class DigestTest extends TestCase
     }
 
     /**
-     * @return Digest
+     * @return Digest|\PHPUnit\Framework\MockObject\MockObject
      */
     protected function getDigestMock()
     {
-        return new class ($this->client) extends Digest
-        {
-            public function generateCnonce(): string
-            {
-                return 'cnonce';
-            }
-        };
+        $digest = $this->getMockBuilder(Digest::class)
+            ->onlyMethods(['generateCnonce'])
+            ->setConstructorArgs([$this->client])
+            ->getMock();
+        $digest->expects($this->any())
+            ->method('generateCnonce')
+            ->willReturn('cnonce');
+
+        return $digest;
     }
 
     /**
@@ -85,7 +85,7 @@ class DigestTest extends TestCase
         $response = new Response($headers, '');
         $this->client->expects($this->once())
             ->method('send')
-            ->willReturn($response);
+            ->will($this->returnValue($response));
 
         $auth = ['username' => 'admin', 'password' => '1234'];
         $request = new Request('http://example.com/some/path', Request::METHOD_GET);
@@ -113,7 +113,7 @@ class DigestTest extends TestCase
         $response = new Response($headers, '');
         $this->client->expects($this->once())
             ->method('send')
-            ->willReturn($response);
+            ->will($this->returnValue($response));
         $auth = ['username' => 'admin', 'password' => '1234'];
         $request = new Request('http://example.com/some/path', Request::METHOD_GET);
         $request = $this->auth->authentication($request, $auth);
@@ -136,7 +136,7 @@ class DigestTest extends TestCase
         $response = new Response($headers, '');
         $this->client->expects($this->once())
             ->method('send')
-            ->willReturn($response);
+            ->will($this->returnValue($response));
 
         $auth = ['username' => 'admin', 'password' => '1234'];
         $request = new Request('http://example.com/some/path', Request::METHOD_GET);
@@ -159,11 +159,11 @@ class DigestTest extends TestCase
         $response = new Response($headers, '');
         $this->client->expects($this->once())
             ->method('send')
-            ->willReturn($response);
+            ->will($this->returnValue($response));
 
         $auth = ['username' => 'admin', 'password' => '1234'];
         $request = new Request('http://example.com/some/path', Request::METHOD_GET);
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid QOP parameter. Valid types are: auth,auth-int');
         $this->auth->authentication($request, $auth);
     }
@@ -180,7 +180,7 @@ class DigestTest extends TestCase
         $response = new Response($headers, '');
         $this->client->expects($this->once())
             ->method('send')
-            ->willReturn($response);
+            ->will($this->returnValue($response));
 
         $auth = ['username' => 'admin', 'password' => '1234'];
         $request = new Request('http://example.com/some/path', Request::METHOD_GET);
@@ -195,7 +195,7 @@ class DigestTest extends TestCase
      *
      * @return array[]
      */
-    public static function algorithmsProvider(): array
+    public function algorithmsProvider(): array
     {
         return [
             [
@@ -330,15 +330,15 @@ class DigestTest extends TestCase
     /**
      * testAlgorithms method
      *
+     * @dataProvider algorithmsProvider
      * @return void
      */
-    #[DataProvider('algorithmsProvider')]
-    public function testAlgorithms($message, $headers, $method, $data, $expected): void
+    public function testAlgorithms($message, $headers, $method, $data, $expected)
     {
         $response = new Response($headers, '');
         $this->client->expects($this->once())
             ->method('send')
-            ->willReturn($response);
+            ->will($this->returnValue($response));
         $auth = ['username' => 'admin', 'password' => '1234'];
         $request = new Request('http://example.com/some/path', $method, [], $data);
         $request = $this->auth->authentication($request, $auth);
@@ -347,7 +347,7 @@ class DigestTest extends TestCase
         $this->assertSame($expected, $result, $message);
     }
 
-    public function testAlgorithmException(): void
+    public function testAlgorithmException()
     {
         $headers = [
             'WWW-Authenticate: Digest algorithm="WRONG",realm="The batcave",nonce="4cded326c6c51"',
@@ -356,11 +356,11 @@ class DigestTest extends TestCase
         $response = new Response($headers, '');
         $this->client->expects($this->once())
             ->method('send')
-            ->willReturn($response);
+            ->will($this->returnValue($response));
 
         $auth = ['username' => 'admin', 'password' => '1234'];
         $request = new Request('http://example.com/some/path', Request::METHOD_GET);
-        $this->expectException(InvalidArgumentException::class);
+        $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Invalid Algorithm. Valid ones are: MD5,SHA-256,SHA-512-256,MD5-sess,SHA-256-sess,SHA-512-256-sess');
         $this->auth->authentication($request, $auth);
     }

@@ -1,9 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd"
-         colors="true"
-         bootstrap="tests/bootstrap.php"
-         backupGlobals="true"
-         cacheDirectory=".phpunit.cache">
+<phpunit
+    colors="true"
+    bootstrap="tests/bootstrap.php"
+    backupGlobals="true"
+    convertDeprecationsToExceptions="true"
+    >
+
     <testsuites>
         <testsuite name="cakephp">
             <directory>tests/TestCase/</directory>
@@ -18,9 +20,6 @@
             <directory>tests/TestCase/Database/</directory>
             <directory>tests/TestCase/ORM/</directory>
         </testsuite>
-        <testsuite name="http-interop-http-factory">
-            <directory>./vendor/http-interop/http-factory-tests/test</directory>
-        </testsuite>
         <testsuite name="globalfunctions">
             <file>tests/TestCase/Collection/FunctionsGlobalTest.php</file>
             <file>tests/TestCase/Core/FunctionsGlobalTest.php</file>
@@ -29,14 +28,24 @@
     </testsuites>
 
     <extensions>
-        <bootstrap class="Cake\TestSuite\Fixture\Extension\PHPUnitExtension"/>
+        <extension class="Cake\TestSuite\Fixture\PHPUnitExtension"/>
     </extensions>
 
-    <source>
-        <include>
+    <!-- Prevent coverage reports from looking in tests, vendors, config folders -->
+    <filter>
+        <whitelist>
             <directory suffix=".php">src/</directory>
-        </include>
-    </source>
+            <exclude>
+                <!--
+                This file contains a few functions that cannot be tested
+                as they contain die; or breakpoint functionality.
+                -->
+                <file>src/basics.php</file>
+                <!-- This file is deprecated and unused -->
+                <file>src/Core/ClassLoader.php</file>
+            </exclude>
+        </whitelist>
+    </filter>
 
     <php>
         <ini name="memory_limit" value="-1"/>
@@ -45,9 +54,6 @@
         <ini name="error_reporting" value="32767"/>
         <env name="FIXTURE_SCHEMA_METADATA" value="./tests/schema.php"/>
 
-        <!-- Enable query logging output for the testrun.
-        <env name="LOG_QUERIES" value="1" />
-        -->
         <!-- SQLite
         <env name="DB_URL" value="sqlite:///:memory:"/>
         -->
@@ -60,14 +66,5 @@
         <!-- SQL Server
         <env name="DB_URL" value="sqlserver://localhost/cake_test?timezone=UTC"/>
         -->
-
-        <const name="PHPUNIT_TESTSUITE" value="true"/>
-        <!-- Constants used by Http Interop's Http Factory tests -->
-        <const name="REQUEST_FACTORY" value="Cake\Http\RequestFactory"/>
-        <const name="RESPONSE_FACTORY" value="Cake\Http\ResponseFactory"/>
-        <const name="SERVER_REQUEST_FACTORY" value="Cake\Http\ServerRequestFactory"/>
-        <const name="STREAM_FACTORY" value="Cake\Http\StreamFactory"/>
-        <const name="UPLOADED_FILE_FACTORY" value="Cake\Http\UploadedFileFactory"/>
-        <const name="URI_FACTORY" value="Cake\Http\UriFactory"/>
     </php>
 </phpunit>

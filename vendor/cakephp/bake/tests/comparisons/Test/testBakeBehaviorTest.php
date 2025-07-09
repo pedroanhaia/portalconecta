@@ -24,7 +24,7 @@ class ExampleBehaviorTest extends TestCase
      *
      * @return void
      */
-    protected function setUp(): void
+    public function setUp(): void
     {
         parent::setUp();
         $table = new Table();
@@ -36,7 +36,7 @@ class ExampleBehaviorTest extends TestCase
      *
      * @return void
      */
-    protected function tearDown(): void
+    public function tearDown(): void
     {
         unset($this->Example);
 

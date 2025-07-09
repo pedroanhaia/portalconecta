@@ -21,7 +21,6 @@ use Cake\Http\Middleware\BodyParserMiddleware;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Http\TestRequestHandler;
 
 /**
@@ -98,7 +97,7 @@ class BodyParserMiddlewareTest extends TestCase
         $this->assertEquals(
             ['application/xml', 'text/xml'],
             array_keys($parser->getParsers()),
-            'Default XML parsers are not set.',
+            'Default XML parsers are not set.'
         );
     }
 
@@ -114,7 +113,7 @@ class BodyParserMiddlewareTest extends TestCase
         $this->assertEquals(
             ['application/json', 'text/json'],
             array_keys($parser->getParsers()),
-            'Default JSON parsers are not set.',
+            'Default JSON parsers are not set.'
         );
     }
 
@@ -161,8 +160,9 @@ class BodyParserMiddlewareTest extends TestCase
 
     /**
      * test skipping parsing on unknown type
+     *
+     * @dataProvider httpMethodProvider
      */
-    #[DataProvider('httpMethodProvider')]
     public function testInvokeMismatchedType(string $method): void
     {
         $parser = new BodyParserMiddleware();
@@ -184,8 +184,9 @@ class BodyParserMiddlewareTest extends TestCase
 
     /**
      * test parsing on valid http method
+     *
+     * @dataProvider httpMethodProvider
      */
-    #[DataProvider('httpMethodProvider')]
     public function testInvokeCaseInsensitiveContentType(string $method): void
     {
         $parser = new BodyParserMiddleware();
@@ -207,8 +208,9 @@ class BodyParserMiddlewareTest extends TestCase
 
     /**
      * test parsing on valid http method
+     *
+     * @dataProvider httpMethodProvider
      */
-    #[DataProvider('httpMethodProvider')]
     public function testInvokeParse(string $method): void
     {
         $parser = new BodyParserMiddleware();
@@ -252,8 +254,9 @@ class BodyParserMiddlewareTest extends TestCase
 
     /**
      * test parsing on ignored http method
+     *
+     * @dataProvider safeHttpMethodProvider
      */
-    #[DataProvider('safeHttpMethodProvider')]
     public function testInvokeNoParseOnSafe(string $method): void
     {
         $parser = new BodyParserMiddleware();
@@ -367,6 +370,7 @@ XML;
             ],
             'input' => $xml,
         ]);
+        $response = new Response();
         $handler = new TestRequestHandler(function ($req) {
             $this->assertEquals([], $req->getParsedBody());
 
@@ -379,19 +383,19 @@ XML;
     /**
      * test parsing non array/object values on JSON
      *
+     * @dataProvider jsonScalarValues
      * @param mixed $expected
      */
-    #[DataProvider('jsonScalarValues')]
     public function testInvokeParseNoArray(string $body, $expected): void
     {
         $parser = new BodyParserMiddleware();
 
         $request = new ServerRequest([
-                'environment' => [
-                    'REQUEST_METHOD' => 'POST',
+            'environment' => [
+                'REQUEST_METHOD' => 'POST',
                 'CONTENT_TYPE' => 'application/json',
-                ],
-                'input' => $body,
+            ],
+            'input' => $body,
         ]);
         $handler = new TestRequestHandler(function ($req) use ($expected) {
             $this->assertSame($expected, $req->getParsedBody());

@@ -16,12 +16,10 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Database\Type;
 
-use Cake\Database\Driver;
 use Cake\Database\TypeFactory;
 use Cake\TestSuite\TestCase;
 use InvalidArgumentException;
 use PDO;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Test for the Integer type.
@@ -45,7 +43,7 @@ class IntegerTypeTest extends TestCase
     {
         parent::setUp();
         $this->type = TypeFactory::build('integer');
-        $this->driver = $this->getMockBuilder(Driver::class)->getMock();
+        $this->driver = $this->getMockBuilder('Cake\Database\Driver')->getMock();
     }
 
     /**
@@ -89,7 +87,7 @@ class IntegerTypeTest extends TestCase
         ];
         $this->assertEquals(
             $expected,
-            $this->type->manyToPHP($values, array_keys($values), $this->driver),
+            $this->type->manyToPHP($values, array_keys($values), $this->driver)
         );
     }
 
@@ -117,7 +115,7 @@ class IntegerTypeTest extends TestCase
         ];
         $this->assertEquals(
             $expected,
-            $this->type->manyToPHP($values, array_keys($values), $this->driver),
+            $this->type->manyToPHP($values, array_keys($values), $this->driver)
         );
     }
 
@@ -138,9 +136,9 @@ class IntegerTypeTest extends TestCase
     /**
      * Invalid Integer Data Provider
      *
-     * @return array
+     * @return void
      */
-    public static function invalidIntegerProvider(): array
+    public function invalidIntegerProvider(): array
     {
         return [
             'array' => [['3', '4']],
@@ -152,9 +150,9 @@ class IntegerTypeTest extends TestCase
     /**
      * Tests that passing an invalid value will throw an exception
      *
+     * @dataProvider invalidIntegerProvider
      * @param  mixed $value Invalid value to test against the database type.
      */
-    #[DataProvider('invalidIntegerProvider')]
     public function testToDatabaseInvalid($value): void
     {
         $this->expectException(InvalidArgumentException::class);

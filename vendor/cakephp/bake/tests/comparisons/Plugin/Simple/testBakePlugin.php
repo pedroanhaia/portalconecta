@@ -14,7 +14,7 @@ class ExampleBehavior extends Behavior
     /**
      * Default configuration.
      *
-     * @var array<string, mixed>
+     * @var array
      */
-    protected array $_defaultConfig = [];
+    protected $_defaultConfig = [];
 }

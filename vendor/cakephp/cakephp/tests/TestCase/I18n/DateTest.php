@@ -17,13 +17,14 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\I18n;
 
 use Cake\Cache\Cache;
+use Cake\Core\Configure;
 use Cake\I18n\Date;
-use Cake\I18n\DateTime;
+use Cake\I18n\FrozenDate;
 use Cake\I18n\I18n;
 use Cake\I18n\Package;
 use Cake\TestSuite\TestCase;
+use DateTimeZone;
 use IntlDateFormatter;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * DateTest class
@@ -37,7 +38,11 @@ class DateTest extends TestCase
     {
         parent::setUp();
 
-        Cache::clear('_cake_translations_');
+        Configure::write('Error.ignoredDeprecationPaths', [
+            'src/I18n/Date.php',
+        ]);
+
+        Cache::clear('_cake_core_');
         I18n::setTranslator('cake', function () {
             $package = new Package();
             $package->setMessages([
@@ -54,133 +59,188 @@ class DateTest extends TestCase
     public function tearDown(): void
     {
         parent::tearDown();
-        DateTime::setDefaultLocale(null);
+        Date::setDefaultLocale(null);
+        FrozenDate::setDefaultLocale(null);
         date_default_timezone_set('UTC');
     }
 
     /**
-     * Ensure that instances can be built from other objects.
+     * Provider for ensuring that Date and FrozenDate work the same way.
+     *
+     * @return array
      */
-    public function testConstructFromAnotherInstance(): void
+    public static function classNameProvider(): array
+    {
+        return ['mutable' => ['Cake\I18n\Date'], 'immutable' => ['Cake\I18n\FrozenDate']];
+    }
+
+    /**
+     * Ensure that instances can be built from other objects.
+     *
+     * @dataProvider classNameProvider
+     */
+    public function testConstructFromAnotherInstance(string $class): void
     {
         $time = '2015-01-22';
-        $frozen = new Date($time);
-        $subject = new Date($frozen);
-        $this->assertSame($time, $subject->format('Y-m-d'), 'date construction');
+        $frozen = new FrozenDate($time);
+        $subject = new $class($frozen);
+        $this->assertSame($time, $subject->format('Y-m-d'), 'frozen date construction');
+
+        $mut = new Date($time);
+        $subject = new $class($mut);
+        $this->assertSame($time, $subject->format('Y-m-d'), 'mutable date construction');
     }
 
     /**
      * test formatting dates taking in account preferred i18n locale file
+     *
+     * @dataProvider classNameProvider
      */
-    public function testI18nFormat(): void
+    public function testI18nFormat(string $class): void
     {
-        $time = new Date('Thu Jan 14 13:59:28 2010');
+        $time = new $class('Thu Jan 14 13:59:28 2010');
         $result = $time->i18nFormat();
         $expected = '1/14/10';
         $this->assertSame($expected, $result);
 
-        $result = $time->i18nFormat('HH:mm:ss');
+        $format = [IntlDateFormatter::NONE, IntlDateFormatter::SHORT];
+        $result = $time->i18nFormat($format);
+        $expected = '12:00 AM';
+        $this->assertSame($expected, $result);
+
+        $result = $time->i18nFormat('HH:mm:ss', 'Australia/Sydney');
         $expected = '00:00:00';
         $this->assertSame($expected, $result);
 
-        DateTime::setDefaultLocale('fr-FR');
+        $class::setDefaultLocale('fr-FR');
         $result = $time->i18nFormat(IntlDateFormatter::FULL);
         $result = str_replace(' à', '', $result);
-        $expected = 'jeudi 14 janvier 2010';
+        $expected = 'jeudi 14 janvier 2010 00:00:00';
         $this->assertStringStartsWith($expected, $result);
 
-        $result = $time->i18nFormat(IntlDateFormatter::FULL, 'es-ES');
+        $result = $time->i18nFormat(IntlDateFormatter::FULL, null, 'es-ES');
         $this->assertStringContainsString('14 de enero de 2010', $result, 'Default locale should not be used');
 
-        $time = new Date('2014-01-01T00:00:00Z');
-        $result = $time->i18nFormat(IntlDateFormatter::FULL, 'en-US');
-        $result = preg_replace('/[\pZ\pC]/u', ' ', $result);
-        $this->assertStringStartsWith('Wednesday, January 1, 2014', $result);
+        $time = new $class('2014-01-01T00:00:00Z');
+        $result = $time->i18nFormat(IntlDateFormatter::FULL, null, 'en-US');
+        $expected = 'Wednesday, January 1, 2014 at 12:00:00 AM';
+        $this->assertStringStartsWith($expected, $result);
     }
 
-    public function testDiffForHumans(): void
+    /**
+     * @dataProvider classNameProvider
+     */
+    public function testDiffForHumans(string $class): void
     {
         I18n::setLocale('fr_FR');
-        $time = new Date('yesterday');
+        $time = new $class('yesterday');
         $this->assertSame('1 day ago (translated)', $time->diffForHumans());
         I18n::setLocale(I18n::getDefaultLocale());
     }
 
     /**
      * test __toString
+     *
+     * @dataProvider classNameProvider
      */
-    public function testToString(): void
+    public function testToString(string $class): void
     {
-        $date = new Date('2015-11-06 11:32:45');
+        $date = new $class('2015-11-06 11:32:45');
         $this->assertSame('11/6/15', (string)$date);
     }
 
     /**
      * test nice()
+     *
+     * @dataProvider classNameProvider
      */
-    public function testNice(): void
+    public function testNice(string $class): void
     {
-        $date = new Date('2015-11-06 11:32:45');
+        $date = new $class('2015-11-06 11:32:45');
 
         $this->assertSame('Nov 6, 2015', $date->nice());
-        $this->assertSame('6 nov. 2015', $date->nice('fr-FR'));
+        $this->assertSame('Nov 6, 2015', $date->nice(new DateTimeZone('America/New_York')));
+        $this->assertSame('6 nov. 2015', $date->nice(null, 'fr-FR'));
     }
 
     /**
      * test jsonSerialize()
+     *
+     * @dataProvider classNameProvider
      */
-    public function testJsonSerialize(): void
+    public function testJsonSerialize(string $class): void
     {
         if (version_compare(INTL_ICU_VERSION, '50.0', '<')) {
             $this->markTestSkipped('ICU 5x is needed');
         }
 
-        $date = new Date('2015-11-06 11:32:45');
+        $date = new $class('2015-11-06 11:32:45');
         $this->assertSame('"2015-11-06"', json_encode($date));
     }
 
     /**
      * Tests change JSON encoding format
+     *
+     * @dataProvider classNameProvider
      */
-    public function testSetJsonEncodeFormat(): void
+    public function testSetJsonEncodeFormat(string $class): void
     {
-        $date = new Date('2015-11-06 11:32:45');
+        $date = new $class('2015-11-06 11:32:45');
 
-        Date::setJsonEncodeFormat(static function ($d) {
+        $class::setJsonEncodeFormat(static function ($d) {
             return $d->format(DATE_ATOM);
         });
         $this->assertSame('"2015-11-06T00:00:00+00:00"', json_encode($date));
 
-        Date::setJsonEncodeFormat("yyyy-MM-dd'T'HH':'mm':'ssZZZZZ");
+        $class::setJsonEncodeFormat("yyyy-MM-dd'T'HH':'mm':'ssZZZZZ");
         $this->assertSame('"2015-11-06T00:00:00Z"', json_encode($date));
     }
 
     /**
      * test parseDate()
+     *
+     * @dataProvider classNameProvider
      */
-    public function testParseDate(): void
+    public function testParseDate(string $class): void
     {
-        $date = Date::parseDate('11/6/15');
+        $date = $class::parseDate('11/6/15');
         $this->assertSame('2015-11-06 00:00:00', $date->format('Y-m-d H:i:s'));
 
-        DateTime::setDefaultLocale('fr-FR');
-        $date = Date::parseDate('13 10, 2015');
+        $class::setDefaultLocale('fr-FR');
+        $date = $class::parseDate('13 10, 2015');
+        $this->assertSame('2015-10-13 00:00:00', $date->format('Y-m-d H:i:s'));
+    }
+
+    /**
+     * test parseDateTime()
+     *
+     * @dataProvider classNameProvider
+     */
+    public function testParseDateTime(string $class): void
+    {
+        $date = $class::parseDate('11/6/15 12:33:12');
+        $this->assertSame('2015-11-06 00:00:00', $date->format('Y-m-d H:i:s'));
+
+        $class::setDefaultLocale('fr-FR');
+        $date = $class::parseDate('13 10, 2015 12:54:12');
         $this->assertSame('2015-10-13 00:00:00', $date->format('Y-m-d H:i:s'));
     }
 
     /**
      * Tests disabling leniency when parsing locale format.
+     *
+     * @dataProvider classNameProvider
      */
-    public function testLenientParseDate(): void
+    public function testLenientParseDate(string $class): void
     {
-        DateTime::setDefaultLocale('pt_BR');
+        $class::setDefaultLocale('pt_BR');
 
-        DateTime::disableLenientParsing();
-        $date = Date::parseDate('04/21/2013');
+        $class::disableLenientParsing();
+        $date = $class::parseDate('04/21/2013');
         $this->assertSame(null, $date);
 
-        DateTime::enableLenientParsing();
-        $date = Date::parseDate('04/21/2013');
+        $class::enableLenientParsing();
+        $date = $class::parseDate('04/21/2013');
         $this->assertSame('2014-09-04', $date->format('Y-m-d'));
     }
 
@@ -208,8 +268,9 @@ class DateTest extends TestCase
 
     /**
      * testTimeAgoInWords method
+     *
+     * @dataProvider timeAgoProvider
      */
-    #[DataProvider('timeAgoProvider')]
     public function testTimeAgoInWords(string $input, string $expected): void
     {
         $date = new Date($input);
@@ -218,17 +279,31 @@ class DateTest extends TestCase
     }
 
     /**
-     * test the timezone option for timeAgoInWords
+     * testTimeAgoInWords with Frozen Date
+     *
+     * @dataProvider timeAgoProvider
      */
-    public function testTimeAgoInWordsTimezone(): void
+    public function testTimeAgoInWordsFrozenDate(string $input, string $expected): void
     {
-        $date = new Date('1990-07-31 20:33:00 UTC');
+        $date = new FrozenDate($input);
+        $result = $date->timeAgoInWords();
+        $this->assertEquals($expected, $result);
+    }
+
+    /**
+     * test the timezone option for timeAgoInWords
+     *
+     * @dataProvider classNameProvider
+     */
+    public function testTimeAgoInWordsTimezone(string $class): void
+    {
+        $date = new $class('1990-07-31 20:33:00 UTC');
         $result = $date->timeAgoInWords(
             [
                 'timezone' => 'America/Vancouver',
                 'end' => '+1month',
                 'format' => 'dd-MM-YYYY',
-            ],
+            ]
         );
         $this->assertSame('on 31-07-1990', $result);
     }
@@ -238,7 +313,7 @@ class DateTest extends TestCase
      *
      * @return array
      */
-    public static function timeAgoEndProvider(): array
+    public function timeAgoEndProvider(): array
     {
         return [
             [
@@ -281,8 +356,9 @@ class DateTest extends TestCase
 
     /**
      * test the end option for timeAgoInWords
+     *
+     * @dataProvider timeAgoEndProvider
      */
-    #[DataProvider('timeAgoEndProvider')]
     public function testTimeAgoInWordsEnd(string $input, string $expected, string $end): void
     {
         $time = new Date($input);
@@ -291,11 +367,25 @@ class DateTest extends TestCase
     }
 
     /**
-     * test the custom string options for timeAgoInWords
+     * test the end option for timeAgoInWords
+     *
+     * @dataProvider timeAgoEndProvider
      */
-    public function testTimeAgoInWordsCustomStrings(): void
+    public function testTimeAgoInWordsEndFrozenDate(string $input, string $expected, string $end): void
     {
-        $date = new Date('-8 years -4 months -2 weeks -3 days');
+        $time = new FrozenDate($input);
+        $result = $time->timeAgoInWords(['end' => $end]);
+        $this->assertEquals($expected, $result);
+    }
+
+    /**
+     * test the custom string options for timeAgoInWords
+     *
+     * @dataProvider classNameProvider
+     */
+    public function testTimeAgoInWordsCustomStrings(string $class): void
+    {
+        $date = new $class('-8 years -4 months -2 weeks -3 days');
         $result = $date->timeAgoInWords([
             'relativeString' => 'at least %s ago',
             'accuracy' => ['year' => 'year'],
@@ -304,7 +394,7 @@ class DateTest extends TestCase
         $expected = 'at least 8 years ago';
         $this->assertSame($expected, $result);
 
-        $date = new Date('+4 months +2 weeks +3 days');
+        $date = new $class('+4 months +2 weeks +3 days');
         $result = $date->timeAgoInWords([
             'absoluteString' => 'exactly on %s',
             'accuracy' => ['year' => 'year'],
@@ -316,10 +406,12 @@ class DateTest extends TestCase
 
     /**
      * Test the accuracy option for timeAgoInWords()
+     *
+     * @dataProvider classNameProvider
      */
-    public function testDateAgoInWordsAccuracy(): void
+    public function testDateAgoInWordsAccuracy(string $class): void
     {
-        $date = new Date('+8 years +4 months +2 weeks +3 days');
+        $date = new $class('+8 years +4 months +2 weeks +3 days');
         $result = $date->timeAgoInWords([
             'accuracy' => ['year' => 'year'],
             'end' => '+10 years',
@@ -327,7 +419,7 @@ class DateTest extends TestCase
         $expected = '8 years';
         $this->assertSame($expected, $result);
 
-        $date = new Date('+8 years +4 months +2 weeks +3 days');
+        $date = new $class('+8 years +4 months +2 weeks +3 days');
         $result = $date->timeAgoInWords([
             'accuracy' => ['year' => 'month'],
             'end' => '+10 years',
@@ -335,7 +427,7 @@ class DateTest extends TestCase
         $expected = '8 years, 4 months';
         $this->assertSame($expected, $result);
 
-        $date = new Date('+8 years +4 months +2 weeks +3 days');
+        $date = new $class('+8 years +4 months +2 weeks +3 days');
         $result = $date->timeAgoInWords([
             'accuracy' => ['year' => 'week'],
             'end' => '+10 years',
@@ -343,7 +435,7 @@ class DateTest extends TestCase
         $expected = '8 years, 4 months, 2 weeks';
         $this->assertSame($expected, $result);
 
-        $date = new Date('+8 years +4 months +2 weeks +3 days');
+        $date = new $class('+8 years +4 months +2 weeks +3 days');
         $result = $date->timeAgoInWords([
             'accuracy' => ['year' => 'day'],
             'end' => '+10 years',
@@ -351,7 +443,7 @@ class DateTest extends TestCase
         $expected = '8 years, 4 months, 2 weeks, 3 days';
         $this->assertSame($expected, $result);
 
-        $date = new Date('+1 years +5 weeks');
+        $date = new $class('+1 years +5 weeks');
         $result = $date->timeAgoInWords([
             'accuracy' => ['year' => 'year'],
             'end' => '+10 years',
@@ -359,7 +451,7 @@ class DateTest extends TestCase
         $expected = '1 year';
         $this->assertSame($expected, $result);
 
-        $date = new Date('now');
+        $date = new $class('now');
         $result = $date->timeAgoInWords([
             'accuracy' => 'day',
         ]);
@@ -369,70 +461,74 @@ class DateTest extends TestCase
 
     /**
      * Test the format option of timeAgoInWords()
+     *
+     * @dataProvider classNameProvider
      */
-    public function testDateAgoInWordsWithFormat(): void
+    public function testDateAgoInWordsWithFormat(string $class): void
     {
-        $date = new Date('2007-9-25');
+        $date = new $class('2007-9-25');
         $result = $date->timeAgoInWords(['format' => 'yyyy-MM-dd']);
         $this->assertSame('on 2007-09-25', $result);
 
-        $date = new Date('2007-9-25');
+        $date = new $class('2007-9-25');
         $result = $date->timeAgoInWords(['format' => 'yyyy-MM-dd']);
         $this->assertSame('on 2007-09-25', $result);
 
-        $date = new Date('+2 weeks +2 days');
+        $date = new $class('+2 weeks +2 days');
         $result = $date->timeAgoInWords(['format' => 'yyyy-MM-dd']);
         $this->assertMatchesRegularExpression('/^2 weeks, [1|2] day(s)?$/', $result);
 
-        $date = new Date('+2 months +2 days');
+        $date = new $class('+2 months +2 days');
         $result = $date->timeAgoInWords(['end' => '1 month', 'format' => 'yyyy-MM-dd']);
         $this->assertSame('on ' . date('Y-m-d', strtotime('+2 months +2 days')), $result);
     }
 
     /**
      * test timeAgoInWords() with negative values.
+     *
+     * @dataProvider classNameProvider
      */
-    public function testDateAgoInWordsNegativeValues(): void
+    public function testDateAgoInWordsNegativeValues(string $class): void
     {
-        $date = new Date('-2 months -2 days');
+        $date = new $class('-2 months -2 days');
         $result = $date->timeAgoInWords(['end' => '3 month']);
         $this->assertSame('2 months, 2 days ago', $result);
 
-        $date = new Date('-2 months -2 days');
+        $date = new $class('-2 months -2 days');
         $result = $date->timeAgoInWords(['end' => '3 month']);
         $this->assertSame('2 months, 2 days ago', $result);
 
-        $date = new Date('-2 months -2 days');
+        $date = new $class('-2 months -2 days');
         $result = $date->timeAgoInWords(['end' => '1 month', 'format' => 'yyyy-MM-dd']);
         $this->assertSame('on ' . date('Y-m-d', strtotime('-2 months -2 days')), $result);
 
-        $date = new Date('-2 years -5 months -2 days');
+        $date = new $class('-2 years -5 months -2 days');
         $result = $date->timeAgoInWords(['end' => '3 years']);
         $this->assertSame('2 years, 5 months, 2 days ago', $result);
 
-        $date = new Date('-2 weeks -2 days');
+        $date = new $class('-2 weeks -2 days');
         $result = $date->timeAgoInWords(['format' => 'yyyy-MM-dd']);
         $this->assertSame('2 weeks, 2 days ago', $result);
 
-        $date = new Date('-3 years -12 months');
+        $date = new $class('-3 years -12 months');
         $result = $date->timeAgoInWords();
         $expected = 'on ' . $date->format('n/j/y');
         $this->assertSame($expected, $result);
 
-        $date = new Date('-1 month -1 week -6 days');
+        $date = new $class('-1 month -1 week -6 days');
         $result = $date->timeAgoInWords(
-            ['end' => '1 year', 'accuracy' => ['month' => 'month']],
+            ['end' => '1 year', 'accuracy' => ['month' => 'month']]
         );
         $this->assertSame('1 month ago', $result);
 
-        $date = new Date('-1 years -2 weeks -3 days');
+        $date = new $class('-1 years -2 weeks -3 days');
         $result = $date->timeAgoInWords(
-            ['accuracy' => ['year' => 'year']],
+            ['accuracy' => ['year' => 'year']]
         );
         $expected = 'on ' . $date->format('n/j/y');
         $this->assertSame($expected, $result);
 
-        $date = new Date('-13 months -5 days');
+        $date = new $class('-13 months -5 days');
         $result = $date->timeAgoInWords(['end' => '2 years']);
         $this->assertSame('1 year, 1 month, 5 days ago', $result);
     }
@@ -440,29 +536,57 @@ class DateTest extends TestCase
     /**
      * Tests that parsing a date in a timezone other than UTC
      * will not alter the date
+     *
+     * @dataProvider classNameProvider
      */
-    public function testParseDateDifferentTimezone(): void
+    public function testParseDateDifferentTimezone(string $class): void
     {
         date_default_timezone_set('Europe/Paris');
-        $result = Date::parseDate('25-02-2016', 'd-M-y');
+        $result = $class::parseDate('25-02-2016', 'd-M-y');
+        $this->assertSame('25-02-2016', $result->format('d-m-Y'));
+    }
+
+    /**
+     * Tests that parsing a full date + time in a timezone other
+     * than UTC respects the timezone when grabbing the date.
+     *
+     * @dataProvider classNameProvider
+     */
+    public function testParseDateTimeDifferentTimezone(string $class): void
+    {
+        date_default_timezone_set('America/Toronto');
+        $result = $class::parseDateTime('25-02-2016 23:00:00', 'd-M-y H:m:s');
         $this->assertSame('25-02-2016', $result->format('d-m-Y'));
     }
 
     /**
      * Tests the default locale setter.
+     *
+     * @dataProvider classNameProvider
      */
-    public function testDefaultLocaleEffectsFormatting(): void
+    public function testGetSetDefaultLocale(string $class): void
     {
-        $result = Date::parseDate('12/03/2015');
+        $class::setDefaultLocale('fr-FR');
+        $this->assertSame('fr-FR', $class::getDefaultLocale());
+    }
+
+    /**
+     * Tests the default locale setter.
+     *
+     * @dataProvider classNameProvider
+     */
+    public function testDefaultLocaleEffectsFormatting(string $class): void
+    {
+        $result = $class::parseDate('12/03/2015');
         $this->assertSame('Dec 3, 2015', $result->nice());
 
-        DateTime::setDefaultLocale('fr-FR');
+        $class::setDefaultLocale('fr-FR');
 
-        $result = Date::parseDate('12/03/2015');
+        $result = $class::parseDate('12/03/2015');
         $this->assertSame('12 mars 2015', $result->nice());
 
         $expected = 'Y-m-d';
-        $result = Date::parseDate('12/03/2015');
+        $result = $class::parseDate('12/03/2015');
         $this->assertSame('2015-03-12', $result->format($expected));
     }
 }

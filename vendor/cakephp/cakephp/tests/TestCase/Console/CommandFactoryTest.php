@@ -18,9 +18,11 @@ use Cake\Console\CommandFactory;
 use Cake\Console\CommandInterface;
 use Cake\Core\Container;
 use Cake\TestSuite\TestCase;
+use InvalidArgumentException;
 use stdClass;
 use TestApp\Command\DemoCommand;
 use TestApp\Command\DependencyCommand;
+use TestApp\Shell\SampleShell;
 
 class CommandFactoryTest extends TestCase
 {
@@ -44,5 +46,26 @@ class CommandFactoryTest extends TestCase
         $command = $factory->create(DependencyCommand::class);
         $this->assertInstanceOf(DependencyCommand::class, $command);
         $this->assertInstanceOf(stdClass::class, $command->inject);
+    }
+
+    public function testCreateShell(): void
+    {
+        $factory = new CommandFactory();
+
+        $shell = $factory->create(SampleShell::class);
+        $this->assertInstanceOf(SampleShell::class, $shell);
+    }
+
+    public function testInvalid(): void
+    {
+        $factory = new CommandFactory();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage(
+            'Class `Cake\Test\TestCase\Console\CommandFactoryTest` must be an instance of ' .
+            '`Cake\Console\Shell` or `Cake\Console\CommandInterface`.'
+        );
+
+        $factory->create(static::class);
     }
 }

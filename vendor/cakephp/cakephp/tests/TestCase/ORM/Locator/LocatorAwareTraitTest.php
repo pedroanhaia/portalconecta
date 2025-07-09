@@ -41,9 +41,7 @@ class LocatorAwareTraitTest extends TestCase
     {
         parent::setUp();
 
-        $this->subject = new class {
-            use LocatorAwareTrait;
-        };
+        $this->subject = $this->getObjectForTrait(LocatorAwareTrait::class);
     }
 
     /**
@@ -81,22 +79,22 @@ class LocatorAwareTraitTest extends TestCase
         $this->assertSame('PaginatorPosts', $result->getAlias());
     }
 
-    public function testFetchTableException(): void
+    public function testfetchTableException()
     {
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            'You must provide an `$alias` or set the `$defaultTable` property to a non empty string.',
+            'You must provide an `$alias` or set the `$defaultTable` property to a non empty string.'
         );
 
         $stub = new LocatorAwareStub();
         $stub->fetchTable();
     }
 
-    public function testFetchTableExceptionForEmptyString(): void
+    public function testfetchTableExceptionForEmptyString()
     {
         $this->expectException(UnexpectedValueException::class);
         $this->expectExceptionMessage(
-            'You must provide an `$alias` or set the `$defaultTable` property to a non empty string.',
+            'You must provide an `$alias` or set the `$defaultTable` property to a non empty string.'
         );
 
         $stub = new LocatorAwareStub('');

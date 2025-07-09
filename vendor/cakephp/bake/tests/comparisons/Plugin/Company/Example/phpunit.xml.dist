@@ -19,12 +19,12 @@
 
     <!-- Setup fixture extension -->
     <extensions>
-        <bootstrap class="Cake\TestSuite\Fixture\Extension\PHPUnitExtension"/>
+        <extension class="Cake\TestSuite\Fixtures\PHPUnitExtension" />
     </extensions>
 
-    <source>
-        <include>
+    <filter>
+        <whitelist>
             <directory suffix=".php">src/</directory>
-        </include>
-    </source>
+        </whitelist>
+    </filter>
 </phpunit>

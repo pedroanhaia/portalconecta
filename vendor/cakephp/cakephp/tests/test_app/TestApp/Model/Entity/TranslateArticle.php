@@ -9,6 +9,4 @@ use Cake\ORM\Entity;
 class TranslateArticle extends Entity
 {
     use TranslateTrait;
-
-    protected bool $requireFieldPresence = true;
 }

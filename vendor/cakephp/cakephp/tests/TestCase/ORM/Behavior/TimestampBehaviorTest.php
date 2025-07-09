@@ -16,14 +16,15 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\ORM\Behavior;
 
-use AssertionError;
+use Cake\Database\TypeFactory;
 use Cake\Event\Event;
-use Cake\I18n\DateTime;
+use Cake\I18n\FrozenTime;
 use Cake\ORM\Behavior\TimestampBehavior;
 use Cake\ORM\Entity;
 use Cake\ORM\Table;
 use Cake\TestSuite\TestCase;
 use DateTime as NativeDateTime;
+use RuntimeException;
 use UnexpectedValueException;
 
 /**
@@ -34,9 +35,9 @@ class TimestampBehaviorTest extends TestCase
     /**
      * fixtures
      *
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'core.Users',
     ];
 
@@ -91,8 +92,9 @@ class TimestampBehaviorTest extends TestCase
         $event = new Event('Model.beforeSave');
         $entity = new Entity(['name' => 'Foo']);
 
-        $this->Behavior->handleEvent($event, $entity);
-        $this->assertInstanceOf(DateTime::class, $entity->created);
+        $return = $this->Behavior->handleEvent($event, $entity);
+        $this->assertTrue($return, 'Handle Event is expected to always return true');
+        $this->assertInstanceOf(FrozenTime::class, $entity->created);
         $this->assertSame($ts->format('c'), $entity->created->format('c'), 'Created timestamp is not the same');
     }
 
@@ -112,7 +114,8 @@ class TimestampBehaviorTest extends TestCase
         $existingValue = new NativeDateTime('2011-11-11');
         $entity = new Entity(['name' => 'Foo', 'created' => $existingValue]);
 
-        $this->Behavior->handleEvent($event, $entity);
+        $return = $this->Behavior->handleEvent($event, $entity);
+        $this->assertTrue($return, 'Handle Event is expected to always return true');
         $this->assertSame($existingValue, $entity->created, 'Created timestamp is expected to be unchanged');
     }
 
@@ -132,7 +135,8 @@ class TimestampBehaviorTest extends TestCase
         $entity = new Entity(['name' => 'Foo']);
         $entity->setNew(false);
 
-        $this->Behavior->handleEvent($event, $entity);
+        $return = $this->Behavior->handleEvent($event, $entity);
+        $this->assertTrue($return, 'Handle Event is expected to always return true');
         $this->assertNull($entity->created, 'Created timestamp is expected to be untouched if the entity is not new');
     }
 
@@ -152,8 +156,9 @@ class TimestampBehaviorTest extends TestCase
         $entity = new Entity(['name' => 'Foo']);
         $entity->setNew(false);
 
-        $this->Behavior->handleEvent($event, $entity);
-        $this->assertInstanceOf(DateTime::class, $entity->modified);
+        $return = $this->Behavior->handleEvent($event, $entity);
+        $this->assertTrue($return, 'Handle Event is expected to always return true');
+        $this->assertInstanceOf(FrozenTime::class, $entity->modified);
         $this->assertSame($ts->format('c'), $entity->modified->format('c'), 'Modified timestamp is not the same');
     }
 
@@ -175,8 +180,9 @@ class TimestampBehaviorTest extends TestCase
         $entity->clean();
         $entity->setNew(false);
 
-        $this->Behavior->handleEvent($event, $entity);
-        $this->assertInstanceOf(DateTime::class, $entity->modified);
+        $return = $this->Behavior->handleEvent($event, $entity);
+        $this->assertTrue($return, 'Handle Event is expected to always return true');
+        $this->assertInstanceOf(FrozenTime::class, $entity->modified);
         $this->assertSame($ts->format('c'), $entity->modified->format('c'), 'Modified timestamp is expected to be updated');
     }
 
@@ -194,26 +200,37 @@ class TimestampBehaviorTest extends TestCase
         $event = new Event('Model.beforeSave');
         $entity = new Entity(['name' => 'Foo']);
 
-        $this->Behavior->handleEvent($event, $entity);
+        $return = $this->Behavior->handleEvent($event, $entity);
+        $this->assertTrue($return, 'Handle Event is expected to always return true');
         $this->assertNull($entity->created);
         $this->assertNull($entity->modified);
     }
 
     /**
-     * testTimeInstanceCreation
+     * testUseImmutable
      *
      * @triggers Model.beforeSave
      */
-    public function testTimeInstanceCreation(): void
+    public function testUseImmutable(): void
     {
-        $table = $this->getTableInstance();
-        $this->Behavior = new TimestampBehavior($table);
-        $entity = new Entity();
-        $event = new Event('Model.beforeSave');
+        $this->deprecated(function () {
+            $table = $this->getTableInstance();
+            $this->Behavior = new TimestampBehavior($table);
+            $entity = new Entity();
+            $event = new Event('Model.beforeSave');
 
-        $entity->clean();
-        $this->Behavior->handleEvent($event, $entity);
-        $this->assertInstanceOf(DateTime::class, $entity->modified);
+            $entity->clean();
+            $this->Behavior->handleEvent($event, $entity);
+            $this->assertInstanceOf('Cake\I18n\FrozenTime', $entity->modified);
+
+            TypeFactory::build('timestamp')->useMutable();
+            $entity->clean();
+            $this->Behavior->handleEvent($event, $entity);
+            $this->assertInstanceOf('Cake\I18n\Time', $entity->modified);
+            // Revert back to using immutable class to avoid causing problems in
+            // other test cases when running full test suite.
+            TypeFactory::build('timestamp')->useImmutable();
+        });
     }
 
     /**
@@ -221,8 +238,8 @@ class TimestampBehaviorTest extends TestCase
      */
     public function testNonDateTimeTypeException(): void
     {
-        $this->expectException(AssertionError::class);
-        $this->expectExceptionMessage('TimestampBehavior only supports columns of type `Cake\Database\Type\DateTimeType`.');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('TimestampBehavior only supports columns of type DateTimeType.');
 
         $table = $this->getTableInstance();
         $this->Behavior = new TimestampBehavior($table, [
@@ -247,7 +264,7 @@ class TimestampBehaviorTest extends TestCase
     public function testInvalidEventConfig(): void
     {
         $this->expectException(UnexpectedValueException::class);
-        $this->expectExceptionMessage('When should be one of "always", "new" or "existing". The passed value `fat fingers` is invalid.');
+        $this->expectExceptionMessage('When should be one of "always", "new" or "existing". The passed value "fat fingers" is invalid');
         $table = $this->getTableInstance();
         $settings = ['events' => ['Model.beforeSave' => ['created' => 'fat fingers']]];
         $this->Behavior = new TimestampBehavior($table, $settings);
@@ -267,12 +284,12 @@ class TimestampBehaviorTest extends TestCase
 
         $return = $behavior->timestamp();
         $this->assertInstanceOf(
-            DateTime::class,
+            'DateTimeImmutable',
             $return,
-            'Should return a timestamp object',
+            'Should return a timestamp object'
         );
 
-        $now = DateTime::now();
+        $now = FrozenTime::now();
         $this->assertEquals($now, $return);
     }
 
@@ -290,7 +307,7 @@ class TimestampBehaviorTest extends TestCase
         $this->assertSame(
             $initialValue,
             $postValue,
-            'The timestamp should be exactly the same object',
+            'The timestamp should be exactly the same object'
         );
     }
 
@@ -308,7 +325,7 @@ class TimestampBehaviorTest extends TestCase
         $this->assertNotSame(
             $initialValue,
             $postValue,
-            'The timestamp should be a different object if refreshTimestamp is truthy',
+            'The timestamp should be a different object if refreshTimestamp is truthy'
         );
     }
 
@@ -327,7 +344,7 @@ class TimestampBehaviorTest extends TestCase
         $this->assertSame(
             $ts->format('c'),
             $return->format('c'),
-            'Should return the same value as initially set',
+            'Should return the same value as initially set'
         );
     }
 
@@ -347,7 +364,7 @@ class TimestampBehaviorTest extends TestCase
         $this->assertSame(
             $ts->format('Y-m-d H:i:s'),
             $entity->modified->format('Y-m-d H:i:s'),
-            'Modified field is expected to be updated',
+            'Modified field is expected to be updated'
         );
         $this->assertNull($entity->created, 'Created field is NOT expected to change');
     }
@@ -394,7 +411,7 @@ class TimestampBehaviorTest extends TestCase
         $this->assertSame(
             $ts->format('Y-m-d H:i:s'),
             $entity->date_specialed->format('Y-m-d H:i:s'),
-            'Modified field is expected to be updated',
+            'Modified field is expected to be updated'
         );
         $this->assertNull($entity->created, 'Created field is NOT expected to change');
     }
@@ -420,7 +437,7 @@ class TimestampBehaviorTest extends TestCase
 
         $row = $table->find('all')->where(['id' => $entity->id])->first();
 
-        $now = DateTime::now();
+        $now = FrozenTime::now();
         $this->assertSame($now->toDateTimeString(), $row->created->toDateTimeString());
         $this->assertSame($now->toDateTimeString(), $row->updated->toDateTimeString());
     }

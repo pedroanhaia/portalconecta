@@ -23,7 +23,7 @@ class TestController extends ControllerTestAppController
      *
      * @var string
      */
-    protected ?string $modelClass = 'Comments';
+    protected $modelClass = 'Comments';
 
     /**
      * beforeFilter handler
@@ -82,7 +82,7 @@ class TestController extends ControllerTestAppController
     /**
      * @return \Cake\Http\Response
      */
-    public function willCauseException(): string
+    public function willCauseException()
     {
         return '';
     }

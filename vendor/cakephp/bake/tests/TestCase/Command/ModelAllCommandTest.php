@@ -2,23 +2,23 @@
 declare(strict_types=1);
 
 /**
- * CakePHP : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP Project
  * @since         2.0.0
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 namespace Bake\Test\TestCase\Command;
 
 use Bake\Test\TestCase\TestCase;
 use Bake\Utility\SubsetSchemaCollection;
-use Cake\Console\CommandInterface;
+use Cake\Command\Command;
 use Cake\Datasource\ConnectionManager;
 use Cake\Utility\Inflector;
 
@@ -30,17 +30,17 @@ class ModelAllCommandTest extends TestCase
     /**
      * fixtures
      *
-     * @var list<string>
+     * @var array
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'plugin.Bake.TodoTasks',
         'plugin.Bake.TodoItems',
     ];
 
     /**
-     * @var list<string>
+     * @var array
      */
-    protected array $tables = ['todo_tasks', 'todo_items'];
+    protected $tables = ['todo_tasks', 'todo_items'];
 
     /**
      * setUp method
@@ -51,6 +51,7 @@ class ModelAllCommandTest extends TestCase
     {
         parent::setUp();
         $this->setAppNamespace('Bake\Test\App');
+        $this->useCommandRunner();
 
         $connection = ConnectionManager::get('test');
         $subsetCollection = new SubsetSchemaCollection($connection->getSchemaCollection(), $this->tables);
@@ -87,16 +88,16 @@ class ModelAllCommandTest extends TestCase
         }
         $this->exec('bake model all --connection test --no-table --no-test');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
 
         $this->assertFileDoesNotExist(
             APP . 'Model/Table/TodoItemsTable.php',
-            'Table should not be created as options should be forwarded',
+            'Table should not be created as options should be forwarded'
         );
         $this->assertFileDoesNotExist(
             ROOT . 'tests/TestCase/Model/Table/TodoItemsTableTest.php',
-            'Table test should not be created as options should be forwarded',
+            'Table test should not be created as options should be forwarded'
         );
     }
 }

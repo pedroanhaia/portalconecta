@@ -16,14 +16,13 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Database\Type;
 
-use Cake\Core\Exception\CakeException;
 use Cake\Database\Driver;
 use Cake\Database\Type\DecimalType;
 use Cake\I18n\I18n;
-use Cake\Test\TestCase\Database\Driver\BaseDriverTrait;
 use Cake\TestSuite\TestCase;
 use InvalidArgumentException;
 use PDO;
+use RuntimeException;
 
 /**
  * Test for the Decimal type.
@@ -52,9 +51,7 @@ class DecimalTypeTest extends TestCase
     {
         parent::setUp();
         $this->type = new DecimalType();
-        $this->driver = new class extends Driver {
-            use BaseDriverTrait;
-        };
+        $this->driver = $this->getMockBuilder(Driver::class)->getMock();
         $this->numberClass = DecimalType::$numberClass;
     }
 
@@ -101,7 +98,7 @@ class DecimalTypeTest extends TestCase
         ];
         $this->assertEquals(
             $expected,
-            $this->type->manyToPHP($values, array_keys($values), $this->driver),
+            $this->type->manyToPHP($values, array_keys($values), $this->driver)
         );
     }
 
@@ -232,7 +229,7 @@ class DecimalTypeTest extends TestCase
      */
     public function testUseLocaleParsingInvalid(): void
     {
-        $this->expectException(CakeException::class);
+        $this->expectException(RuntimeException::class);
         DecimalType::$numberClass = 'stdClass';
         $this->type->useLocaleParser();
     }

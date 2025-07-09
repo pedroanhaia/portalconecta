@@ -27,9 +27,9 @@ class NumericPaginatorTest extends TestCase
     /**
      * fixtures property
      *
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'core.Posts', 'core.Articles', 'core.Tags', 'core.ArticlesTags',
         'core.Authors', 'core.AuthorsTags',
     ];
@@ -57,42 +57,75 @@ class NumericPaginatorTest extends TestCase
         $this->assertCount(4, $result, '4 rows should come back');
         $this->assertEquals(['First Post', 'Second Post', 'Third Post', 'Fourth Post'], $titleExtractor($result));
 
-        $pagingParams = $result->pagingParams();
-        $this->assertSame(4, $pagingParams['count']);
-        $this->assertSame(4, $pagingParams['totalCount']);
+        $pagingParams = $this->Paginator->getPagingParams();
+        $this->assertSame(4, $pagingParams['PaginatorPosts']['current']);
+        $this->assertSame(4, $pagingParams['PaginatorPosts']['count']);
 
         $settings = ['finder' => 'published'];
         $result = $this->Paginator->paginate($table, [], $settings);
         $this->assertCount(3, $result, '3 rows should come back');
         $this->assertEquals(['First Post', 'Second Post', 'Third Post'], $titleExtractor($result));
 
-        $pagingParams = $result->pagingParams();
-        $this->assertSame(3, $pagingParams['count']);
-        $this->assertSame(3, $pagingParams['totalCount']);
+        $pagingParams = $this->Paginator->getPagingParams();
+        $this->assertSame(3, $pagingParams['PaginatorPosts']['current']);
+        $this->assertSame(3, $pagingParams['PaginatorPosts']['count']);
 
         $settings = ['finder' => 'published', 'limit' => 2, 'page' => 2];
         $result = $this->Paginator->paginate($table, [], $settings);
         $this->assertCount(1, $result, '1 rows should come back');
         $this->assertEquals(['Third Post'], $titleExtractor($result));
 
-        $pagingParams = $result->pagingParams();
-        $this->assertSame(1, $pagingParams['count']);
-        $this->assertSame(3, $pagingParams['totalCount']);
-        $this->assertSame(2, $pagingParams['pageCount']);
+        $pagingParams = $this->Paginator->getPagingParams();
+        $this->assertSame(1, $pagingParams['PaginatorPosts']['current']);
+        $this->assertSame(3, $pagingParams['PaginatorPosts']['count']);
+        $this->assertSame(2, $pagingParams['PaginatorPosts']['pageCount']);
 
         $settings = ['finder' => 'published', 'limit' => 2];
         $result = $this->Paginator->paginate($table, [], $settings);
         $this->assertCount(2, $result, '2 rows should come back');
         $this->assertEquals(['First Post', 'Second Post'], $titleExtractor($result));
 
-        $pagingParams = $result->pagingParams();
-        $this->assertSame(2, $pagingParams['count']);
-        $this->assertSame(3, $pagingParams['totalCount']);
-        $this->assertSame(2, $pagingParams['pageCount']);
-        $this->assertTrue($pagingParams['hasNextPage']);
-        $this->assertFalse($pagingParams['hasPrevPage']);
-        $this->assertSame(2, $pagingParams['perPage']);
-        $this->assertNull($pagingParams['limit']);
+        $pagingParams = $this->Paginator->getPagingParams();
+        $this->assertSame(2, $pagingParams['PaginatorPosts']['current']);
+        $this->assertSame(3, $pagingParams['PaginatorPosts']['count']);
+        $this->assertSame(2, $pagingParams['PaginatorPosts']['pageCount']);
+        $this->assertTrue($pagingParams['PaginatorPosts']['nextPage']);
+        $this->assertFalse($pagingParams['PaginatorPosts']['prevPage']);
+        $this->assertSame(2, $pagingParams['PaginatorPosts']['perPage']);
+        $this->assertNull($pagingParams['PaginatorPosts']['limit']);
+    }
+
+    /**
+     * test paginate() and custom find with fields array, to make sure the correct count is returned.
+     */
+    public function testPaginateCustomFindFieldsArray(): void
+    {
+        $this->deprecated(function () {
+            $table = $this->getTableLocator()->get('PaginatorPosts');
+            $data = ['author_id' => 3, 'title' => 'Fourth Article', 'body' => 'Article Body, unpublished', 'published' => 'N'];
+            $table->save(new Entity($data));
+
+            $settings = [
+                'finder' => 'list',
+                'conditions' => ['PaginatorPosts.published' => 'Y'],
+                'limit' => 2,
+            ];
+            $results = $this->Paginator->paginate($table, [], $settings);
+
+            $result = $results->toArray();
+            $expected = [
+                1 => 'First Post',
+                2 => 'Second Post',
+            ];
+            $this->assertEquals($expected, $result);
+
+            $result = $this->Paginator->getPagingParams()['PaginatorPosts'];
+            $this->assertSame(2, $result['current']);
+            $this->assertSame(3, $result['count']);
+            $this->assertSame(2, $result['pageCount']);
+            $this->assertTrue($result['nextPage']);
+            $this->assertFalse($result['prevPage']);
+        });
     }
 
     /**
@@ -108,16 +141,15 @@ class NumericPaginatorTest extends TestCase
         ];
 
         $table = $this->getTableLocator()->get('PaginatorPosts');
-        $this->assertSame(3, $table->find('published')->count());
         $table->updateAll(['published' => 'N'], ['id' => 2]);
 
-        $result = $this->Paginator->paginate($table, [], $settings);
-        $pagingParams = $result->pagingParams();
+        $this->Paginator->paginate($table, [], $settings);
+        $pagingParams = $this->Paginator->getPagingParams();
+        $this->assertSame('published', $pagingParams['PaginatorPosts']['finder']);
 
-        $this->assertSame(1, $pagingParams['start']);
-        $this->assertSame(2, $pagingParams['end']);
-        $this->assertSame(2, $pagingParams['totalCount']);
-        $this->assertFalse($pagingParams['hasNextPage']);
+        $this->assertSame(1, $pagingParams['PaginatorPosts']['start']);
+        $this->assertSame(2, $pagingParams['PaginatorPosts']['end']);
+        $this->assertFalse($pagingParams['PaginatorPosts']['nextPage']);
     }
 
     /**
@@ -133,11 +165,11 @@ class NumericPaginatorTest extends TestCase
 
         $table = $this->getTableLocator()->get('PaginatorPosts');
 
-        $result = $this->Paginator->paginate($table, [], $settings);
-        $pagingParams = $result->pagingParams();
+        $this->Paginator->paginate($table, [], $settings);
+        $pagingParams = $this->Paginator->getPagingParams();
 
-        $this->assertSame('Other.title', $pagingParams['sort']);
-        $this->assertNull($pagingParams['direction']);
+        $this->assertSame('Other.title', $pagingParams['PaginatorPosts']['sort']);
+        $this->assertNull($pagingParams['PaginatorPosts']['direction']);
     }
 
     /**
@@ -150,7 +182,7 @@ class NumericPaginatorTest extends TestCase
         $this->expectException(CakeException::class);
         $this->expectExceptionMessage(
             'The `order` config must be an associative array.'
-            . ' Found invalid value with numeric key: `PaginatorPosts.title ASC`',
+            . ' Found invalid value with numeric key: `PaginatorPosts.title ASC`'
         );
 
         $settings = [
@@ -162,16 +194,5 @@ class NumericPaginatorTest extends TestCase
         $table = $this->getTableLocator()->get('PaginatorPosts');
 
         $this->Paginator->paginate($table, ['sort' => 'title'], $settings);
-    }
-
-    public function testDeprecationWarningForExtraSettings(): void
-    {
-        $this->expectWarningMessageMatches(
-            '/Passing query options as paginator settings is no longer supported/',
-            function (): void {
-                $table = $this->getTableLocator()->get('PaginatorPosts');
-                $this->Paginator->paginate($table, [], ['fields' => ['title']]);
-            },
-        );
     }
 }

@@ -37,7 +37,7 @@ class SmtpTestTransport extends SmtpTransport
     {
         $method = '_' . $method;
 
-        return call_user_func_array($this->$method(...), $args);
+        return call_user_func_array([$this, $method], $args);
     }
 
     /**

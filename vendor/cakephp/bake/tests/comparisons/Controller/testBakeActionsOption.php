@@ -7,8 +7,8 @@ namespace Bake\Test\App\Controller;
  * BakeArticles Controller
  *
  * @property \Bake\Test\App\Model\Table\BakeArticlesTable $BakeArticles
- * @property \Cake\Controller\Component\FormProtectionComponent $FormProtection
- * @property \Cake\Controller\Component\FlashComponent $Flash
+ * @property \Cake\Controller\Component\RequestHandlerComponent $RequestHandler
+ * @property \Cake\Controller\Component\AuthComponent $Auth
  */
 class BakeArticlesController extends AppController
 {
@@ -21,22 +21,36 @@ class BakeArticlesController extends AppController
     {
         parent::initialize();
 
-        $this->loadComponent('FormProtection');
-        $this->loadComponent('Flash');
+        $this->loadComponent('RequestHandler');
+        $this->loadComponent('Auth');
         $this->viewBuilder()->setHelpers(['Html', 'Time']);
     }
 
     /**
-     * Index method
+     * Login method
      *
      * @return \Cake\Http\Response|null|void Renders view
      */
-    public function index()
+    public function login()
     {
-        $query = $this->BakeArticles->find()
-            ->contain(['BakeUsers']);
-        $bakeArticles = $this->paginate($query);
+        if ($this->request->is('post')) {
+            $user = $this->Auth->identify();
+            if ($user) {
+                $this->Auth->setUser($user);
 
-        $this->set(compact('bakeArticles'));
+                return $this->redirect($this->Auth->redirectUrl());
+            }
+            $this->Flash->error(__('Invalid credentials, try again'));
+        }
+    }
+
+    /**
+     * Logout method
+     *
+     * @return \Cake\Http\Response|null|void Redirects to logout URL
+     */
+    public function logout()
+    {
+        return $this->redirect($this->Auth->logout());
     }
 }

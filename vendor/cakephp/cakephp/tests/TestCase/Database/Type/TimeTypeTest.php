@@ -16,17 +16,12 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Database\Type;
 
-use Cake\Chronos\ChronosTime;
-use Cake\Core\Exception\CakeException;
-use Cake\Database\Driver;
+use Cake\Core\Configure;
 use Cake\Database\Type\TimeType;
-use Cake\I18n\DateTime;
 use Cake\I18n\I18n;
 use Cake\I18n\Time;
 use Cake\TestSuite\TestCase;
-use DateTime as NativeDateTime;
 use DateTimeImmutable;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Test for the Time type.
@@ -50,7 +45,13 @@ class TimeTypeTest extends TestCase
     {
         parent::setUp();
         $this->type = new TimeType();
-        $this->driver = $this->getMockBuilder(Driver::class)->getMock();
+        $this->driver = $this->getMockBuilder('Cake\Database\Driver')->getMock();
+
+        Configure::write('Error.ignoredDeprecationPaths', [
+            'src/Database/Type/DateTimeType.php',
+            'src/I18n/Time.php',
+            'tests/TestCase/Database/Type/TimeTypeTest.php',
+        ]);
     }
 
     /**
@@ -60,14 +61,6 @@ class TimeTypeTest extends TestCase
     {
         parent::tearDown();
         I18n::setLocale(I18n::getDefaultLocale());
-    }
-
-    /**
-     * Test getTimeClassName
-     */
-    public function testGetTimeClassName(): void
-    {
-        $this->assertSame(Time::class, $this->type->getTimeClassName());
     }
 
     /**
@@ -84,7 +77,7 @@ class TimeTypeTest extends TestCase
         $this->assertSame('15', $result->format('s'));
 
         $result = $this->type->toPHP('16:30:15', $this->driver);
-        $this->assertInstanceOf(Time::class, $result);
+        $this->assertInstanceOf(DateTimeImmutable::class, $result);
         $this->assertSame('16', $result->format('H'));
         $this->assertSame('30', $result->format('i'));
         $this->assertSame('15', $result->format('s'));
@@ -105,7 +98,7 @@ class TimeTypeTest extends TestCase
         ];
         $this->assertEquals(
             $expected,
-            $this->type->manyToPHP($values, array_keys($values), $this->driver),
+            $this->type->manyToPHP($values, array_keys($values), $this->driver)
         );
     }
 
@@ -118,11 +111,11 @@ class TimeTypeTest extends TestCase
         $result = $this->type->toDatabase($value, $this->driver);
         $this->assertSame($value, $result);
 
-        $date = new DateTime('16:30:15');
+        $date = new Time('16:30:15');
         $result = $this->type->toDatabase($date, $this->driver);
         $this->assertSame('16:30:15', $result);
 
-        $date = new DateTime('2013-08-12 15:16:18');
+        $date = new Time('2013-08-12 15:16:18');
         $result = $this->type->toDatabase($date, $this->driver);
         $this->assertSame('15:16:18', $result);
     }
@@ -132,9 +125,15 @@ class TimeTypeTest extends TestCase
      *
      * @return array
      */
-    public static function marshalProvider(): array
+    public function marshalProvider(): array
     {
-        return [
+        Configure::write('Error.ignoredDeprecationPaths', [
+            'src/I18n/Time.php',
+        ]);
+
+        $date = new Time('@1392387900');
+
+        $data = [
             // invalid types.
             [null, null],
             [false, null],
@@ -145,49 +144,12 @@ class TimeTypeTest extends TestCase
             ['2014-02-14 13:14:15', null],
 
             // valid string types
+            ['1392387900', $date],
+            [1392387900, $date],
             ['13:10:10', new Time('13:10:10')],
             ['14:15', new Time('14:15:00')],
 
-            [new ChronosTime('13:10:10'), new Time('13:10:10')],
-            [new Time('13:10:10'), new Time('13:10:10')],
-            [new NativeDateTime('13:10:10'), new Time('13:10:10')],
-            [new DateTimeImmutable('13:10:10'), new Time('13:10:10')],
-
             // valid array types
-            [
-                ['year' => 2014, 'month' => 2, 'day' => 14, 'hour' => 13, 'minute' => 14, 'second' => 15],
-                new Time('13:14:15'),
-            ],
-            [
-                [
-                    'year' => 2014, 'month' => 2, 'day' => 14,
-                    'hour' => 1, 'minute' => 14, 'second' => 15,
-                    'meridian' => 'am',
-                ],
-                new Time('01:14:15'),
-            ],
-            [
-                [
-                    'year' => 2014, 'month' => 2, 'day' => 14,
-                    'hour' => 1, 'minute' => 14, 'second' => 15,
-                    'meridian' => 'pm',
-                ],
-                new Time('13:14:15'),
-            ],
-            [
-                [
-                    'hour' => 1, 'minute' => 14, 'second' => 15,
-                ],
-                new Time('01:14:15'),
-            ],
-            [
-                [
-                    'hour' => 1, 'minute' => 14,
-                ],
-                new Time('01:14:00'),
-            ],
-
-            // Invalid array types
             [
                 ['hour' => '', 'minute' => '', 'second' => ''],
                 null,
@@ -197,31 +159,64 @@ class TimeTypeTest extends TestCase
                 null,
             ],
             [
+                ['year' => 2014, 'month' => 2, 'day' => 14, 'hour' => 13, 'minute' => 14, 'second' => 15],
+                new Time('2014-02-14 13:14:15'),
+            ],
+            [
+                [
+                    'year' => 2014, 'month' => 2, 'day' => 14,
+                    'hour' => 1, 'minute' => 14, 'second' => 15,
+                    'meridian' => 'am',
+                ],
+                new Time('2014-02-14 01:14:15'),
+            ],
+            [
+                [
+                    'year' => 2014, 'month' => 2, 'day' => 14,
+                    'hour' => 1, 'minute' => 14, 'second' => 15,
+                    'meridian' => 'pm',
+                ],
+                new Time('2014-02-14 13:14:15'),
+            ],
+            [
+                [
+                    'hour' => 1, 'minute' => 14, 'second' => 15,
+                ],
+                new Time('01:14:15'),
+            ],
+
+            // Invalid array types
+            [
                 ['hour' => 'nope', 'minute' => 14, 'second' => 15],
-                null,
+                new Time(date('Y-m-d 00:14:15')),
             ],
             [
                 [
                     'year' => '2014', 'month' => '02', 'day' => '14',
                     'hour' => 'nope', 'minute' => 'nope',
                 ],
-                null,
+                new Time('2014-02-14 00:00:00'),
             ],
         ];
+
+        Configure::delete('Error.ignoredDeprecationPaths');
+
+        return $data;
     }
 
     /**
      * test marshalling data.
      *
+     * @dataProvider marshalProvider
      * @param mixed $value
      * @param mixed $expected
      */
-    #[DataProvider('marshalProvider')]
     public function testMarshal($value, $expected): void
     {
         $result = $this->type->marshal($value);
         if (is_object($expected)) {
             $this->assertEquals($expected, $result);
+            $this->assertInstanceOf(DateTimeImmutable::class, $result);
         } else {
             $this->assertSame($expected, $result);
         }
@@ -255,23 +250,16 @@ class TimeTypeTest extends TestCase
     }
 
     /**
-     * Tests marshalling dates using the locale aware parser and custom format
+     * Test that toImmutable changes all the methods to create frozen time instances.
      */
-    public function testMarshalWithLocaleParsingWithFormat(): void
+    public function testToImmutableAndToMutable(): void
     {
-        $this->type->useLocaleParser()->setLocaleFormat('hh:mm a');
+        $this->type->useImmutable();
+        $this->assertInstanceOf('DateTimeImmutable', $this->type->marshal('11:23:12'));
+        $this->assertInstanceOf('DateTimeImmutable', $this->type->toPHP('11:23:12', $this->driver));
 
-        $expected = new Time('13:54:00');
-        $result = $this->type->marshal('01:54 pm');
-        $this->assertEquals($expected, $result);
-    }
-
-    public function testUseLocaleParserException(): void
-    {
-        $this->expectException(CakeException::class);
-        $this->expectExceptionMessage('You must install the `cakephp/i18n` package to use locale aware parsing.');
-
-        $type = new TimeType('time', ChronosTime::class);
-        $type->useLocaleParser();
+        $this->type->useMutable();
+        $this->assertInstanceOf('DateTime', $this->type->marshal('11:23:12'));
+        $this->assertInstanceOf('DateTime', $this->type->toPHP('11:23:12', $this->driver));
     }
 }

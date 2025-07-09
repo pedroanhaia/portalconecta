@@ -16,7 +16,6 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Database;
 
-use Cake\Database\StatementInterface;
 use Cake\Database\ValueBinder;
 use Cake\TestSuite\TestCase;
 
@@ -145,12 +144,14 @@ class ValueBinderTest extends TestCase
     public function testAttachTo(): void
     {
         $valueBinder = new ValueBinder();
-        $statementMock = $this->createMock(StatementInterface::class);
+        $statementMock = $this->getMockBuilder('Cake\Database\Statement\StatementDecorator')
+            ->disableOriginalConstructor()
+            ->onlyMethods(['bindValue'])
+            ->getMock();
+
         $statementMock->expects($this->exactly(2))
             ->method('bindValue')
-            ->with(
-                ...self::withConsecutive(['c0', 'value0', 'string'], ['c1', 'value1', 'string']),
-            );
+            ->withConsecutive(['c0', 'value0', 'string'], ['c1', 'value1', 'string']);
 
         $valueBinder->attachTo($statementMock); //empty array shouldn't call statement
 

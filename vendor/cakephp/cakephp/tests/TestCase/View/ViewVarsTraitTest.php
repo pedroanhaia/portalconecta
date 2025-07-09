@@ -16,10 +16,8 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\View;
 
 use Cake\Controller\Controller;
-use Cake\Http\ServerRequest;
 use Cake\TestSuite\TestCase;
 use Cake\View\Exception\MissingViewException;
-use Cake\View\XmlView;
 
 /**
  * ViewVarsTrait test case
@@ -38,7 +36,7 @@ class ViewVarsTraitTest extends TestCase
     {
         parent::setUp();
 
-        $this->subject = new Controller(new ServerRequest());
+        $this->subject = new Controller();
     }
 
     /**
@@ -109,7 +107,7 @@ class ViewVarsTraitTest extends TestCase
     {
         $this->subject->viewBuilder()->setClassName('View');
         $view = $this->subject->createView('Xml');
-        $this->assertInstanceOf(XmlView::class, $view);
+        $this->assertInstanceOf('Cake\View\XmlView', $view);
     }
 
     /**
@@ -118,7 +116,7 @@ class ViewVarsTraitTest extends TestCase
     public function testCreateViewException(): void
     {
         $this->expectException(MissingViewException::class);
-        $this->expectExceptionMessage('View class `Foo` is missing.');
+        $this->expectExceptionMessage('View class "Foo" is missing.');
         $this->subject->createView('Foo');
     }
 }

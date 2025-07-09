@@ -17,7 +17,6 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\Database\Type;
 
 use Cake\Core\Exception\CakeException;
-use Cake\Database\Driver;
 use Cake\Database\TypeFactory;
 use Cake\TestSuite\TestCase;
 use PDO;
@@ -44,7 +43,7 @@ class BinaryTypeTest extends TestCase
     {
         parent::setUp();
         $this->type = TypeFactory::build('binary');
-        $this->driver = $this->getMockBuilder(Driver::class)->getMock();
+        $this->driver = $this->getMockBuilder('Cake\Database\Driver')->getMock();
     }
 
     /**
@@ -69,7 +68,7 @@ class BinaryTypeTest extends TestCase
     public function testToPHPFailure(): void
     {
         $this->expectException(CakeException::class);
-        $this->expectExceptionMessage('Unable to convert `array` into binary.');
+        $this->expectExceptionMessage('Unable to convert array into binary.');
         $this->type->toPHP([], $this->driver);
     }
 

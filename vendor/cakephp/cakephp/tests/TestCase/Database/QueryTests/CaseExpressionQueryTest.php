@@ -19,8 +19,6 @@ namespace Cake\Test\TestCase\Database\QueryTests;
 use Cake\Database\Driver\Postgres;
 use Cake\Database\Expression\QueryExpression;
 use Cake\Database\Query;
-use Cake\Database\Query\SelectQuery;
-use Cake\Database\Query\UpdateQuery;
 use Cake\Database\StatementInterface;
 use Cake\Database\TypeMap;
 use Cake\Datasource\ConnectionManager;
@@ -28,11 +26,10 @@ use Cake\Test\Fixture\ArticlesFixture;
 use Cake\Test\Fixture\CommentsFixture;
 use Cake\Test\Fixture\ProductsFixture;
 use Cake\TestSuite\TestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 class CaseExpressionQueryTest extends TestCase
 {
-    protected array $fixtures = [
+    protected $fixtures = [
         ArticlesFixture::class,
         CommentsFixture::class,
         ProductsFixture::class,
@@ -44,7 +41,7 @@ class CaseExpressionQueryTest extends TestCase
     protected $connection;
 
     /**
-     * @var \Cake\Database\Query\SelectQuery
+     * @var \Cake\Database\Query
      */
     protected $query;
 
@@ -53,7 +50,7 @@ class CaseExpressionQueryTest extends TestCase
         parent::setUp();
 
         $this->connection = ConnectionManager::get('test');
-        $this->query = new SelectQuery($this->connection);
+        $this->query = new Query($this->connection);
     }
 
     public function tearDown(): void
@@ -80,8 +77,8 @@ class CaseExpressionQueryTest extends TestCase
                 ];
             })
             ->from('products')
-            ->orderByAsc('category')
-            ->orderByAsc('name');
+            ->orderAsc('category')
+            ->orderAsc('name');
 
         $expected = [
             [
@@ -121,8 +118,8 @@ class CaseExpressionQueryTest extends TestCase
                 ];
             })
             ->from('products')
-            ->orderByAsc('price')
-            ->orderByAsc('name')
+            ->orderAsc('price')
+            ->orderAsc('name')
             ->setSelectTypeMap($typeMap);
 
         $expected = [
@@ -155,14 +152,14 @@ class CaseExpressionQueryTest extends TestCase
         $query = $this->query
             ->select(['article_id', 'user_id'])
             ->from('comments')
-            ->orderByAsc('comments.article_id')
-            ->orderByDesc(function (QueryExpression $exp, Query $query) {
+            ->orderAsc('comments.article_id')
+            ->orderDesc(function (QueryExpression $exp, Query $query) {
                 return $query->newExpr()
                     ->case($query->identifier('comments.article_id'))
                     ->when(1)
                     ->then($query->identifier('comments.user_id'));
             })
-            ->orderByAsc(function (QueryExpression $exp, Query $query) {
+            ->orderAsc(function (QueryExpression $exp, Query $query) {
                 return $query->newExpr()
                     ->case($query->identifier('comments.article_id'))
                     ->when(2)
@@ -205,7 +202,7 @@ class CaseExpressionQueryTest extends TestCase
             ->select(['articles.title'])
             ->from('articles')
             ->leftJoin('comments', ['comments.article_id = articles.id'])
-            ->groupBy(['articles.id', 'articles.title'])
+            ->group(['articles.id', 'articles.title'])
             ->having(function (QueryExpression $exp, Query $query) {
                 $expression = $query->newExpr()
                     ->case()
@@ -219,7 +216,7 @@ class CaseExpressionQueryTest extends TestCase
                 return $exp->gt(
                     $query->func()->sum($expression),
                     2,
-                    'integer',
+                    'integer'
                 );
             });
 
@@ -244,7 +241,7 @@ class CaseExpressionQueryTest extends TestCase
 
         $this->assertSame(1, (int)$query->execute()->fetch()[0]);
 
-        $query = (new UpdateQuery($this->connection))
+        $query = (new Query($this->connection))
             ->update('comments')
             ->set([
                 'published' =>
@@ -257,7 +254,7 @@ class CaseExpressionQueryTest extends TestCase
             ->where(['1 = 1'])
             ->execute();
 
-        $query = (new SelectQuery($this->connection))
+        $query = (new Query($this->connection))
             ->select(['count' => $this->query->func()->count('*')])
             ->from('comments')
             ->where(['comments.published' => 'Y']);
@@ -268,7 +265,7 @@ class CaseExpressionQueryTest extends TestCase
         $this->assertSame(5, (int)$query->execute()->fetch()[0]);
     }
 
-    public static function bindingValueDataProvider(): array
+    public function bindingValueDataProvider(): array
     {
         return [
             ['1', 3],
@@ -277,10 +274,10 @@ class CaseExpressionQueryTest extends TestCase
     }
 
     /**
+     * @dataProvider bindingValueDataProvider
      * @param string $when The `WHEN` value.
      * @param int $result The result value.
      */
-    #[DataProvider('bindingValueDataProvider')]
     public function testBindValues(string $when, int $result): void
     {
         $value = '1';

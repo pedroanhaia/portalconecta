@@ -18,14 +18,13 @@ namespace Cake\Test\TestCase\ORM;
 
 use Cake\Database\Expression\IdentifierExpression;
 use Cake\Event\EventInterface;
-use Cake\I18n\DateTime;
-use Cake\ORM\Association;
+use Cake\I18n\FrozenTime;
 use Cake\ORM\Entity;
 use Cake\ORM\Marshaller;
 use Cake\TestSuite\TestCase;
 use Cake\Validation\Validator;
 use InvalidArgumentException;
-use PHPUnit\Framework\Attributes\DataProvider;
+use RuntimeException;
 use TestApp\Model\Entity\OpenArticleEntity;
 use TestApp\Model\Entity\OpenTag;
 use TestApp\Model\Entity\ProtectedArticle;
@@ -36,7 +35,7 @@ use TestApp\Model\Table\GreedyCommentsTable;
  */
 class MarshallerTest extends TestCase
 {
-    protected array $fixtures = [
+    protected $fixtures = [
         'core.Articles',
         'core.Tags',
         'core.ArticlesTags',
@@ -121,7 +120,7 @@ class MarshallerTest extends TestCase
         $marshall = new Marshaller($this->articles);
         $result = $marshall->one($data, []);
 
-        $this->assertInstanceOf(Entity::class, $result);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result);
         $this->assertEquals($data, $result->toArray());
         $this->assertTrue($result->isDirty(), 'Should be a dirty entity.');
         $this->assertTrue($result->isNew(), 'Should be new');
@@ -155,8 +154,8 @@ class MarshallerTest extends TestCase
             'id' => '',
             'username' => 'superuser',
             'password' => 'root',
-            'created' => new DateTime('2013-10-10 00:00'),
-            'updated' => new DateTime('2013-10-10 00:00'),
+            'created' => new FrozenTime('2013-10-10 00:00'),
+            'updated' => new FrozenTime('2013-10-10 00:00'),
         ];
         $marshall = new Marshaller($this->articles);
         $result = $marshall->one($data, []);
@@ -181,7 +180,7 @@ class MarshallerTest extends TestCase
         $marshall = new Marshaller($this->comments);
         $result = $marshall->one($data, []);
 
-        $this->assertEquals(new DateTime('2014-02-14 00:00:00'), $result->created);
+        $this->assertEquals(new FrozenTime('2014-02-14 00:00:00'), $result->created);
 
         $data['created'] = [
             'year' => '2014',
@@ -192,7 +191,7 @@ class MarshallerTest extends TestCase
             'meridian' => 'pm',
         ];
         $result = $marshall->one($data, []);
-        $this->assertEquals(new DateTime('2014-02-14 21:25:00'), $result->created);
+        $this->assertEquals(new FrozenTime('2014-02-14 21:25:00'), $result->created);
 
         $data['created'] = [
             'year' => '2014',
@@ -202,11 +201,11 @@ class MarshallerTest extends TestCase
             'minute' => 25,
         ];
         $result = $marshall->one($data, []);
-        $this->assertEquals(new DateTime('2014-02-14 09:25:00'), $result->created);
+        $this->assertEquals(new FrozenTime('2014-02-14 09:25:00'), $result->created);
 
         $data['created'] = '2014-02-14 09:25:00';
         $result = $marshall->one($data, []);
-        $this->assertEquals(new DateTime('2014-02-14 09:25:00'), $result->created);
+        $this->assertEquals(new FrozenTime('2014-02-14 09:25:00'), $result->created);
 
         $data['created'] = 1392387900;
         $result = $marshall->one($data, []);
@@ -223,30 +222,6 @@ class MarshallerTest extends TestCase
         $result = $marshall->one($data);
 
         $this->assertEquals($data['Articles'], $result->Articles);
-    }
-
-    public function testOneWithGeospatialFields(): void
-    {
-        $articles = $this->getTableLocator()->get('Articles');
-        $articles->getSchema()
-            ->addColumn('geo_line', ['type' => 'linestring'])
-            ->addColumn('geo_geometry', ['type' => 'geometry'])
-            ->addColumn('geo_point', ['type' => 'point'])
-            ->addColumn('geo_polygon', ['type' => 'polygon']);
-
-        $data = [
-            'geo_line' => 'LINESTRING(0 0,1 1)',
-            'geo_geometry' => 'GEOMETRY(15, 25)',
-            'geo_point' => 'POINT(10, 15)',
-            'geo_polygon' => 'POLYGON(0 0,6 6,6 12,12 0)',
-        ];
-        $marshall = new Marshaller($articles);
-        $result = $marshall->one($data);
-
-        $this->assertEquals($data['geo_line'], $result->geo_line);
-        $this->assertEquals($data['geo_geometry'], $result->geo_geometry);
-        $this->assertEquals($data['geo_point'], $result->geo_point);
-        $this->assertEquals($data['geo_polygon'], $result->geo_polygon);
     }
 
     /**
@@ -322,7 +297,7 @@ class MarshallerTest extends TestCase
     public function testOneInvalidAssociation(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Cannot marshal data for `Derp` association. It is not associated with `Articles`.');
+        $this->expectExceptionMessage('Cannot marshal data for "Derp" association. It is not associated with "Articles".');
         $data = [
             'title' => 'My title',
             'body' => 'My content',
@@ -426,7 +401,7 @@ class MarshallerTest extends TestCase
         $marshall = new Marshaller($this->articles);
         $result = $marshall->one($data, ['associated' => ['Users']]);
 
-        $this->assertInstanceOf(Entity::class, $result);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result);
         $this->assertTrue($result->isDirty(), 'Should be a dirty entity.');
         $this->assertTrue($result->isNew(), 'Should be new');
         $this->assertFalse($result->has('Articles'), 'No prefixed field.');
@@ -463,7 +438,7 @@ class MarshallerTest extends TestCase
         $this->assertEquals($data['comments'], $result->comments);
         $this->assertTrue($result->isDirty('comments'));
 
-        $this->assertInstanceOf(Entity::class, $result->user);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->user);
         $this->assertTrue($result->isDirty('user'));
         $this->assertSame($data['user']['username'], $result->user->username);
         $this->assertSame($data['user']['password'], $result->user->password);
@@ -496,8 +471,8 @@ class MarshallerTest extends TestCase
 
         $this->assertIsArray($result->comments);
         $this->assertCount(2, $result->comments);
-        $this->assertInstanceOf(Entity::class, $result->comments[0]);
-        $this->assertInstanceOf(Entity::class, $result->comments[1]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->comments[0]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->comments[1]);
         $this->assertSame($data['comments'][0]['comment'], $result->comments[0]->comment);
 
         $this->assertIsArray($result->user);
@@ -527,18 +502,18 @@ class MarshallerTest extends TestCase
         $this->assertSame($data['body'], $result->body);
 
         $this->assertIsArray($result->tags);
-        $this->assertInstanceOf(Entity::class, $result->tags[0]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[0]);
         $this->assertSame($data['tags'][0]['tag'], $result->tags[0]->tag);
 
         $this->assertInstanceOf(
-            Entity::class,
+            'Cake\ORM\Entity',
             $result->tags[0]->_joinData,
-            '_joinData should be an entity.',
+            '_joinData should be an entity.'
         );
         $this->assertSame(
             $data['tags'][0]['_joinData']['active'],
             $result->tags[0]->_joinData->active,
-            '_joinData should be an entity.',
+            '_joinData should be an entity.'
         );
     }
 
@@ -617,15 +592,15 @@ class MarshallerTest extends TestCase
         $marshall = new Marshaller($this->articles);
         $result = $marshall->one($data, ['associated' => ['Tags._joinData.Users']]);
         $this->assertInstanceOf(
-            Entity::class,
+            'Cake\ORM\Entity',
             $result->tags[0]->_joinData->user,
-            'joinData should contain a user entity.',
+            'joinData should contain a user entity.'
         );
         $this->assertSame('Bill', $result->tags[0]->_joinData->user->username);
         $this->assertInstanceOf(
-            Entity::class,
+            'Cake\ORM\Entity',
             $result->tags[1]->_joinData->user,
-            'joinData should contain a user entity.',
+            'joinData should contain a user entity.'
         );
         $this->assertSame('Mark', $result->tags[1]->_joinData->user->username);
     }
@@ -666,22 +641,22 @@ class MarshallerTest extends TestCase
         $marshall = new Marshaller($this->articles);
         $result = $marshall->one($data, ['associated' => ['Tags._joinData.Users']]);
         $this->assertInstanceOf(
-            Entity::class,
-            $result->tags[0],
+            'Cake\ORM\Entity',
+            $result->tags[0]
         );
         $this->assertInstanceOf(
-            Entity::class,
-            $result->tags[1],
-        );
-
-        $this->assertInstanceOf(
-            Entity::class,
-            $result->tags[0]->_joinData->user,
+            'Cake\ORM\Entity',
+            $result->tags[1]
         );
 
         $this->assertInstanceOf(
-            Entity::class,
-            $result->tags[1]->_joinData->user,
+            'Cake\ORM\Entity',
+            $result->tags[0]->_joinData->user
+        );
+
+        $this->assertInstanceOf(
+            'Cake\ORM\Entity',
+            $result->tags[1]->_joinData->user
         );
         $this->assertFalse($result->tags[0]->isNew(), 'Should not be new, as id is in db.');
         $this->assertFalse($result->tags[1]->isNew(), 'Should not be new, as id is in db.');
@@ -753,12 +728,12 @@ class MarshallerTest extends TestCase
         $this->assertNotEmpty($tag->articles);
         $this->assertCount(1, $tag->articles);
         $this->assertTrue($tag->isDirty('articles'), 'Updated prop should be dirty');
-        $this->assertInstanceOf(Entity::class, $tag->articles[0]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $tag->articles[0]);
         $this->assertSame('New tagged article', $tag->articles[0]->title);
         $this->assertFalse($tag->articles[0]->isNew());
 
         $this->assertNotEmpty($tag->articles[0]->user);
-        $this->assertInstanceOf(Entity::class, $tag->articles[0]->user);
+        $this->assertInstanceOf('Cake\ORM\Entity', $tag->articles[0]->user);
         $this->assertTrue($tag->articles[0]->isDirty('user'), 'Updated prop should be dirty');
         $this->assertSame('newuser', $tag->articles[0]->user->username);
         $this->assertTrue($tag->articles[0]->user->isNew());
@@ -766,59 +741,7 @@ class MarshallerTest extends TestCase
         $this->assertNotEmpty($tag->articles[0]->comments);
         $this->assertCount(2, $tag->articles[0]->comments);
         $this->assertTrue($tag->articles[0]->isDirty('comments'), 'Updated prop should be dirty');
-        $this->assertInstanceOf(Entity::class, $tag->articles[0]->comments[0]);
-        $this->assertTrue($tag->articles[0]->comments[0]->isNew());
-        $this->assertTrue($tag->articles[0]->comments[1]->isNew());
-    }
-
-    /**
-     * Same test as @see testOneBelongsToManyWithNestedAssociations
-     * just without using dot notation in the marshalling process
-     *
-     * @return void
-     */
-    public function testOneBelongsToManyWithNestedAssociationsWithoutDotNotation(): void
-    {
-        $this->tags->belongsToMany('Articles');
-        $data = [
-            'name' => 'new tag',
-            'articles' => [
-                // This nested article exists, and we want to update it.
-                [
-                    'id' => 1,
-                    'title' => 'New tagged article',
-                    'body' => 'New tagged article',
-                    'user' => [
-                        'id' => 1,
-                        'username' => 'newuser',
-                    ],
-                    'comments' => [
-                        ['comment' => 'New comment', 'user_id' => 1],
-                        ['comment' => 'Second comment', 'user_id' => 1],
-                    ],
-                ],
-            ],
-        ];
-        $marshaller = new Marshaller($this->tags);
-        $tag = $marshaller->one($data, ['associated' => ['Articles' => [ 'associated' => ['Users', 'Comments']]]]);
-
-        $this->assertNotEmpty($tag->articles);
-        $this->assertCount(1, $tag->articles);
-        $this->assertTrue($tag->isDirty('articles'), 'Updated prop should be dirty');
-        $this->assertInstanceOf(Entity::class, $tag->articles[0]);
-        $this->assertSame('New tagged article', $tag->articles[0]->title);
-        $this->assertFalse($tag->articles[0]->isNew());
-
-        $this->assertNotEmpty($tag->articles[0]->user);
-        $this->assertInstanceOf(Entity::class, $tag->articles[0]->user);
-        $this->assertTrue($tag->articles[0]->isDirty('user'), 'Updated prop should be dirty');
-        $this->assertSame('newuser', $tag->articles[0]->user->username);
-        $this->assertTrue($tag->articles[0]->user->isNew());
-
-        $this->assertNotEmpty($tag->articles[0]->comments);
-        $this->assertCount(2, $tag->articles[0]->comments);
-        $this->assertTrue($tag->articles[0]->isDirty('comments'), 'Updated prop should be dirty');
-        $this->assertInstanceOf(Entity::class, $tag->articles[0]->comments[0]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $tag->articles[0]->comments[0]);
         $this->assertTrue($tag->articles[0]->comments[0]->isNew());
         $this->assertTrue($tag->articles[0]->comments[1]->isNew());
     }
@@ -871,22 +794,6 @@ class MarshallerTest extends TestCase
         $this->assertTrue($result->isDirty('tags'), 'Modified prop should be dirty');
         $this->assertSame(0, $result->tags[0]->_joinData->active);
         $this->assertSame(1, $result->tags[1]->_joinData->active);
-
-        $entity = new Entity();
-        $entity->requireFieldPresence(true);
-        // MissingPropertyException should not be thrown for `tags` field
-        $marshall->merge($entity, $data, ['associated' => ['Tags._joinData']]);
-
-        $inner = new Entity(['id' => 1]);
-        $inner->requireFieldPresence(true);
-        $entity = new Entity([
-            'tags' => [
-                $inner,
-            ],
-        ]);
-        $entity->requireFieldPresence(true);
-        // MissingPropertyException should not be thrown for `_joinData` field
-        $marshall->merge($entity, $data, ['associated' => ['Tags._joinData']]);
     }
 
     /**
@@ -1137,11 +1044,11 @@ class MarshallerTest extends TestCase
 
         $this->assertSame(
             $data['article']['title'],
-            $result->article->title,
+            $result->article->title
         );
         $this->assertSame(
             $data['article']['user']['username'],
-            $result->article->user->username,
+            $result->article->user->username
         );
     }
 
@@ -1158,8 +1065,8 @@ class MarshallerTest extends TestCase
         $result = $marshall->many($data);
 
         $this->assertCount(2, $result);
-        $this->assertInstanceOf(Entity::class, $result[0]);
-        $this->assertInstanceOf(Entity::class, $result[1]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result[0]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result[1]);
         $this->assertSame($data[0]['comment'], $result[0]->comment);
         $this->assertSame($data[1]['comment'], $result[1]->comment);
     }
@@ -1205,15 +1112,15 @@ class MarshallerTest extends TestCase
         $result = $marshall->many($data, ['associated' => ['Users']]);
 
         $this->assertCount(2, $result);
-        $this->assertInstanceOf(Entity::class, $result[0]);
-        $this->assertInstanceOf(Entity::class, $result[1]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result[0]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result[1]);
         $this->assertSame(
             $data[0]['user']['username'],
-            $result[0]->user->username,
+            $result[0]->user->username
         );
         $this->assertSame(
             $data[1]['user']['username'],
-            $result[1]->user->username,
+            $result[1]->user->username
         );
     }
 
@@ -1291,9 +1198,9 @@ class MarshallerTest extends TestCase
         $result = $marshall->one($data, ['associated' => ['Tags']]);
 
         $this->assertCount(3, $result->tags);
-        $this->assertInstanceOf(Entity::class, $result->tags[0]);
-        $this->assertInstanceOf(Entity::class, $result->tags[1]);
-        $this->assertInstanceOf(Entity::class, $result->tags[2]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[0]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[1]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[2]);
     }
 
     /**
@@ -1320,11 +1227,6 @@ class MarshallerTest extends TestCase
         $this->assertEquals($data + ['body' => 'My Content'], $result->toArray());
         $this->assertTrue($result->isDirty(), 'Should be a dirty entity.');
         $this->assertFalse($result->isNew(), 'Should not change the entity state');
-
-        $entity = new Entity();
-        $entity->requireFieldPresence(true);
-        // MissingPropertyException should not be thrown
-        $marshall->merge($entity, $data, []);
     }
 
     /**
@@ -1358,7 +1260,7 @@ class MarshallerTest extends TestCase
      *
      * @return array
      */
-    public static function emptyProvider(): array
+    public function emptyProvider(): array
     {
         return [
             [0],
@@ -1369,9 +1271,9 @@ class MarshallerTest extends TestCase
     /**
      * Test merging empty values into an entity.
      *
+     * @dataProvider emptyProvider
      * @param mixed $value
      */
-    #[DataProvider('emptyProvider')]
     public function testMergeFalseyValues($value): void
     {
         $marshall = new Marshaller($this->articles);
@@ -1402,7 +1304,7 @@ class MarshallerTest extends TestCase
         $entity->setAccess('*', true);
         $entity->setNew(false);
         $entity->clean();
-        $marshall->merge($entity, $data, []);
+        $result = $marshall->merge($entity, $data, []);
 
         $this->assertFalse($entity->isDirty('body'), 'unchanged null should not be dirty');
     }
@@ -1412,7 +1314,7 @@ class MarshallerTest extends TestCase
      */
     public function testMergeWithSameObjectValue(): void
     {
-        $created = new DateTime('2020-10-29');
+        $created = new FrozenTime('2020-10-29');
         $entity = new Entity([
             'comment' => 'foo',
             'created' => $created,
@@ -1467,7 +1369,7 @@ class MarshallerTest extends TestCase
     public function testMergeInvalidAssociation(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Cannot marshal data for `Derp` association. It is not associated with `Articles`.');
+        $this->expectExceptionMessage('Cannot marshal data for "Derp" association. It is not associated with "Articles".');
         $data = [
             'title' => 'My title',
             'body' => 'My content',
@@ -1606,7 +1508,7 @@ class MarshallerTest extends TestCase
         $marshall->merge($entity, $data, ['associated' => ['Users']]);
 
         $this->assertSame('My Content', $entity->body);
-        $this->assertInstanceOf(Entity::class, $entity->user);
+        $this->assertInstanceOf('Cake\ORM\Entity', $entity->user);
         $this->assertSame('mark', $entity->user->username);
         $this->assertSame('not a secret', $entity->user->password);
         $this->assertTrue($entity->isDirty('user'));
@@ -1701,7 +1603,7 @@ class MarshallerTest extends TestCase
 
         $this->assertEquals(
             ['comment' => 'Extra comment 3'] + $thirdComment,
-            $entity->comments[2]->toArray(),
+            $entity->comments[2]->toArray()
         );
 
         $forthComment = $this->articles->Comments
@@ -1712,16 +1614,16 @@ class MarshallerTest extends TestCase
 
         $this->assertEquals(
             ['comment' => 'Extra comment 4'] + $forthComment,
-            $entity->comments[3]->toArray(),
+            $entity->comments[3]->toArray()
         );
 
         $this->assertEquals(
             ['comment' => 'Extra comment 1'],
-            $entity->comments[4]->toArray(),
+            $entity->comments[4]->toArray()
         );
         $this->assertEquals(
             ['comment' => 'Extra comment 2'],
-            $entity->comments[5]->toArray(),
+            $entity->comments[5]->toArray()
         );
     }
 
@@ -1730,7 +1632,7 @@ class MarshallerTest extends TestCase
      */
     public function testMergeHasManyEntitiesFromIds(): void
     {
-        $entity = $this->articles->get(1, ...['contain' => ['Comments']]);
+        $entity = $this->articles->get(1, ['contain' => ['Comments']]);
         $this->assertNotEmpty($entity->comments);
 
         $marshall = new Marshaller($this->articles);
@@ -1752,7 +1654,7 @@ class MarshallerTest extends TestCase
      */
     public function testMergeHasManyEntitiesFromIdsOnlyIds(): void
     {
-        $entity = $this->articles->get(1, ...['contain' => ['Comments']]);
+        $entity = $this->articles->get(1, ['contain' => ['Comments']]);
         $this->assertNotEmpty($entity->comments);
 
         $marshall = new Marshaller($this->articles);
@@ -1799,9 +1701,9 @@ class MarshallerTest extends TestCase
 
         $this->assertCount(3, $result->tags);
         $this->assertTrue($result->isDirty('tags'), 'Updated prop should be dirty');
-        $this->assertInstanceOf(Entity::class, $result->tags[0]);
-        $this->assertInstanceOf(Entity::class, $result->tags[1]);
-        $this->assertInstanceOf(Entity::class, $result->tags[2]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[0]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[1]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[2]);
     }
 
     /**
@@ -1846,7 +1748,7 @@ class MarshallerTest extends TestCase
      */
     public function testMergeBelongsToManyFromIdsWithConditions(): void
     {
-        $this->articles->associations()->get('Tags')->setConditions([
+        $this->articles->belongsToMany('Tags', [
             'conditions' => ['ArticleTags.article_id' => 1],
         ]);
 
@@ -1868,9 +1770,9 @@ class MarshallerTest extends TestCase
 
         $this->assertCount(3, $result->tags);
         $this->assertTrue($result->isDirty('tags'));
-        $this->assertInstanceOf(Entity::class, $result->tags[0]);
-        $this->assertInstanceOf(Entity::class, $result->tags[1]);
-        $this->assertInstanceOf(Entity::class, $result->tags[2]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[0]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[1]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[2]);
     }
 
     /**
@@ -1879,7 +1781,7 @@ class MarshallerTest extends TestCase
      */
     public function testMergeBelongsToManyFromArrayWithConditions(): void
     {
-        $this->articles->associations()->get('Tags')->setConditions([
+        $this->articles->belongsToMany('Tags', [
             'conditions' => ['ArticleTags.article_id' => 1],
         ]);
 
@@ -1908,8 +1810,8 @@ class MarshallerTest extends TestCase
         $result = $marshall->merge($entity, $data, ['associated' => ['Tags']]);
 
         $this->assertCount(2, $result->tags);
-        $this->assertInstanceOf(Entity::class, $result->tags[0]);
-        $this->assertInstanceOf(Entity::class, $result->tags[1]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[0]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[1]);
         $this->assertTrue($called);
     }
 
@@ -2024,7 +1926,7 @@ class MarshallerTest extends TestCase
             'through' => 'SpecialTags',
         ]);
 
-        $entity = $articles->get(1, ...['contain' => 'Tags']);
+        $entity = $articles->get(1, ['contain' => 'Tags']);
         $data = [
             'title' => 'Haz data',
             'tags' => [
@@ -2032,7 +1934,7 @@ class MarshallerTest extends TestCase
             ],
         ];
         $marshall = new Marshaller($articles);
-        $marshall->merge($entity, $data, ['associated' => 'Tags._joinData']);
+        $result = $marshall->merge($entity, $data, ['associated' => 'Tags._joinData']);
 
         $articles->save($entity, ['associated' => ['Tags._joinData']]);
         $this->assertFalse($entity->tags[0]->isDirty('_joinData'));
@@ -2051,7 +1953,7 @@ class MarshallerTest extends TestCase
             'through' => 'SpecialTags',
         ]);
 
-        $entity = $articles->get(1, ...['contain' => 'Tags']);
+        $entity = $articles->get(1, ['contain' => 'Tags']);
         // Make only specific fields accessible, but not _joinData.
         $entity->tags[0]->setAccess('*', false);
         $entity->tags[0]->setAccess(['article_id', 'tag_id'], true);
@@ -2096,11 +1998,11 @@ class MarshallerTest extends TestCase
         $result = $marshall->merge($entity, $data, ['associated' => 'Tags']);
 
         $this->assertTrue($entity->isDirty('tags'));
-        $this->assertInstanceOf(Entity::class, $result->tags[0]->_joinData);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[0]->_joinData);
         $this->assertTrue($result->tags[0]->_joinData->highlighted);
 
         // Also ensure merge() overwrites existing data.
-        $entity = $articles->get(1, ...['contain' => 'Tags']);
+        $entity = $articles->get(1, ['contain' => 'Tags']);
         $data = [
             'title' => 'Haz data',
             'tags' => [
@@ -2111,7 +2013,7 @@ class MarshallerTest extends TestCase
         $result = $marshall->merge($entity, $data, ['associated' => 'Tags']);
 
         $this->assertTrue($entity->isDirty('tags'), 'association data changed');
-        $this->assertInstanceOf(Entity::class, $result->tags[0]->_joinData);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[0]->_joinData);
         $this->assertTrue($result->tags[0]->_joinData->highlighted);
     }
 
@@ -2143,15 +2045,15 @@ class MarshallerTest extends TestCase
         $articlesTags->belongsTo('Users');
 
         $marshall = new Marshaller($this->articles);
-        $article = $this->articles->get(1, ...['associated' => 'Tags']);
+        $article = $this->articles->get(1, ['associated' => 'Tags']);
         $result = $marshall->merge($article, $data, ['associated' => ['Tags._joinData.Users']]);
 
         $this->assertTrue($result->isDirty('tags'));
-        $this->assertInstanceOf(Entity::class, $result->tags[0]);
-        $this->assertInstanceOf(Entity::class, $result->tags[1]);
-        $this->assertInstanceOf(Entity::class, $result->tags[0]->_joinData->user);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[0]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[1]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[0]->_joinData->user);
 
-        $this->assertInstanceOf(Entity::class, $result->tags[1]->_joinData->user);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[1]->_joinData->user);
         $this->assertFalse($result->tags[0]->isNew(), 'Should not be new, as id is in db.');
         $this->assertFalse($result->tags[1]->isNew(), 'Should not be new, as id is in db.');
         $this->assertSame(1, $result->tags[0]->id);
@@ -2162,75 +2064,11 @@ class MarshallerTest extends TestCase
 
         $this->assertSame(
             $data['tags'][0]['_joinData']['user']['username'],
-            $result->tags[0]->_joinData->user->username,
+            $result->tags[0]->_joinData->user->username
         );
         $this->assertSame(
             $data['tags'][1]['_joinData']['user']['username'],
-            $result->tags[1]->_joinData->user->username,
-        );
-    }
-
-    /**
-     * Same test as @see testMergeBelongsToManyJoinDataAssociatedWithIds
-     * just without using dot notation in the marshalling process
-     */
-    public function testMergeBelongsToManyJoinDataAssociatedWithIdsWithoutDotNotation(): void
-    {
-        $data = [
-            'title' => 'My title',
-            'tags' => [
-                [
-                    'id' => 1,
-                    '_joinData' => [
-                        'active' => 1,
-                        'user' => ['username' => 'MyLux'],
-                    ],
-                ],
-                [
-                    'id' => 2,
-                    '_joinData' => [
-                        'active' => 0,
-                        'user' => ['username' => 'IronFall'],
-                    ],
-                ],
-            ],
-        ];
-        $articlesTags = $this->getTableLocator()->get('ArticlesTags');
-        $articlesTags->belongsTo('Users');
-
-        $marshall = new Marshaller($this->articles);
-        $article = $this->articles->get(1, ...['associated' => 'Tags']);
-        $result = $marshall->merge($article, $data, ['associated' => [
-            'Tags' => [
-                'associated' => [
-                    '_joinData' => [
-                        'associated' => ['Users'],
-                    ],
-                ],
-            ],
-        ]]);
-
-        $this->assertTrue($result->isDirty('tags'));
-        $this->assertInstanceOf(Entity::class, $result->tags[0]);
-        $this->assertInstanceOf(Entity::class, $result->tags[1]);
-        $this->assertInstanceOf(Entity::class, $result->tags[0]->_joinData->user);
-
-        $this->assertInstanceOf(Entity::class, $result->tags[1]->_joinData->user);
-        $this->assertFalse($result->tags[0]->isNew(), 'Should not be new, as id is in db.');
-        $this->assertFalse($result->tags[1]->isNew(), 'Should not be new, as id is in db.');
-        $this->assertSame(1, $result->tags[0]->id);
-        $this->assertSame(2, $result->tags[1]->id);
-
-        $this->assertSame(1, $result->tags[0]->_joinData->active);
-        $this->assertSame(0, $result->tags[1]->_joinData->active);
-
-        $this->assertSame(
-            $data['tags'][0]['_joinData']['user']['username'],
-            $result->tags[0]->_joinData->user->username,
-        );
-        $this->assertSame(
-            $data['tags'][1]['_joinData']['user']['username'],
-            $result->tags[1]->_joinData->user->username,
+            $result->tags[1]->_joinData->user->username
         );
     }
 
@@ -2283,11 +2121,11 @@ class MarshallerTest extends TestCase
         $this->assertSame($tag1->_joinData, $entity->tags[0]->_joinData);
         $this->assertSame(
             ['active' => 0, 'foo' => 'bar'],
-            $entity->tags[0]->_joinData->toArray(),
+            $entity->tags[0]->_joinData->toArray()
         );
         $this->assertSame(
             ['active' => 1, 'foo' => 'baz'],
-            $entity->tags[1]->_joinData->toArray(),
+            $entity->tags[1]->_joinData->toArray()
         );
         $this->assertSame('new tag', $entity->tags[1]->tag);
         $this->assertTrue($entity->tags[0]->isDirty('_joinData'));
@@ -2372,11 +2210,12 @@ class MarshallerTest extends TestCase
      */
     public function testMergeBelongsToManyIdsRetainJoinData(): void
     {
-        $entity = $this->articles->get(1, ...['contain' => ['Tags']]);
+        $this->articles->belongsToMany('Tags');
+        $entity = $this->articles->get(1, ['contain' => ['Tags']]);
         $entity->setAccess('*', true);
         $original = $entity->tags[0]->_joinData;
 
-        $this->assertInstanceOf(Entity::class, $entity->tags[0]->_joinData);
+        $this->assertInstanceOf('Cake\ORM\Entity', $entity->tags[0]->_joinData);
 
         $data = [
             'title' => 'Haz moar tags',
@@ -2389,8 +2228,8 @@ class MarshallerTest extends TestCase
 
         $this->assertCount(1, $result->tags);
         $this->assertTrue($result->isDirty('tags'));
-        $this->assertInstanceOf(Entity::class, $result->tags[0]);
-        $this->assertInstanceOf(Entity::class, $result->tags[0]->_joinData);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[0]);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->tags[0]->_joinData);
         $this->assertSame($original, $result->tags[0]->_joinData, 'Should be same object');
     }
 
@@ -2562,7 +2401,7 @@ class MarshallerTest extends TestCase
     {
         $entity = new Entity(
             ['comment' => 'My Comment text'],
-            ['markNew' => false, 'markClean' => true],
+            ['markNew' => false, 'markClean' => true]
         );
         $data = [
             'created' => [
@@ -2572,8 +2411,8 @@ class MarshallerTest extends TestCase
             ],
         ];
         $marshall = new Marshaller($this->comments);
-        $marshall->merge($entity, $data);
-        $this->assertInstanceOf(DateTime::class, $entity->created);
+        $result = $marshall->merge($entity, $data);
+        $this->assertInstanceOf(FrozenTime::class, $entity->created);
         $this->assertSame('2014-02-14', $entity->created->format('Y-m-d'));
     }
 
@@ -2590,7 +2429,7 @@ class MarshallerTest extends TestCase
         $marshall = new Marshaller($this->articles);
         $result = $marshall->one($data, ['fields' => ['title', 'author_id']]);
 
-        $this->assertInstanceOf(Entity::class, $result);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result);
         unset($data['body']);
         $this->assertEquals($data, $result->toArray());
     }
@@ -2742,7 +2581,7 @@ class MarshallerTest extends TestCase
         $this->assertSame($data['body'], $result->body);
         $this->assertNull($result->author_id);
 
-        $this->assertInstanceOf(Entity::class, $result->user);
+        $this->assertInstanceOf('Cake\ORM\Entity', $result->user);
         $this->assertSame($data['user']['username'], $result->user->username);
         $this->assertNull($result->user->password);
     }
@@ -2826,15 +2665,15 @@ class MarshallerTest extends TestCase
             ],
         ]);
         $this->assertInstanceOf(
-            Entity::class,
+            'Cake\ORM\Entity',
             $result->tags[0]->_joinData->user,
-            'joinData should contain a user entity.',
+            'joinData should contain a user entity.'
         );
         $this->assertSame('Bill', $result->tags[0]->_joinData->user->username);
         $this->assertInstanceOf(
-            Entity::class,
+            'Cake\ORM\Entity',
             $result->tags[1]->_joinData->user,
-            'joinData should contain a user entity.',
+            'joinData should contain a user entity.'
         );
         $this->assertSame('Mark', $result->tags[1]->_joinData->user->username);
 
@@ -2893,11 +2732,11 @@ class MarshallerTest extends TestCase
         $this->assertSame($tag1->_joinData, $entity->tags[0]->_joinData);
         $this->assertSame(
             ['active' => 0, 'foo' => 'bar'],
-            $entity->tags[0]->_joinData->toArray(),
+            $entity->tags[0]->_joinData->toArray()
         );
         $this->assertSame(
             ['foo' => 'baz'],
-            $entity->tags[1]->_joinData->toArray(),
+            $entity->tags[1]->_joinData->toArray()
         );
         $this->assertSame('new tag', $entity->tags[1]->tag);
         $this->assertTrue($entity->tags[0]->isDirty('_joinData'));
@@ -2918,6 +2757,19 @@ class MarshallerTest extends TestCase
         $marshall = new Marshaller($this->articles);
         $entity = $marshall->one($data);
         $this->assertNotEmpty($entity->getError('thing'));
+    }
+
+    /**
+     * Test that invalid validate options raise exceptions
+     */
+    public function testValidateInvalidType(): void
+    {
+        $this->expectException(RuntimeException::class);
+        $data = ['title' => 'foo'];
+        $marshaller = new Marshaller($this->articles);
+        $marshaller->one($data, [
+            'validate' => ['derp'],
+        ]);
     }
 
     /**
@@ -2995,6 +2847,27 @@ class MarshallerTest extends TestCase
     }
 
     /**
+     * Tests that it is possible to pass a validator directly in the options
+     *
+     * @deprecated
+     */
+    public function testPassingCustomValidator(): void
+    {
+        $this->deprecated(function () {
+            $data = [
+                'title' => 'Thing',
+                'body' => 'hey',
+            ];
+
+            $validator = clone $this->articles->getValidator();
+            $validator->requirePresence('thing');
+            $marshall = new Marshaller($this->articles);
+            $entity = $marshall->one($data, ['validate' => $validator]);
+            $this->assertNotEmpty($entity->getError('thing'));
+        });
+    }
+
+    /**
      * Tests that invalid property is being filled when data cannot be patched into an entity.
      */
     public function testValidationWithInvalidFilled(): void
@@ -3005,7 +2878,7 @@ class MarshallerTest extends TestCase
         ];
         $this->articles->setValidator(
             'custom',
-            (new Validator())->add('number', 'numeric', ['rule' => 'numeric']),
+            (new Validator())->add('number', 'numeric', ['rule' => 'numeric'])
         );
         $marshall = new Marshaller($this->articles);
         $entity = $marshall->one($data, ['validate' => 'custom']);
@@ -3158,7 +3031,7 @@ class MarshallerTest extends TestCase
                 $data['user']['username'] = 'robert';
 
                 $options['associated'] = ['Users'];
-            },
+            }
         );
 
         $entity = $marshall->one($data);
@@ -3205,36 +3078,36 @@ class MarshallerTest extends TestCase
                 $this->assertSame([], $options['associated']);
 
                 $this->assertArrayHasKey('association', $options);
-                $this->assertInstanceOf(Association::class, $options['association']);
-            },
+                $this->assertInstanceOf('Cake\ORM\Association', $options['association']);
+            }
         );
 
         $this->articles->Users->getEventManager()->on(
             'Model.beforeMarshal',
             function ($e, $data, $options): void {
                 $data['secret'] = 'h45h3d';
-            },
+            }
         );
 
         $this->articles->Comments->getEventManager()->on(
             'Model.beforeMarshal',
             function ($e, $data): void {
                 $data['comment'] .= ' (modified)';
-            },
+            }
         );
 
         $this->articles->Tags->getEventManager()->on(
             'Model.beforeMarshal',
             function ($e, $data): void {
                 $data['tag'] .= ' (modified)';
-            },
+            }
         );
 
         $this->articles->Tags->junction()->getEventManager()->on(
             'Model.beforeMarshal',
             function ($e, $data): void {
                 $data['modified_by'] = 1;
-            },
+            }
         );
 
         $entity = $marshall->one($data, [
@@ -3269,7 +3142,7 @@ class MarshallerTest extends TestCase
         $this->articles->getEventManager()->on(
             'Model.afterMarshal',
             function ($e, $entity, $data, $options): void {
-                $this->assertInstanceOf(Entity::class, $entity);
+                $this->assertInstanceOf('Cake\ORM\Entity', $entity);
                 $this->assertArrayHasKey('validate', $options);
                 $this->assertFalse($options['isMerge']);
 
@@ -3278,7 +3151,7 @@ class MarshallerTest extends TestCase
                 $options['associated'] = ['Users'];
 
                 $entity->body = 'Modified body';
-            },
+            }
         );
 
         $entity = $marshall->one($data);
@@ -3311,7 +3184,7 @@ class MarshallerTest extends TestCase
         $this->articles->getEventManager()->on(
             'Model.afterMarshal',
             function ($e, $entity, $data, $options): void {
-                $this->assertInstanceOf(Entity::class, $entity);
+                $this->assertInstanceOf('Cake\ORM\Entity', $entity);
                 $this->assertArrayHasKey('validate', $options);
                 $this->assertTrue($options['isMerge']);
 
@@ -3323,12 +3196,12 @@ class MarshallerTest extends TestCase
                 if (isset($options['fields'])) {
                     $entity->body = 'options[fields] is set';
                 }
-            },
+            }
         );
 
         //test when $options['fields'] is empty
         $entity = $this->articles->newEmptyEntity();
-        $marshall->merge($entity, $data, []);
+        $result = $marshall->merge($entity, $data, []);
 
         $this->assertSame('original title', $entity->title, '$data is immutable');
         $this->assertSame('options[fields] is empty', $entity->body);
@@ -3339,7 +3212,7 @@ class MarshallerTest extends TestCase
 
         //test when $options['fields'] is set
         $entity = $this->articles->newEmptyEntity();
-        $marshall->merge($entity, $data, ['fields' => ['title', 'body']]);
+        $result = $marshall->merge($entity, $data, ['fields' => ['title', 'body']]);
 
         $this->assertSame('original title', $entity->title, '$data is immutable');
         $this->assertSame('options[fields] is set', $entity->body);
@@ -3370,7 +3243,7 @@ class MarshallerTest extends TestCase
         $marshall = new Marshaller($this->articles);
         $marshall->merge($entity, $data, ['associated' => ['Users']]);
         $this->assertSame('My Content', $entity->body);
-        $this->assertInstanceOf(Entity::class, $entity->user);
+        $this->assertInstanceOf('Cake\ORM\Entity', $entity->user);
         $this->assertSame('mark', $entity->user->username);
         $this->assertSame('not a secret', $entity->user->password);
         $this->assertFalse($entity->isDirty('user'));
@@ -3428,13 +3301,13 @@ class MarshallerTest extends TestCase
                     'id' => 1,
                     'name' => 'tag1',
                     'description' => 'A big description',
-                    'created' => new DateTime('2016-01-01 00:00'),
+                    'created' => new FrozenTime('2016-01-01 00:00'),
                 ],
                 [
                     'id' => 2,
                     'name' => 'tag2',
                     'description' => 'Another big description',
-                    'created' => new DateTime('2016-01-01 00:00'),
+                    'created' => new FrozenTime('2016-01-01 00:00'),
                 ],
             ],
         ];
@@ -3447,7 +3320,7 @@ class MarshallerTest extends TestCase
     public function testInvalidTypesWhenLoadingAssociatedByIds(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Cannot convert value `foobar` of type `string` to int');
+        $this->expectExceptionMessage('Cannot convert value of type `string` to integer');
 
         $data = [
             'title' => 'article',
@@ -3467,7 +3340,7 @@ class MarshallerTest extends TestCase
     public function testInvalidTypesWhenLoadingAssociatedByCompositeIds(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Cannot convert value `foo` of type `string` to int');
+        $this->expectExceptionMessage('Cannot convert value of type `string` to integer');
 
         $data = [
             'title' => 'article',

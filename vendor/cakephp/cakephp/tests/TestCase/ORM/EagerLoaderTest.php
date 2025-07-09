@@ -21,7 +21,7 @@ use Cake\Database\Expression\QueryExpression;
 use Cake\Database\TypeMap;
 use Cake\Datasource\ConnectionManager;
 use Cake\ORM\EagerLoader;
-use Cake\ORM\Query\SelectQuery;
+use Cake\ORM\Query;
 use Cake\TestSuite\TestCase;
 use InvalidArgumentException;
 
@@ -104,15 +104,15 @@ class EagerLoaderTest extends TestCase
                 'primary' => ['type' => 'primary', 'columns' => ['id']],
             ],
         ];
-        $this->table = $this->getTableLocator()->get('foo', ['schema' => $schema]);
-        $table = $this->table;
+
+        $this->table = $table = $this->getTableLocator()->get('foo', ['schema' => $schema]);
         $clients = $this->getTableLocator()->get('clients', ['schema' => $schema1]);
         $orders = $this->getTableLocator()->get('orders', ['schema' => $schema2]);
         $companies = $this->getTableLocator()->get('companies', ['schema' => $schema, 'table' => 'organizations']);
-        $this->getTableLocator()->get('orderTypes', ['schema' => $schema]);
+        $orderTypes = $this->getTableLocator()->get('orderTypes', ['schema' => $schema]);
         $stuff = $this->getTableLocator()->get('stuff', ['schema' => $schema, 'table' => 'things']);
-        $this->getTableLocator()->get('stuffTypes', ['schema' => $schema]);
-        $this->getTableLocator()->get('categories', ['schema' => $schema]);
+        $stuffTypes = $this->getTableLocator()->get('stuffTypes', ['schema' => $schema]);
+        $categories = $this->getTableLocator()->get('categories', ['schema' => $schema]);
 
         $table->belongsTo('clients');
         $clients->hasOne('orders');
@@ -189,18 +189,17 @@ class EagerLoaderTest extends TestCase
             ],
         ];
 
-        $query = $this->getMockBuilder(SelectQuery::class)
+        $query = $this->getMockBuilder('Cake\ORM\Query')
             ->onlyMethods(['join'])
-            ->setConstructorArgs([$this->table])
+            ->setConstructorArgs([$this->connection, $this->table])
             ->getMock();
 
         $query->setTypeMap($this->clientsTypeMap);
 
         $query->expects($this->exactly(7))
             ->method('join')
-            ->with(
-                ...self::withConsecutive(
-                    [
+            ->withConsecutive(
+                [
                     ['clients' => [
                         'table' => 'clients',
                         'type' => 'LEFT',
@@ -208,8 +207,8 @@ class EagerLoaderTest extends TestCase
                             ['clients.id' => new IdentifierExpression('foo.client_id')],
                         ], new TypeMap($this->clientsTypeMap->getDefaults())),
                     ]],
-                    ],
-                    [
+                ],
+                [
                     ['orders' => [
                         'table' => 'orders',
                         'type' => 'LEFT',
@@ -217,8 +216,8 @@ class EagerLoaderTest extends TestCase
                             ['clients.id' => new IdentifierExpression('orders.client_id')],
                         ], $this->ordersTypeMap),
                     ]],
-                    ],
-                    [
+                ],
+                [
                     ['orderTypes' => [
                         'table' => 'order_types',
                         'type' => 'LEFT',
@@ -226,8 +225,8 @@ class EagerLoaderTest extends TestCase
                             ['orderTypes.id' => new IdentifierExpression('orders.order_type_id')],
                         ], $this->orderTypesTypeMap),
                     ]],
-                    ],
-                    [
+                ],
+                [
                     ['stuff' => [
                         'table' => 'things',
                         'type' => 'LEFT',
@@ -235,8 +234,8 @@ class EagerLoaderTest extends TestCase
                             ['orders.id' => new IdentifierExpression('stuff.order_id')],
                         ], $this->stuffTypeMap),
                     ]],
-                    ],
-                    [
+                ],
+                [
                     ['stuffTypes' => [
                         'table' => 'stuff_types',
                         'type' => 'LEFT',
@@ -244,8 +243,8 @@ class EagerLoaderTest extends TestCase
                             ['stuffTypes.id' => new IdentifierExpression('stuff.stuff_type_id')],
                         ], $this->stuffTypesTypeMap),
                     ]],
-                    ],
-                    [
+                ],
+                [
                     ['companies' => [
                         'table' => 'organizations',
                         'type' => 'LEFT',
@@ -253,8 +252,8 @@ class EagerLoaderTest extends TestCase
                             ['companies.id' => new IdentifierExpression('clients.organization_id')],
                         ], $this->companiesTypeMap),
                     ]],
-                    ],
-                    [
+                ],
+                [
                     ['categories' => [
                         'table' => 'categories',
                         'type' => 'LEFT',
@@ -262,10 +261,9 @@ class EagerLoaderTest extends TestCase
                             ['categories.id' => new IdentifierExpression('companies.category_id')],
                         ], $this->categoriesTypeMap),
                     ]],
-                    ],
-                ),
+                ]
             )
-            ->willReturn($query);
+            ->will($this->returnValue($query));
 
         $loader = new EagerLoader();
         $loader->contain($contains);
@@ -412,7 +410,7 @@ class EagerLoaderTest extends TestCase
         ]);
         $builder = $loader->getContain()['clients']['queryBuilder'];
         $table = $this->getTableLocator()->get('foo');
-        $query = new SelectQuery($table);
+        $query = new Query($this->connection, $table);
         $query = $builder($query);
         $this->assertEquals(['a', 'b'], $query->clause('select'));
     }
@@ -432,7 +430,7 @@ class EagerLoaderTest extends TestCase
         ];
 
         $table = $this->getTableLocator()->get('foo');
-        $query = new SelectQuery($table);
+        $query = new Query($this->connection, $table);
         $loader = new EagerLoader();
         $loader->contain($contains);
         $query->select('foo.id');
@@ -456,7 +454,7 @@ class EagerLoaderTest extends TestCase
     {
         $contains = ['clients' => ['orders']];
 
-        $query = new SelectQuery($this->table);
+        $query = new Query($this->connection, $this->table);
         $query->select()->contain($contains)->sql();
         $select = $query->clause('select');
         $expected = [
@@ -469,7 +467,7 @@ class EagerLoaderTest extends TestCase
         $this->assertEquals($expected, $select);
 
         $contains['clients']['fields'] = ['name'];
-        $query = new SelectQuery($this->table);
+        $query = new Query($this->connection, $this->table);
         $query->select('foo.id')->contain($contains)->sql();
         $select = $query->clause('select');
         $expected = ['foo__id' => 'foo.id', 'clients__name' => 'clients.name'];
@@ -478,7 +476,7 @@ class EagerLoaderTest extends TestCase
 
         $contains['clients']['fields'] = [];
         $contains['clients']['orders']['fields'] = false;
-        $query = new SelectQuery($this->table);
+        $query = new Query($this->connection, $this->table);
         $query->select()->contain($contains)->sql();
         $select = $query->clause('select');
         $expected = [
@@ -509,6 +507,11 @@ class EagerLoaderTest extends TestCase
             ],
         ];
 
+        $query = $this->getMockBuilder('Cake\ORM\Query')
+            ->onlyMethods(['join'])
+            ->setConstructorArgs([$this->connection, $this->table])
+            ->getMock();
+
         $loader = new EagerLoader();
         $loader->contain($contains);
         $normalized = $loader->normalized($this->table);
@@ -528,11 +531,11 @@ class EagerLoaderTest extends TestCase
         $assocs = $assocs['stuff']->associations();
         $this->assertSame(
             'clients.orders.stuff.stuffTypes',
-            $assocs['stuffTypes']->aliasPath(),
+            $assocs['stuffTypes']->aliasPath()
         );
         $this->assertSame(
             'client.order.stuff.stuff_type',
-            $assocs['stuffTypes']->propertyPath(),
+            $assocs['stuffTypes']->propertyPath()
         );
     }
 
@@ -620,7 +623,7 @@ class EagerLoaderTest extends TestCase
 
             return array_combine(
                 array_map($quoter, array_keys($elements)),
-                array_map($quoter, array_values($elements)),
+                array_map($quoter, array_values($elements))
             );
         }
 

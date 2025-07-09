@@ -9,7 +9,7 @@ use Cake\TestSuite\TestCase;
 
 class ContentTypeNegotiationTest extends TestCase
 {
-    public function testPreferredTypeNoAccept(): void
+    public function testPreferredTypeNoAccept()
     {
         $request = new ServerRequest([
             'url' => '/dashboard',
@@ -26,7 +26,7 @@ class ContentTypeNegotiationTest extends TestCase
         $this->assertNull($content->preferredType($request));
     }
 
-    public function testPreferredTypeFirefoxHtml(): void
+    public function testPreferredTypeFirefoxHtml()
     {
         $content = new ContentTypeNegotiation();
         $request = new ServerRequest([
@@ -41,7 +41,7 @@ class ContentTypeNegotiationTest extends TestCase
         $this->assertNull($content->preferredType($request, ['application/json']));
     }
 
-    public function testPreferredTypeFirstMatch(): void
+    public function testPreferredTypeFirstMatch()
     {
         $content = new ContentTypeNegotiation();
         $request = new ServerRequest([
@@ -61,7 +61,7 @@ class ContentTypeNegotiationTest extends TestCase
         $this->assertEquals('application/json', $content->preferredType($request));
     }
 
-    public function testPreferredTypeQualValue(): void
+    public function testPreferredTypeQualValue()
     {
         $content = new ContentTypeNegotiation();
         $request = new ServerRequest([
@@ -82,7 +82,7 @@ class ContentTypeNegotiationTest extends TestCase
         $this->assertEquals('application/json', $content->preferredType($request));
     }
 
-    public function testPreferredTypeSimple(): void
+    public function testPreferredTypeSimple()
     {
         $content = new ContentTypeNegotiation();
         $request = new ServerRequest([
@@ -96,11 +96,11 @@ class ContentTypeNegotiationTest extends TestCase
         $request = $request->withEnv('HTTP_ACCEPT', 'application/json');
         $this->assertEquals(
             'application/json',
-            $content->preferredType($request, ['text/html', 'application/json']),
+            $content->preferredType($request, ['text/html', 'application/json'])
         );
     }
 
-    public function testParseAccept(): void
+    public function testParseAccept()
     {
         $content = new ContentTypeNegotiation();
         $request = new ServerRequest([
@@ -119,7 +119,7 @@ class ContentTypeNegotiationTest extends TestCase
 
         $request = $request->withEnv(
             'HTTP_ACCEPT',
-            'application/pdf;q=0.3,application/json;q=0.5,application/xml;q=0.5',
+            'application/pdf;q=0.3,application/json;q=0.5,application/xml;q=0.5'
         );
         $result = $content->parseAccept($request);
         $expected = [
@@ -129,7 +129,7 @@ class ContentTypeNegotiationTest extends TestCase
         $this->assertEquals($expected, $result, 'Sorting is incorrect.');
     }
 
-    public function testParseAcceptLanguage(): void
+    public function testParseAcceptLanguage()
     {
         $content = new ContentTypeNegotiation();
         $request = new ServerRequest([
@@ -156,7 +156,7 @@ class ContentTypeNegotiationTest extends TestCase
         $this->assertEquals($expected, $content->parseAcceptLanguage($request));
     }
 
-    public function testAcceptLanguage(): void
+    public function testAcceptLanguage()
     {
         $content = new ContentTypeNegotiation();
         $request = new ServerRequest([
@@ -171,7 +171,7 @@ class ContentTypeNegotiationTest extends TestCase
         $this->assertFalse($content->acceptLanguage($request, 'en_CA'), 'Input code not normalized');
     }
 
-    public function testAcceptedLanguage(): void
+    public function testAcceptedLanguage()
     {
         $content = new ContentTypeNegotiation();
         $request = new ServerRequest([
@@ -181,6 +181,6 @@ class ContentTypeNegotiationTest extends TestCase
             ],
         ]);
         $expected = ['en-us', 'en-ca', 'pt-br'];
-        $this->assertEquals($expected, $content->acceptedLanguages($request));
+        $this->assertEquals($expected, $content->acceptedLanguages($request, 'es-mx'));
     }
 }

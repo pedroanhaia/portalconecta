@@ -16,16 +16,14 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Command;
 
-use Cake\Command\PluginAssetsSymlinkCommand;
-use Cake\Console\CommandInterface;
+use Cake\Command\Command;
 use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\Console\TestSuite\StubConsoleOutput;
 use Cake\Core\Configure;
+use Cake\Filesystem\Filesystem;
 use Cake\TestSuite\TestCase;
-use Cake\Utility\Filesystem;
-use Mockery;
 use SplFileInfo;
 
 /**
@@ -41,7 +39,7 @@ class PluginAssetsCommandsTest extends TestCase
     protected $wwwRoot;
 
     /**
-     * @var \Cake\Utility\Filesystem
+     * @var \Cake\Filesystem\Filesystem
      */
     protected $fs;
 
@@ -59,6 +57,7 @@ class PluginAssetsCommandsTest extends TestCase
         $this->fs->deleteDir($this->wwwRoot);
         $this->fs->copyDir(WWW_ROOT, $this->wwwRoot);
 
+        $this->useCommandRunner();
         $this->setAppNamespace();
         $this->configApplication(Configure::read('App.namespace') . '\ApplicationWithDefaultRoutes', []);
     }
@@ -80,7 +79,7 @@ class PluginAssetsCommandsTest extends TestCase
         $this->loadPlugins(['TestPlugin' => ['routes' => false], 'Company/TestPluginThree']);
 
         $this->exec('plugin assets symlink');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
 
         $path = $this->wwwRoot . 'test_plugin';
         $this->assertFileExists($path . DS . 'root.js');
@@ -98,7 +97,7 @@ class PluginAssetsCommandsTest extends TestCase
         mkdir($this->wwwRoot . 'company');
 
         $this->exec('plugin assets symlink');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
 
         $path = $this->wwwRoot . 'company' . DS . 'test_plugin_three';
         $this->assertFileExists($path . DS . 'css' . DS . 'company.css');
@@ -113,15 +112,18 @@ class PluginAssetsCommandsTest extends TestCase
         $this->loadPlugins(['TestTheme']);
 
         $output = new StubConsoleOutput();
-        $io = Mockery::mock(ConsoleIo::class, [$output, $output, null, null])->makePartial();
+        $io = $this->getMockBuilder(ConsoleIo::class)
+            ->setConstructorArgs([$output, $output, null, null])
+            ->addMethods(['in'])
+            ->getMock();
         $parser = new ConsoleOptionParser('cake example');
         $parser->addArgument('name', ['required' => false]);
         $parser->addOption('overwrite', ['default' => false, 'boolean' => true]);
 
-        $command = $this->getMockBuilder(PluginAssetsSymlinkCommand::class)
+        $command = $this->getMockBuilder('Cake\Command\PluginAssetsSymlinkCommand')
             ->onlyMethods(['getOptionParser', '_createSymlink', '_copyDirectory'])
             ->getMock();
-        $command->method('getOptionParser')->willReturn($parser);
+        $command->method('getOptionParser')->will($this->returnValue($parser));
 
         $this->assertDirectoryExists($this->wwwRoot . 'test_theme');
 
@@ -151,6 +153,7 @@ class PluginAssetsCommandsTest extends TestCase
         $this->exec('plugin assets symlink TestPlugin');
 
         $path = $this->wwwRoot . 'test_plugin';
+        $link = new SplFileInfo($path);
         $this->assertFileExists($path . DS . 'root.js');
 
         $path = $this->wwwRoot . 'company' . DS . 'test_plugin_three';
@@ -223,7 +226,7 @@ class PluginAssetsCommandsTest extends TestCase
 
         $this->assertFalse(is_link($this->wwwRoot . 'test_plugin'));
         $this->assertFalse(is_link($path));
-        $this->assertDirectoryExists($this->wwwRoot . 'company', "Ensure namespace folder isn't removed");
+        $this->assertDirectoryExists($this->wwwRoot . 'company', 'Ensure namespace folder isn\'t removed');
     }
 
     /**
@@ -243,7 +246,7 @@ class PluginAssetsCommandsTest extends TestCase
 
         $this->assertDirectoryDoesNotExist($this->wwwRoot . 'test_plugin');
         $this->assertDirectoryDoesNotExist($this->wwwRoot . 'company' . DS . 'test_plugin_three');
-        $this->assertDirectoryExists($this->wwwRoot . 'company', "Ensure namespace folder isn't removed");
+        $this->assertDirectoryExists($this->wwwRoot . 'company', 'Ensure namespace folder isn\'t removed');
     }
 
     /**

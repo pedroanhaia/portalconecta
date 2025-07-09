@@ -15,30 +15,30 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Database\QueryTests;
 
-use Cake\Core\Exception\CakeException;
 use Cake\Database\Driver\Mysql;
 use Cake\Database\Driver\Sqlite;
 use Cake\Database\Driver\Sqlserver;
-use Cake\Database\DriverFeatureEnum;
+use Cake\Database\DriverInterface;
 use Cake\Database\Expression\QueryExpression;
 use Cake\Database\Expression\WindowExpression;
-use Cake\Database\Query\SelectQuery;
+use Cake\Database\Query;
 use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\TestCase;
+use RuntimeException;
 
 /**
  * Tests WindowExpression class
  */
 class WindowQueryTest extends TestCase
 {
-    protected array $fixtures = [
+    protected $fixtures = [
         'core.Comments',
     ];
 
     /**
      * @var \Cake\Database\Connection
      */
-    protected $connection;
+    protected $connection = null;
 
     /**
      * @var bool
@@ -61,7 +61,7 @@ class WindowQueryTest extends TestCase
             $driver instanceof Mysql ||
             $driver instanceof Sqlite
         ) {
-            $this->skipTests = !$this->connection->getDriver()->supports(DriverFeatureEnum::WINDOW);
+            $this->skipTests = !$this->connection->getDriver()->supports(DriverInterface::FEATURE_WINDOW);
         } else {
             $this->skipTests = false;
         }
@@ -77,7 +77,7 @@ class WindowQueryTest extends TestCase
      */
     public function testWindowSql(): void
     {
-        $query = new SelectQuery($this->connection);
+        $query = new Query($this->connection);
         $sql = $query
             ->select('*')
             ->window('name', new WindowExpression())
@@ -99,9 +99,9 @@ class WindowQueryTest extends TestCase
 
     public function testMissingWindow(): void
     {
-        $this->expectException(CakeException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('You must return a `WindowExpression`');
-        (new SelectQuery($this->connection))->window('name', function () {
+        (new Query($this->connection))->window('name', function () {
             return new QueryExpression();
         });
     }
@@ -110,7 +110,7 @@ class WindowQueryTest extends TestCase
     {
         $this->skipIf($this->skipTests);
 
-        $query = new SelectQuery($this->connection);
+        $query = new Query($this->connection);
         $result = $query
             ->select(['num_rows' => $query->func()->count('*')->over()])
             ->from('comments')
@@ -118,20 +118,20 @@ class WindowQueryTest extends TestCase
             ->fetchAll();
         $this->assertCount(6, $result);
 
-        $query = new SelectQuery($this->connection);
+        $query = new Query($this->connection);
         $result = $query
             ->select(['num_rows' => $query->func()->count('*')->partition('article_id')])
             ->from('comments')
-            ->orderBy(['article_id'])
+            ->order(['article_id'])
             ->execute()
             ->fetchAll('assoc');
         $this->assertEquals(4, $result[0]['num_rows']);
 
-        $query = new SelectQuery($this->connection);
+        $query = new Query($this->connection);
         $result = $query
-            ->select(['num_rows' => $query->func()->count('*')->partition('article_id')->orderBy('updated')])
+            ->select(['num_rows' => $query->func()->count('*')->partition('article_id')->order('updated')])
             ->from('comments')
-            ->orderBy(['updated'])
+            ->order(['updated'])
             ->execute()
             ->fetchAll('assoc');
         $this->assertEquals(1, $result[0]['num_rows']);
@@ -150,12 +150,12 @@ class WindowQueryTest extends TestCase
         }
         $this->skipIf($skip);
 
-        $query = new SelectQuery($this->connection);
+        $query = new Query($this->connection);
         $result = $query
             ->select(['num_rows' => $query->func()->count('*')->over('window1')])
             ->from('comments')
             ->window('window1', (new WindowExpression())->partition('article_id'))
-            ->orderBy(['article_id'])
+            ->order(['article_id'])
             ->execute()
             ->fetchAll('assoc');
         $this->assertEquals(4, $result[0]['num_rows']);
@@ -173,13 +173,13 @@ class WindowQueryTest extends TestCase
         }
         $this->skipIf($skip);
 
-        $query = new SelectQuery($this->connection);
+        $query = new Query($this->connection);
         $result = $query
             ->select(['num_rows' => $query->func()->count('*')->over('window2')])
             ->from('comments')
             ->window('window1', (new WindowExpression())->partition('article_id'))
             ->window('window2', new WindowExpression('window1'))
-            ->orderBy(['article_id'])
+            ->order(['article_id'])
             ->execute()
             ->fetchAll('assoc');
         $this->assertEquals(4, $result[0]['num_rows']);

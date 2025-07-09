@@ -18,7 +18,6 @@ namespace Cake\Test\TestCase\Utility;
 
 use Cake\Collection\Collection;
 use Cake\Core\Configure;
-use Cake\Core\Exception\CakeException;
 use Cake\ORM\Entity;
 use Cake\TestSuite\TestCase;
 use Cake\Utility\Exception\XmlException;
@@ -26,11 +25,8 @@ use Cake\Utility\Xml;
 use DateTime;
 use DOMDocument;
 use Exception;
-use PHPUnit\Framework\Attributes\DataProvider;
+use RuntimeException;
 use SimpleXMLElement;
-use TestApp\Model\Enum\ArticleStatus;
-use TestApp\Model\Enum\NonBacked;
-use TestApp\Model\Enum\Priority;
 use TypeError;
 
 /**
@@ -86,7 +82,7 @@ class XmlTest extends TestCase
 
         $this->assertEquals(
             Xml::build($xml, ['readFile' => true]),
-            Xml::build(file_get_contents($xml)),
+            Xml::build(file_get_contents($xml))
         );
 
         $obj = Xml::build($xml, ['return' => 'domdocument', 'readFile' => true]);
@@ -94,7 +90,7 @@ class XmlTest extends TestCase
 
         $this->assertEquals(
             Xml::build($xml, ['return' => 'domdocument', 'readFile' => true]),
-            Xml::build(file_get_contents($xml), ['return' => 'domdocument']),
+            Xml::build(file_get_contents($xml), ['return' => 'domdocument'])
         );
 
         $xml = ['tag' => 'value'];
@@ -128,7 +124,7 @@ class XmlTest extends TestCase
     {
         $this->expectException(XmlException::class);
         $xml = CORE_TESTS . 'Fixture/sample.xml';
-        Xml::build($xml, ['readFile' => false]);
+        $obj = Xml::build($xml, ['readFile' => false]);
     }
 
     /**
@@ -176,6 +172,8 @@ class XmlTest extends TestCase
     public static function invalidDataProvider(): array
     {
         return [
+            [null],
+            [false],
             [''],
             ['http://localhost/notthere.xml'],
         ];
@@ -184,12 +182,12 @@ class XmlTest extends TestCase
     /**
      * testBuildInvalidData
      *
+     * @dataProvider invalidDataProvider
      * @param mixed $value
      */
-    #[DataProvider('invalidDataProvider')]
     public function testBuildInvalidData($value): void
     {
-        $this->expectException(CakeException::class);
+        $this->expectException(RuntimeException::class);
         Xml::build($value);
     }
 
@@ -211,7 +209,7 @@ class XmlTest extends TestCase
         try {
             Xml::build('<tag>');
             $this->fail('No exception');
-        } catch (Exception) {
+        } catch (Exception $e) {
             $this->assertTrue(true, 'An exception was raised');
         }
     }
@@ -570,6 +568,9 @@ XML;
     public static function invalidArrayDataProvider(): array
     {
         return [
+            [''],
+            [null],
+            [false],
             [[]],
             [['numeric key as root']],
             [['item1' => '', 'item2' => '']],
@@ -606,9 +607,9 @@ XML;
     /**
      * testFromArrayFail method
      *
+     * @dataProvider invalidArrayDataProvider
      * @param mixed $value
      */
-    #[DataProvider('invalidArrayDataProvider')]
     public function testFromArrayFail($value): void
     {
         $this->expectException(Exception::class);
@@ -827,7 +828,7 @@ XML;
         $expected = [
             'title' => 'Alertpay automated sales via IPN',
             'link' => 'http://bakery.cakephp.org/articles/view/alertpay-automated-sales-via-ipn',
-            'description' => "I'm going to show you how I implemented a payment module via the Alertpay payment processor.",
+            'description' => 'I\'m going to show you how I implemented a payment module via the Alertpay payment processor.',
             'pubDate' => 'Tue, 31 Aug 2010 01:42:00 -0500',
             'guid' => 'http://bakery.cakephp.org/articles/view/alertpay-automated-sales-via-ipn',
         ];
@@ -1142,35 +1143,6 @@ XML;
     }
 
     /**
-     * Tests that Enums don't blow up SimpleXml.
-     */
-    public function testEnum(): void
-    {
-        $xml = [
-            'root' => [
-                'tag' => [
-                    'xmlns:pref' => 'http://cakephp.org',
-                    'backed-int' => Priority::Medium,
-                    'backend-string' => ArticleStatus::Published,
-                    'non-backed' => NonBacked::Basic,
-                ],
-            ],
-        ];
-        $expected = <<<XML
-<?xml version="1.0" encoding="UTF-8"?>
-<root>
-  <tag xmlns:pref="http://cakephp.org">
-     <backed-int>2</backed-int>
-     <backend-string>Y</backend-string>
-     <non-backed>Basic</non-backed>
-  </tag>
-</root>
-XML;
-        $xmlResponse = Xml::fromArray($xml);
-        $this->assertXmlStringEqualsXmlString($expected, $xmlResponse->asXML());
-    }
-
-    /**
      * test that CDATA blocks don't get screwed up by SimpleXml
      */
     public function testCdata(): void
@@ -1180,6 +1152,31 @@ XML;
 
         $result = Xml::build($xml);
         $this->assertSame(' Mark ', (string)$result->name);
+    }
+
+    /**
+     * data provider for toArray() failures
+     *
+     * @return array
+     */
+    public static function invalidToArrayDataProvider(): array
+    {
+        return [
+            [new \DateTime()],
+            [[]],
+        ];
+    }
+
+    /**
+     * testToArrayFail method
+     *
+     * @dataProvider invalidToArrayDataProvider
+     * @param mixed $value
+     */
+    public function testToArrayFail($value): void
+    {
+        $this->expectException(\Cake\Utility\Exception\XmlException::class);
+        Xml::toArray($value);
     }
 
     /**
@@ -1205,7 +1202,7 @@ XML;
         $file = str_replace(' ', '%20', CAKE . 'VERSION.txt');
         $xml = <<<XML
 <!DOCTYPE cakephp [
-  <!ENTITY payload SYSTEM "file://{$file}" >]>
+  <!ENTITY payload SYSTEM "file://$file" >]>
 <request>
   <xxe>&payload;</xxe>
 </request>

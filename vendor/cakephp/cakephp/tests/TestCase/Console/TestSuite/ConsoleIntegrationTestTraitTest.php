@@ -15,12 +15,11 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Console\TestSuite;
 
-use Cake\Console\CommandInterface;
+use Cake\Command\Command;
 use Cake\Console\TestSuite\ConsoleIntegrationTestTrait;
 use Cake\Console\TestSuite\MissingConsoleInputException;
 use Cake\TestSuite\TestCase;
 use PHPUnit\Framework\AssertionFailedError;
-use PHPUnit\Framework\Attributes\DataProvider;
 use stdClass;
 
 class ConsoleIntegrationTestTraitTest extends TestCase
@@ -42,9 +41,10 @@ class ConsoleIntegrationTestTraitTest extends TestCase
      */
     public function testExecWithCommandRunner(): void
     {
+        $this->useCommandRunner();
         $this->exec('');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertOutputContains('Current Paths');
         $this->assertExitSuccess();
     }
@@ -56,8 +56,19 @@ class ConsoleIntegrationTestTraitTest extends TestCase
     {
         $this->exec('sample');
 
-        $this->assertOutputContains('SampleCommand');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertOutputContains('SampleShell');
+        $this->assertExitCode(Command::CODE_SUCCESS);
+    }
+
+    /**
+     * tests that exec catches a StopException
+     */
+    public function testExecShellWithStopException(): void
+    {
+        $this->exec('integration abort_shell');
+        $this->assertExitCode(Command::CODE_ERROR);
+        $this->assertExitError();
+        $this->assertErrorContains('Shell aborted');
     }
 
     /**
@@ -65,6 +76,7 @@ class ConsoleIntegrationTestTraitTest extends TestCase
      */
     public function testExecCommandWithStopException(): void
     {
+        $this->useCommandRunner();
         $this->exec('abort_command');
         $this->assertExitCode(127);
         $this->assertErrorContains('Command aborted');
@@ -75,24 +87,10 @@ class ConsoleIntegrationTestTraitTest extends TestCase
      */
     public function testExecCommandWithFormatSpecifier(): void
     {
+        $this->useCommandRunner();
         $this->exec('format_specifier_command');
         $this->assertOutputContains('format specifier');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
-    }
-
-    /**
-     * tests exec clears output
-     */
-    public function testExecClearsOutput(): void
-    {
-        $this->exec('sample');
-        $this->assertOutputContains('SampleCommand');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
-
-        $this->exec('abort');
-        $this->assertOutputNotContains('SampleCommand');
-        $this->assertErrorContains('Command aborted');
-        $this->assertExitCode(127);
+        $this->assertExitCode(Command::CODE_SUCCESS);
     }
 
     /**
@@ -100,9 +98,10 @@ class ConsoleIntegrationTestTraitTest extends TestCase
      */
     public function testExecCoreCommand(): void
     {
+        $this->useCommandRunner();
         $this->exec('routes');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
     }
 
     /**
@@ -110,12 +109,12 @@ class ConsoleIntegrationTestTraitTest extends TestCase
      */
     public function testExecWithArgsAndOption(): void
     {
-        $this->exec('integration arg --opt="some string"');
+        $this->exec('integration args_and_options arg --opt="some string"');
 
         $this->assertErrorEmpty();
         $this->assertOutputContains('arg: arg');
         $this->assertOutputContains('opt: some string');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
     }
 
     /**
@@ -123,11 +122,11 @@ class ConsoleIntegrationTestTraitTest extends TestCase
      */
     public function testExecWithJsonArg(): void
     {
-        $this->exec("integration '{\"key\":\"value\"}'");
+        $this->exec("integration args_and_options '{\"key\":\"value\"}'");
 
         $this->assertErrorEmpty();
         $this->assertOutputContains('arg: {"key":"value"}');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
     }
 
     /**
@@ -135,11 +134,12 @@ class ConsoleIntegrationTestTraitTest extends TestCase
      */
     public function testExecWithMissingRequiredArg(): void
     {
-        $this->exec('integration');
+        $this->exec('integration args_and_options');
 
+        $this->assertOutputEmpty();
         $this->assertErrorContains('Missing required argument');
         $this->assertErrorContains('`arg` argument is required');
-        $this->assertExitCode(CommandInterface::CODE_ERROR);
+        $this->assertExitCode(Command::CODE_ERROR);
     }
 
     /**
@@ -147,10 +147,10 @@ class ConsoleIntegrationTestTraitTest extends TestCase
      */
     public function testExecWithInput(): void
     {
-        $this->exec('bridge', ['javascript']);
+        $this->exec('integration bridge', ['javascript']);
 
         $this->assertErrorContains('No!');
-        $this->assertExitCode(CommandInterface::CODE_ERROR);
+        $this->assertExitCode(Command::CODE_ERROR);
     }
 
     /**
@@ -160,7 +160,7 @@ class ConsoleIntegrationTestTraitTest extends TestCase
     {
         $this->expectException(MissingConsoleInputException::class);
         $this->expectExceptionMessage('no more input');
-        $this->exec('bridge', ['cake']);
+        $this->exec('integration bridge', ['cake']);
     }
 
     /**
@@ -168,10 +168,10 @@ class ConsoleIntegrationTestTraitTest extends TestCase
      */
     public function testExecWithMultipleInput(): void
     {
-        $this->exec('bridge', ['cake', 'blue']);
+        $this->exec('integration bridge', ['cake', 'blue']);
 
         $this->assertOutputContains('You may pass');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
     }
 
     public function testExecWithMockServiceDependencies(): void
@@ -179,10 +179,11 @@ class ConsoleIntegrationTestTraitTest extends TestCase
         $this->mockService(stdClass::class, function () {
             return json_decode('{"console-mock":true}');
         });
+        $this->useCommandRunner();
         $this->exec('dependency');
 
         $this->assertOutputContains('constructor inject: {"console-mock":true}');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
     }
 
     /**
@@ -193,6 +194,16 @@ class ConsoleIntegrationTestTraitTest extends TestCase
         $this->exec('sample');
 
         $this->assertOutputRegExp('/^[A-Z]+/mi');
+    }
+
+    /**
+     * tests assertErrorRegExp assertion
+     */
+    public function testAssertErrorRegExp(): void
+    {
+        $this->exec('integration args_and_options');
+
+        $this->assertErrorRegExp('/\<error\>(.+)\<\/error\>/');
     }
 
     /**
@@ -210,7 +221,7 @@ class ConsoleIntegrationTestTraitTest extends TestCase
         $this->assertSame($expected, $result);
 
         $json = json_encode(['key' => '"val"', 'this' => true]);
-        $result = $this->commandStringToArgs("   --json='{$json}'");
+        $result = $this->commandStringToArgs("   --json='$json'");
         $expected = [
             '--json=' . $json,
         ];
@@ -224,16 +235,17 @@ class ConsoleIntegrationTestTraitTest extends TestCase
      * @param string $message Expected failure message
      * @param string $command Command to test
      * @param mixed ...$rest
+     * @dataProvider assertionFailureMessagesProvider
      */
-    #[DataProvider('assertionFailureMessagesProvider')]
     public function testAssertionFailureMessages($assertion, $message, $command, ...$rest): void
     {
         $this->expectException(AssertionFailedError::class);
-        $this->expectExceptionMessageMatches('#' . $message . '.?#');
+        $this->expectExceptionMessageMatches('#' . preg_quote($message, '#') . '.?#');
 
+        $this->useCommandRunner();
         $this->exec($command);
 
-        call_user_func_array($this->$assertion(...), $rest);
+        call_user_func_array([$this, $assertion], $rest);
     }
 
     /**
@@ -241,17 +253,18 @@ class ConsoleIntegrationTestTraitTest extends TestCase
      *
      * @return array
      */
-    public static function assertionFailureMessagesProvider(): array
+    public function assertionFailureMessagesProvider(): array
     {
         return [
-            'assertExitCode' => ['assertExitCode', 'Failed asserting that `1` matches exit code `0`', 'routes', CommandInterface::CODE_ERROR],
+            'assertExitCode' => ['assertExitCode', 'Failed asserting that 1 matches exit code 0', 'routes', Command::CODE_ERROR],
             'assertOutputEmpty' => ['assertOutputEmpty', 'Failed asserting that output is empty', 'routes'],
-            'assertOutputContains' => ['assertOutputContains', "Failed asserting that 'missing' is in output", 'routes', 'missing'],
-            'assertOutputNotContains' => ['assertOutputNotContains', "Failed asserting that 'controller' is not in output", 'routes', 'controller'],
+            'assertOutputContains' => ['assertOutputContains', 'Failed asserting that \'missing\' is in output', 'routes', 'missing'],
+            'assertOutputNotContains' => ['assertOutputNotContains', 'Failed asserting that \'controller\' is not in output', 'routes', 'controller'],
             'assertOutputRegExp' => ['assertOutputRegExp', 'Failed asserting that `/missing/` PCRE pattern found in output', 'routes', '/missing/'],
-            'assertOutputContainsRow' => ['assertOutputContainsRow', 'Failed asserting that `.*` row was in output', 'routes', ['test', 'missing']],
-            'assertErrorContains' => ['assertErrorContains', "Failed asserting that 'test' is in error output", 'routes', 'test'],
+            'assertOutputContainsRow' => ['assertOutputContainsRow', 'Failed asserting that `Array (...)` row was in output', 'routes', ['test', 'missing']],
+            'assertErrorContains' => ['assertErrorContains', 'Failed asserting that \'test\' is in error output', 'routes', 'test'],
             'assertErrorRegExp' => ['assertErrorRegExp', 'Failed asserting that `/test/` PCRE pattern found in error output', 'routes', '/test/'],
+            'assertErrorEmpty' => ['assertErrorEmpty', 'Failed asserting that error output is empty', 'integration args_and_options'],
         ];
     }
 }

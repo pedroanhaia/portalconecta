@@ -17,20 +17,17 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\ORM\Rule;
 
 use Cake\Core\Configure;
-use Cake\Database\Exception\DatabaseException;
 use Cake\Database\Expression\IdentifierExpression;
 use Cake\Database\Expression\QueryExpression;
 use Cake\Event\Event;
 use Cake\ORM\Association\HasMany;
-use Cake\ORM\Query\SelectQuery;
+use Cake\ORM\Query;
 use Cake\ORM\Rule\LinkConstraint;
 use Cake\ORM\RulesChecker;
 use Cake\TestSuite\TestCase;
 use InvalidArgumentException;
-use Mockery;
-use PHPUnit\Framework\Attributes\DataProvider;
+use RuntimeException;
 use stdClass;
-use TestApp\Model\Table\ArticlesTable;
 
 /**
  * Tests the LinkConstraint rule.
@@ -42,7 +39,7 @@ class LinkConstraintTest extends TestCase
      *
      * @var string[]
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'core.Articles',
         'core.Tags',
         'core.ArticlesTags',
@@ -73,13 +70,33 @@ class LinkConstraintTest extends TestCase
      *
      * @return array
      */
-    public static function invalidConstructorArgumentOneDataProvider(): array
+    public function invalidConstructorArgumentOneDataProvider(): array
     {
-        return [[null, 'null'], [1, 'int'], [[], 'array'], [new stdClass(), 'stdClass']];
+        return [[null, 'NULL'], [1, 'integer'], [[], 'array'], [new \stdClass(), 'stdClass']];
+    }
+
+    /**
+     * Tests that an exception is thrown when passing an invalid value for the `$association` argument.
+     *
+     * @dataProvider invalidConstructorArgumentOneDataProvider
+     * @param mixed $value
+     * @param string $actualType
+     */
+    public function testInvalidConstructorArgumentOne($value, $actualType): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage(sprintf(
+            'Argument 1 is expected to be of type `\Cake\ORM\Association|string`, `%s` given.',
+            $actualType
+        ));
+
+        new LinkConstraint($value, LinkConstraint::STATUS_LINKED);
     }
 
     /**
      * Tests that an exception is thrown when passing an invalid value for the `$requiredLinkStatus` argument.
+     *
+     * @dataProvider invalidConstructorArgumentOneDataProvider
      */
     public function testInvalidConstructorArgumentTwo(): void
     {
@@ -101,7 +118,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Articles->rulesChecker();
         $rulesChecker->addDelete(
-            new LinkConstraint('NonExistent', LinkConstraint::STATUS_NOT_LINKED),
+            new LinkConstraint('NonExistent', LinkConstraint::STATUS_NOT_LINKED)
         );
 
         $article = $Articles->get(1);
@@ -113,10 +130,10 @@ class LinkConstraintTest extends TestCase
      */
     public function testMissingPrimaryKeyValues(): void
     {
-        $this->expectException(DatabaseException::class);
+        $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage(
             'LinkConstraint rule on `Articles` requires all primary key values for building the counting ' .
-            'conditions, expected values for `(id, nonexistent)`, got `(1, )`.',
+            'conditions, expected values for `(id, nonexistent)`, got `(1, )`.'
         );
 
         $Articles = $this->getTableLocator()->get('Articles');
@@ -128,7 +145,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Articles->rulesChecker();
         $rulesChecker->addDelete(
-            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED),
+            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED)
         );
 
         $article = $Articles->get(1);
@@ -143,7 +160,7 @@ class LinkConstraintTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage(
-            'The number of fields is expected to match the number of values, got 0 field(s) and 1 value(s).',
+            'The number of fields is expected to match the number of values, got 0 field(s) and 1 value(s).'
         );
 
         $Articles = $this->getTableLocator()->get('Articles');
@@ -172,7 +189,7 @@ class LinkConstraintTest extends TestCase
      *
      * @return array
      */
-    public static function invalidRepositoryOptionsDataProvider(): array
+    public function invalidRepositoryOptionsDataProvider(): array
     {
         return [
             [['repository' => null]],
@@ -184,29 +201,21 @@ class LinkConstraintTest extends TestCase
     /**
      * Tests that an exception is thrown when the `repository` option holds an invalid value.
      *
+     * @dataProvider invalidRepositoryOptionsDataProvider
      * @param mixed $options
      */
-    #[DataProvider('invalidRepositoryOptionsDataProvider')]
     public function testInvalidRepository($options): void
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Argument 2 is expected to have a `repository` key that holds an instance of `\Cake\ORM\Table`');
 
-        $rulesChecker = new RulesChecker($options);
+        $Articles = $this->getMockForModel('Articles', ['buildRules'], ['table' => 'articles']);
 
-        $Articles = Mockery::mock(
-            ArticlesTable::class . '[buildRules]',
-            [[
-                'alias' => 'Articles',
-                'table' => 'articles',
-            ]]
-        );
-        $Articles->shouldReceive('buildRules')
-            ->atLeast()->once()
-            ->andReturn($rulesChecker);
+        $rulesChecker = new RulesChecker($options);
+        $Articles->expects($this->atLeastOnce())->method('buildRules')->willReturn($rulesChecker);
 
         $rulesChecker->addDelete(
-            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED),
+            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED)
         );
         $Articles->buildRules($rulesChecker);
 
@@ -224,7 +233,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Comments->rulesChecker();
         $rulesChecker->addUpdate(
-            new LinkConstraint('Articles', LinkConstraint::STATUS_LINKED),
+            new LinkConstraint('Articles', LinkConstraint::STATUS_LINKED)
         );
 
         $comment = $Comments->get(1);
@@ -253,7 +262,7 @@ class LinkConstraintTest extends TestCase
             '_isLinkedTo',
             [
                 'errorField' => 'article',
-            ],
+            ]
         );
 
         $comment = $Comments->get(7);
@@ -277,7 +286,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Tags->rulesChecker();
         $rulesChecker->addUpdate(
-            new LinkConstraint('Articles', LinkConstraint::STATUS_LINKED),
+            new LinkConstraint('Articles', LinkConstraint::STATUS_LINKED)
         );
 
         $tag = $Tags->get(1);
@@ -303,7 +312,7 @@ class LinkConstraintTest extends TestCase
             '_isLinkedTo',
             [
                 'errorField' => 'articles',
-            ],
+            ]
         );
 
         $tag = $Tags->get(4);
@@ -328,7 +337,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Articles->rulesChecker();
         $rulesChecker->addUpdate(
-            new LinkConstraint('Comments', LinkConstraint::STATUS_LINKED),
+            new LinkConstraint('Comments', LinkConstraint::STATUS_LINKED)
         );
 
         $article = $Articles->get(1);
@@ -351,7 +360,7 @@ class LinkConstraintTest extends TestCase
             '_isLinkedTo',
             [
                 'errorField' => 'comments',
-            ],
+            ]
         );
 
         $article = $Articles->get(3);
@@ -376,7 +385,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Articles->rulesChecker();
         $rulesChecker->addUpdate(
-            new LinkConstraint('Comments', LinkConstraint::STATUS_LINKED),
+            new LinkConstraint('Comments', LinkConstraint::STATUS_LINKED)
         );
 
         $article = $Articles->get(1);
@@ -399,7 +408,7 @@ class LinkConstraintTest extends TestCase
             '_isLinkedTo',
             [
                 'errorField' => 'comment',
-            ],
+            ]
         );
 
         $article = $Articles->get(3);
@@ -430,7 +439,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Comments->rulesChecker();
         $rulesChecker->addDelete(
-            new LinkConstraint('Articles', LinkConstraint::STATUS_NOT_LINKED),
+            new LinkConstraint('Articles', LinkConstraint::STATUS_NOT_LINKED)
         );
 
         $comment = $Comments->get(7);
@@ -452,7 +461,7 @@ class LinkConstraintTest extends TestCase
             '_isNotLinkedTo',
             [
                 'errorField' => 'article',
-            ],
+            ]
         );
 
         $comment = $Comments->get(1);
@@ -479,7 +488,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Tags->rulesChecker();
         $rulesChecker->addDelete(
-            new LinkConstraint('Articles', LinkConstraint::STATUS_NOT_LINKED),
+            new LinkConstraint('Articles', LinkConstraint::STATUS_NOT_LINKED)
         );
 
         $tag = $Tags->get(4);
@@ -500,7 +509,7 @@ class LinkConstraintTest extends TestCase
             '_isNotLinkedTo',
             [
                 'errorField' => 'articles',
-            ],
+            ]
         );
 
         $tag = $Tags->get(1);
@@ -524,7 +533,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Articles->rulesChecker();
         $rulesChecker->addDelete(
-            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED),
+            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED)
         );
 
         $article = $Articles->get(3);
@@ -546,7 +555,7 @@ class LinkConstraintTest extends TestCase
             '_isNotLinkedTo',
             [
                 'errorField' => 'comments',
-            ],
+            ]
         );
 
         $article = $Articles->get(1);
@@ -570,7 +579,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Articles->rulesChecker();
         $rulesChecker->addDelete(
-            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED),
+            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED)
         );
 
         $article = $Articles->get(3);
@@ -592,7 +601,7 @@ class LinkConstraintTest extends TestCase
             '_isNotLinkedTo',
             [
                 'errorField' => 'comment',
-            ],
+            ]
         );
 
         $article = $Articles->get(1);
@@ -614,7 +623,7 @@ class LinkConstraintTest extends TestCase
         $Articles = $this->getTableLocator()->get('Articles');
         $Articles->hasOne('Comments', [
             'foreignKey' => false,
-            'conditions' => function (QueryExpression $exp, SelectQuery $query) {
+            'conditions' => function (QueryExpression $exp, Query $query) {
                 $connection = $query->getConnection();
                 $subQuery = $connection
                     ->selectQuery(['RecentComments.id'])
@@ -622,10 +631,10 @@ class LinkConstraintTest extends TestCase
                     ->where(function (QueryExpression $exp) {
                         return $exp->eq(
                             new IdentifierExpression('Articles.id'),
-                            new IdentifierExpression('RecentComments.article_id'),
+                            new IdentifierExpression('RecentComments.article_id')
                         );
                     })
-                    ->orderBy(['RecentComments.created' => 'DESC'])
+                    ->order(['RecentComments.created' => 'DESC'])
                     ->limit(1);
 
                 return $exp->add(['Comments.id' => $subQuery]);
@@ -634,7 +643,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Articles->rulesChecker();
         $rulesChecker->addDelete(
-            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED),
+            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED)
         );
 
         $article = $Articles->get(3);
@@ -650,7 +659,7 @@ class LinkConstraintTest extends TestCase
         $Articles = $this->getTableLocator()->get('Articles');
         $Articles->hasOne('Comments', [
             'foreignKey' => false,
-            'conditions' => function (QueryExpression $exp, SelectQuery $query) {
+            'conditions' => function (QueryExpression $exp, Query $query) {
                 $connection = $query->getConnection();
                 $subQuery = $connection
                     ->selectQuery(['RecentComments.id'])
@@ -658,10 +667,10 @@ class LinkConstraintTest extends TestCase
                     ->where(function (QueryExpression $exp) {
                         return $exp->eq(
                             new IdentifierExpression('Articles.id'),
-                            new IdentifierExpression('RecentComments.article_id'),
+                            new IdentifierExpression('RecentComments.article_id')
                         );
                     })
-                    ->orderBy(['RecentComments.created' => 'DESC'])
+                    ->order(['RecentComments.created' => 'DESC'])
                     ->limit(1);
 
                 return $exp->add(['Comments.id' => $subQuery]);
@@ -674,7 +683,7 @@ class LinkConstraintTest extends TestCase
             '_isNotLinkedTo',
             [
                 'errorField' => 'comment',
-            ],
+            ]
         );
 
         $article = $Articles->get(1);
@@ -702,7 +711,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Articles->rulesChecker();
         $rulesChecker->addDelete(
-            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED),
+            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED)
         );
 
         $article = $Articles->get(2);
@@ -728,7 +737,7 @@ class LinkConstraintTest extends TestCase
             '_isNotLinkedTo',
             [
                 'errorField' => 'comments',
-            ],
+            ]
         );
 
         $article = $Articles->get(2);
@@ -752,7 +761,7 @@ class LinkConstraintTest extends TestCase
             'conditions' => function (QueryExpression $exp) {
                 return $exp->notEq(
                     new IdentifierExpression('Comments.published'),
-                    new IdentifierExpression('Articles.published'),
+                    new IdentifierExpression('Articles.published')
                 );
             },
         ]);
@@ -770,7 +779,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Articles->rulesChecker();
         $rulesChecker->addDelete(
-            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED),
+            new LinkConstraint('Comments', LinkConstraint::STATUS_NOT_LINKED)
         );
 
         $article = $Articles->get($article->id);
@@ -788,7 +797,7 @@ class LinkConstraintTest extends TestCase
             'conditions' => function (QueryExpression $exp) {
                 return $exp->eq(
                     new IdentifierExpression('Comments.published'),
-                    new IdentifierExpression('Articles.published'),
+                    new IdentifierExpression('Articles.published')
                 );
             },
         ]);
@@ -799,7 +808,7 @@ class LinkConstraintTest extends TestCase
             '_isNotLinkedTo',
             [
                 'errorField' => 'comment',
-            ],
+            ]
         );
 
         $article = $Articles->get(1);
@@ -836,7 +845,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Comments->rulesChecker();
         $rulesChecker->addDelete(
-            new LinkConstraint('Articles', LinkConstraint::STATUS_NOT_LINKED),
+            new LinkConstraint('Articles', LinkConstraint::STATUS_NOT_LINKED)
         );
 
         $comment = $Comments->get($comment->id);
@@ -860,7 +869,7 @@ class LinkConstraintTest extends TestCase
             '_isLinkedTo',
             [
                 'errorField' => 'article',
-            ],
+            ]
         );
 
         $comment = $Comments->get(1);
@@ -884,7 +893,7 @@ class LinkConstraintTest extends TestCase
 
         $rulesChecker = $Comments->rulesChecker();
         $rulesChecker->addUpdate(
-            new LinkConstraint($Comments->getAssociation('Articles'), LinkConstraint::STATUS_LINKED),
+            new LinkConstraint($Comments->getAssociation('Articles'), LinkConstraint::STATUS_LINKED)
         );
 
         $comment = $Comments->get(1);
@@ -913,7 +922,7 @@ class LinkConstraintTest extends TestCase
             '_isLinkedTo',
             [
                 'errorField' => 'article',
-            ],
+            ]
         );
 
         $comment = $Comments->get(7);
@@ -949,7 +958,7 @@ class LinkConstraintTest extends TestCase
             '_isNotLinkedTo',
             [
                 'errorField' => 'attachments',
-            ],
+            ]
         );
 
         $article = $Articles->get(2);
@@ -963,7 +972,7 @@ class LinkConstraintTest extends TestCase
         $this->assertFalse($Articles->save($article));
         $this->assertEmpty(
             $article->getErrors(),
-            'This should not be empty, but currently is because unlink errors are not being returned.',
+            'This should not be empty, but currently is because unlink errors are not being returned.'
         );
 
         $this->markTestIncomplete('This test is incomplete because currently unlink errors are not being returned.');
@@ -975,6 +984,10 @@ class LinkConstraintTest extends TestCase
     public function testImplicitBelongsToManyJunctionDeleteErrors(): void
     {
         $Articles = $this->getTableLocator()->get('Articles');
+        $Articles
+            ->getAssociation('Tags')
+            ->junction()
+            ->belongsTo('Articles');
 
         $rulesChecker = $Articles->getAssociation('Tags')->junction()->rulesChecker();
         $rulesChecker->addDelete(
@@ -982,7 +995,7 @@ class LinkConstraintTest extends TestCase
             '_isNotLinkedTo',
             [
                 'errorField' => 'articles',
-            ],
+            ]
         );
 
         $article = $Articles->get(1);
@@ -996,11 +1009,11 @@ class LinkConstraintTest extends TestCase
         $this->assertFalse($Articles->save($article));
         $this->assertEmpty(
             $article->getErrors(),
-            'This should not be empty, but currently is because junction delete errors are not being returned.',
+            'This should not be empty, but currently is because junction delete errors are not being returned.'
         );
 
         $this->markTestIncomplete(
-            'This test is incomplete because currently junction delete errors are not returned.',
+            'This test is incomplete because currently junction delete errors are not returned.'
         );
     }
 }

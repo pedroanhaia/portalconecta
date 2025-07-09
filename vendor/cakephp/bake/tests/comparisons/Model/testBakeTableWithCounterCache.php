@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Bake\Test\App\Model\Table;
 
-use Cake\ORM\Query\SelectQuery;
+use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
@@ -15,17 +15,17 @@ use Cake\Validation\Validator;
  *
  * @method \Bake\Test\App\Model\Entity\TodoTask newEmptyEntity()
  * @method \Bake\Test\App\Model\Entity\TodoTask newEntity(array $data, array $options = [])
- * @method array<\Bake\Test\App\Model\Entity\TodoTask> newEntities(array $data, array $options = [])
- * @method \Bake\Test\App\Model\Entity\TodoTask get(mixed $primaryKey, array|string $finder = 'all', \Psr\SimpleCache\CacheInterface|string|null $cache = null, \Closure|string|null $cacheKey = null, mixed ...$args)
- * @method \Bake\Test\App\Model\Entity\TodoTask findOrCreate($search, ?callable $callback = null, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\TodoTask[] newEntities(array $data, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\TodoTask get($primaryKey, $options = [])
+ * @method \Bake\Test\App\Model\Entity\TodoTask findOrCreate($search, ?callable $callback = null, $options = [])
  * @method \Bake\Test\App\Model\Entity\TodoTask patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
- * @method array<\Bake\Test\App\Model\Entity\TodoTask> patchEntities(iterable $entities, array $data, array $options = [])
- * @method \Bake\Test\App\Model\Entity\TodoTask|false save(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method \Bake\Test\App\Model\Entity\TodoTask saveOrFail(\Cake\Datasource\EntityInterface $entity, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\TodoTask>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\TodoTask>|false saveMany(iterable $entities, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\TodoTask>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\TodoTask> saveManyOrFail(iterable $entities, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\TodoTask>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\TodoTask>|false deleteMany(iterable $entities, array $options = [])
- * @method iterable<\Bake\Test\App\Model\Entity\TodoTask>|\Cake\Datasource\ResultSetInterface<\Bake\Test\App\Model\Entity\TodoTask> deleteManyOrFail(iterable $entities, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\TodoTask[] patchEntities(iterable $entities, array $data, array $options = [])
+ * @method \Bake\Test\App\Model\Entity\TodoTask|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \Bake\Test\App\Model\Entity\TodoTask saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method \Bake\Test\App\Model\Entity\TodoTask[]|\Cake\Datasource\ResultSetInterface|false saveMany(iterable $entities, $options = [])
+ * @method \Bake\Test\App\Model\Entity\TodoTask[]|\Cake\Datasource\ResultSetInterface saveManyOrFail(iterable $entities, $options = [])
+ * @method \Bake\Test\App\Model\Entity\TodoTask[]|\Cake\Datasource\ResultSetInterface|false deleteMany(iterable $entities, $options = [])
+ * @method \Bake\Test\App\Model\Entity\TodoTask[]|\Cake\Datasource\ResultSetInterface deleteManyOrFail(iterable $entities, $options = [])
  *
  * @mixin \Cake\ORM\Behavior\TimestampBehavior
  * @mixin \Cake\ORM\Behavior\CounterCacheBehavior
@@ -35,7 +35,7 @@ class TodoTasksTable extends Table
     /**
      * Initialize method
      *
-     * @param array<string, mixed> $config The configuration for the Table.
+     * @param array $config The configuration for the Table.
      * @return void
      */
     public function initialize(array $config): void
@@ -66,7 +66,7 @@ class TodoTasksTable extends Table
      */
     public function buildRules(RulesChecker $rules): RulesChecker
     {
-        $rules->add($rules->existsIn(['todo_item_id'], 'TodoItems'), ['errorField' => 'todo_item_id']);
+        $rules->add($rules->existsIn('todo_item_id', 'TodoItems'), ['errorField' => 'todo_item_id']);
 
         return $rules;
     }

@@ -21,6 +21,7 @@ use Cake\Cache\Engine\MemcachedEngine;
 use Cake\Cache\Exception\InvalidArgumentException;
 use Cake\TestSuite\TestCase;
 use DateInterval;
+use Exception;
 use Memcached;
 use function Cake\Core\env;
 
@@ -155,7 +156,7 @@ class MemcachedEngineTest extends TestCase
     public function testInvalidSerializerSetting(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('`invalid_serializer` is not a valid serializer engine for Memcached.');
+        $this->expectExceptionMessage('invalid_serializer is not a valid serializer engine for Memcached');
         $Memcached = new MemcachedEngine();
         $config = [
             'className' => 'Memcached',
@@ -190,7 +191,7 @@ class MemcachedEngineTest extends TestCase
     {
         $this->skipIf(
             !Memcached::HAVE_JSON,
-            'Memcached extension is not compiled with json support',
+            'Memcached extension is not compiled with json support'
         );
 
         $Memcached = new MemcachedEngine();
@@ -212,7 +213,7 @@ class MemcachedEngineTest extends TestCase
     {
         $this->skipIf(
             !Memcached::HAVE_IGBINARY,
-            'Memcached extension is not compiled with igbinary support',
+            'Memcached extension is not compiled with igbinary support'
         );
 
         $Memcached = new MemcachedEngine();
@@ -234,7 +235,7 @@ class MemcachedEngineTest extends TestCase
     {
         $this->skipIf(
             !defined('Memcached::HAVE_MSGPACK') || !Memcached::HAVE_MSGPACK,
-            'Memcached extension is not compiled with msgpack support',
+            'Memcached extension is not compiled with msgpack support'
         );
 
         $Memcached = new MemcachedEngine();
@@ -256,7 +257,7 @@ class MemcachedEngineTest extends TestCase
     {
         $this->skipIf(
             (bool)Memcached::HAVE_JSON,
-            'Memcached extension is compiled with json support',
+            'Memcached extension is compiled with json support'
         );
 
         $Memcached = new MemcachedEngine();
@@ -279,11 +280,11 @@ class MemcachedEngineTest extends TestCase
     {
         $this->skipIf(
             !defined('Memcached::HAVE_MSGPACK'),
-            'Memcached::HAVE_MSGPACK constant is not available in Memcached below 3.0.0',
+            'Memcached::HAVE_MSGPACK constant is not available in Memcached below 3.0.0'
         );
         $this->skipIf(
             (bool)Memcached::HAVE_MSGPACK,
-            'Memcached extension is compiled with msgpack support',
+            'Memcached extension is compiled with msgpack support'
         );
 
         $Memcached = new MemcachedEngine();
@@ -306,7 +307,7 @@ class MemcachedEngineTest extends TestCase
     {
         $this->skipIf(
             (bool)Memcached::HAVE_IGBINARY,
-            'Memcached extension is compiled with igbinary support',
+            'Memcached extension is compiled with igbinary support'
         );
 
         $Memcached = new MemcachedEngine();
@@ -332,7 +333,7 @@ class MemcachedEngineTest extends TestCase
         $this->expectExceptionMessage('Memcached extension is not build with SASL support');
         $this->skipIf(
             method_exists(Memcached::class, 'setSaslAuthData'),
-            'Cannot test exception when sasl has been compiled in.',
+            'Cannot test exception when sasl has been compiled in.'
         );
         $MemcachedEngine = new MemcachedEngine();
         $config = [
@@ -513,10 +514,41 @@ class MemcachedEngineTest extends TestCase
     }
 
     /**
+     * Test readMany where null is a valid cache value
+     *
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     */
+    public function testReadManyTreatNullAsValidCacheValue(): void
+    {
+        $this->_configCache(['duration' => 2]);
+        $data = [
+            'App.falseTest' => false,
+            'App.trueTest' => true,
+            'App.nullTest' => null,
+            'App.zeroTest' => 0,
+            'App.zeroTest2' => '0',
+        ];
+        foreach ($data as $key => $value) {
+            Cache::write($key, $value, 'memcached');
+        }
+
+        $default = new Exception('Cache key not found');
+        $read = Cache::pool('memcached')->getMultiple(array_merge(array_keys($data), ['App.doesNotExist']), $default);
+
+        $this->assertFalse($read['App.falseTest']);
+        $this->assertTrue($read['App.trueTest']);
+        $this->assertNull($read['App.nullTest']);
+        $this->assertSame($read['App.zeroTest'], 0);
+        $this->assertSame($read['App.zeroTest2'], '0');
+        $this->assertSame($default, $read['App.doesNotExist']);
+    }
+
+    /**
      * testWriteMany method
      */
     public function testWriteMany(): void
     {
+        $this->skipIf(PHP_VERSION_ID >= 80100, 'php-memcached writeMany() argument parsing is broken with PHP 8.1+');
         $this->_configCache(['duration' => 2]);
         $data = [
             'App.falseTest' => false,
@@ -813,6 +845,26 @@ class MemcachedEngineTest extends TestCase
 
         $this->assertNull(Cache::read('some_value', 'memcached'));
         $this->assertSame('cache2', Cache::read('some_value', 'memcached2'));
+
+        Cache::clear('memcached2');
+    }
+
+    /**
+     * test clearing memcached with empty prefix.
+     */
+    public function testClearWithEmptyPrefix(): void
+    {
+        Cache::setConfig('memcached2', [
+            'engine' => 'Memcached',
+            'prefix' => '',
+            'duration' => 3600,
+            'servers' => ['127.0.0.1:' . $this->port],
+        ]);
+
+        Cache::write('some_value', 'cache1', 'memcached2');
+        sleep(1);
+        $this->assertTrue(Cache::clear('memcached2'));
+        $this->assertNull(Cache::read('some_value', 'memcached2'));
 
         Cache::clear('memcached2');
     }

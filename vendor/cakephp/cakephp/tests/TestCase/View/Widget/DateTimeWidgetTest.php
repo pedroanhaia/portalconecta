@@ -21,7 +21,6 @@ use Cake\View\Form\NullContext;
 use Cake\View\StringTemplate;
 use Cake\View\Widget\DateTimeWidget;
 use DateTime;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * DateTimeWidget test case
@@ -55,6 +54,39 @@ class DateTimeWidgetTest extends TestCase
     }
 
     /**
+     * Data provider for testing various types of invalid selected values.
+     *
+     * @return array
+     */
+    public static function invalidSelectedValuesProvider(): array
+    {
+        return [
+            'false' => [false],
+            'true' => [true],
+            'string' => ['Bag of poop'],
+            'array' => [[
+                'derp' => 'hurt',
+            ]],
+        ];
+    }
+
+    /**
+     * test rendering selected values.
+     *
+     * @dataProvider invalidSelectedValuesProvider
+     * @param mixed $selected
+     */
+    public function testRenderInvalid($selected): void
+    {
+        $result = $this->DateTime->render(['val' => $selected, 'type' => 'month'], $this->context);
+        $now = new \DateTime();
+        $expected = [
+            'input' => ['type' => 'month', 'name' => '', 'value' => $now->format('Y-m')],
+        ];
+        $this->assertHtml($expected, $result);
+    }
+
+    /**
      * Data provider for testing various acceptable selected values.
      *
      * @return array
@@ -74,9 +106,9 @@ class DateTimeWidgetTest extends TestCase
     /**
      * test rendering selected values.
      *
+     * @dataProvider selectedValuesProvider
      * @param mixed $selected
      */
-    #[DataProvider('selectedValuesProvider')]
     public function testRenderValid($selected): void
     {
         $result = $this->DateTime->render(['val' => $selected], $this->context);
@@ -225,7 +257,7 @@ class DateTimeWidgetTest extends TestCase
     {
         $this->expectException('InvalidArgumentException');
         $this->expectExceptionMessage('Invalid type `foo` for input tag, expected datetime-local, date, time, month or week');
-        $this->DateTime->render(['type' => 'foo', 'val' => new DateTime()], $this->context);
+        $result = $this->DateTime->render(['type' => 'foo', 'val' => new DateTime()], $this->context);
     }
 
     /**

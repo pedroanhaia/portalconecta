@@ -28,45 +28,22 @@ require_once (ROOT . DS . 'vendor' . DS  . 'KanbadaPackages' . DS . 'Utilities.p
 
 class AppController extends Controller
 {
-    public function initialize(): void
-    {
-        parent::initialize();
+	public function initialize(): void
+	{
+		parent::initialize();
 
-        $this->loadComponent('RequestHandler');
-        $this->loadComponent('Flash');
-        $this->loadComponent('Authentication.Authentication');
 		$this->loadComponent('Authorization.Authorization');
+		$this->loadComponent('Authentication.Authentication');
+		$this->loadComponent('Flash'); // <-- esta linha resolve o erro
 
-        $this->loadModel('Users');
-
-		$this->Authorization->skipAuthorization();
-    }
+		// Se quiser pular autorização em algumas actions, pode usar:
+		if ($this->getRequest()->getParam('action') === 'index') {
+			$this->Authorization->skipAuthorization();
+		}
+	}
     
 	public function beforeFilter(\Cake\Event\EventInterface $event) {
 		parent::beforeFilter($event);
-
-		$userLogado = $this->Authentication->getIdentity();
-
-		if(!empty($userLogado)) {
-			$userData = $this->Authentication->getIdentity()->getOriginalData();
-			$usuarioId = $userData->id; // Obtém o ID do usuário autenticado
-			$userAtt = $this->Users->get($userData->id);
-
-			$currentController = $this->request->getParam('controller');
-			$currentAction = $this->request->getParam('action');
-			$this->set('currentAction', $currentAction);
-			$this->set('currentController', $currentController);
-			
-			$this->userObj = $this->Users->findById($usuarioId)->first();
-			if(!empty($userAtt->img)) $userImg = $currentController == 'Quadros' ? $userAtt->img : '../' . $userAtt->img;
-			else $userImg = "";
-			$this->set('userImg', $userImg);
-			$this->set('darkMode', $userAtt->dark_mode);
-			$this->set('iduserLogado', $userData->id);
-			$this->set('role', $userAtt->role);
-			$this->set('username', $userAtt->nickname);
-			$this->set('userNameCompleto', $userAtt->name);
-		}
 	}
 
 	public function isAuthorized($user)	{

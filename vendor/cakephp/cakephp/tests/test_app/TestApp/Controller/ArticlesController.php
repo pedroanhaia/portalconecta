@@ -20,5 +20,8 @@ use TestApp\Model\Table\ArticlesTable;
 
 class ArticlesController extends Controller
 {
-    protected ?string $defaultTable = ArticlesTable::class;
+    /**
+     * @var string
+     */
+    protected $modelClass = ArticlesTable::class;
 }

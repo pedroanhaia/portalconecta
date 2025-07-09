@@ -3,23 +3,25 @@ declare(strict_types=1);
 
 namespace Cake\Test\TestCase\ORM;
 
-use Cake\Database\Driver;
+use Cake\Database\DriverInterface;
 use Cake\Database\TypeFactory;
 use Cake\TestSuite\TestCase;
 use TestApp\Database\Type\ColumnSchemaAwareType;
 
 class ColumnSchemaAwareTypeIntegrationTest extends TestCase
 {
-    protected array $fixtures = [
+    protected $fixtures = [
         'core.ColumnSchemaAwareTypeValues',
     ];
 
-    protected array $typeMap;
+    /**
+     * @var \Cake\Database\TypeInterface|null
+     */
+    public $textType;
 
     public function setUp(): void
     {
-        $this->typeMap = TypeFactory::getMap();
-
+        $this->textType = TypeFactory::build('text');
         TypeFactory::map('text', ColumnSchemaAwareType::class);
         // For SQLServer.
         TypeFactory::map('nvarchar', ColumnSchemaAwareType::class);
@@ -30,8 +32,11 @@ class ColumnSchemaAwareTypeIntegrationTest extends TestCase
     public function tearDown(): void
     {
         parent::tearDown();
+        TypeFactory::set('text', $this->textType);
 
-        TypeFactory::setMap($this->typeMap);
+        $map = TypeFactory::getMap();
+        unset($map['nvarchar']);
+        TypeFactory::setMap($map);
     }
 
     public function testCustomTypesCanBeUsedInFixtures(): void
@@ -42,7 +47,7 @@ class ColumnSchemaAwareTypeIntegrationTest extends TestCase
             'this text has been processed via a custom type',
             'this text also has been processed via a custom type',
         ];
-        $result = $table->find()->orderByAsc('id')->all()->extract('val')->toArray();
+        $result = $table->find()->orderAsc('id')->all()->extract('val')->toArray();
         $this->assertSame($expected, $result);
     }
 
@@ -68,14 +73,14 @@ class ColumnSchemaAwareTypeIntegrationTest extends TestCase
         $type
             ->expects($this->once())
             ->method('convertColumnDefinition')
-            ->willReturnCallback(function (array $definition, Driver $driver) {
+            ->willReturnCallback(function (array $definition, DriverInterface $driver) {
                 $this->assertEquals(
                     [
                         'length',
                         'precision',
                         'scale',
                     ],
-                    array_keys($definition),
+                    array_keys($definition)
                 );
 
                 return null;

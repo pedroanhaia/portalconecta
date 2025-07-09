@@ -25,13 +25,6 @@ use Cake\TestSuite\TestCase;
  */
 class MessagesFileLoaderTest extends TestCase
 {
-    public function setUp(): void
-    {
-        parent::setUp();
-
-        $this->clearPlugins();
-    }
-
     /**
      * test reading file from custom locale folder
      */
@@ -64,20 +57,7 @@ class MessagesFileLoaderTest extends TestCase
     }
 
     /**
-     * @return void
-     */
-    public function testTranslationsFolders(): void
-    {
-        $this->loadPlugins(['Company/TestPluginThree']);
-
-        $loader = new MessagesFileLoader('company/test_plugin_three', 'es', 'mo');
-
-        $result = $loader->translationsFolders();
-        $this->assertCount(4, $result);
-    }
-
-    /**
-     * Testing MessagesFileLoader::translationsFolder array sequence
+     * Testing MessagesFileLoader::translationsFilder array sequence
      */
     public function testTranslationFoldersSequence(): void
     {
@@ -87,31 +67,14 @@ class MessagesFileLoaderTest extends TestCase
         $loader = new MessagesFileLoader('test_plugin_two', 'en');
 
         $expected = [
+            ROOT . DS . 'tests' . DS . 'test_app' . DS . 'resources' . DS . 'locales' . DS . 'en_' . DS,
+            ROOT . DS . 'tests' . DS . 'test_app' . DS . 'resources' . DS . 'locales' . DS . 'en_' . DS . 'LC_MESSAGES' . DS,
             ROOT . DS . 'tests' . DS . 'test_app' . DS . 'resources' . DS . 'locales' . DS . 'en' . DS,
             ROOT . DS . 'tests' . DS . 'test_app' . DS . 'resources' . DS . 'locales' . DS . 'en' . DS . 'LC_MESSAGES' . DS,
+            ROOT . DS . 'tests' . DS . 'test_app' . DS . 'Plugin' . DS . 'TestPluginTwo' . DS . 'resources' . DS . 'locales' . DS . 'en_' . DS,
+            ROOT . DS . 'tests' . DS . 'test_app' . DS . 'Plugin' . DS . 'TestPluginTwo' . DS . 'resources' . DS . 'locales' . DS . 'en_' . DS . 'LC_MESSAGES' . DS,
             ROOT . DS . 'tests' . DS . 'test_app' . DS . 'Plugin' . DS . 'TestPluginTwo' . DS . 'resources' . DS . 'locales' . DS . 'en' . DS,
             ROOT . DS . 'tests' . DS . 'test_app' . DS . 'Plugin' . DS . 'TestPluginTwo' . DS . 'resources' . DS . 'locales' . DS . 'en' . DS . 'LC_MESSAGES' . DS,
-        ];
-        $result = $loader->translationsFolders();
-        $this->assertEquals($expected, $result);
-    }
-
-    public function testTranslationsFoldersGettextCompatible(): void
-    {
-        $this->loadPlugins(['Company/TestPluginThree']);
-
-        $locale = 'en_US';
-        $loader = new MessagesFileLoader('company/test_plugin_three', $locale);
-
-        $expected = [
-            ROOT . DS . 'tests' . DS . 'test_app' . DS . 'resources' . DS . 'locales' . DS . 'en' . DS,
-            ROOT . DS . 'tests' . DS . 'test_app' . DS . 'resources' . DS . 'locales' . DS . 'en' . DS . 'LC_MESSAGES' . DS,
-            ROOT . DS . 'tests' . DS . 'test_app' . DS . 'resources' . DS . 'locales' . DS . $locale . DS,
-            ROOT . DS . 'tests' . DS . 'test_app' . DS . 'resources' . DS . 'locales' . DS . $locale . DS . 'LC_MESSAGES' . DS,
-            ROOT . DS . 'tests' . DS . 'test_app' . DS . 'Plugin' . DS . 'Company' . DS . 'TestPluginThree' . DS . 'resources' . DS . 'locales' . DS . 'en' . DS,
-            ROOT . DS . 'tests' . DS . 'test_app' . DS . 'Plugin' . DS . 'Company' . DS . 'TestPluginThree' . DS . 'resources' . DS . 'locales' . DS . 'en' . DS . 'LC_MESSAGES' . DS,
-            ROOT . DS . 'tests' . DS . 'test_app' . DS . 'Plugin' . DS . 'Company' . DS . 'TestPluginThree' . DS . 'resources' . DS . 'locales' . DS . $locale . DS,
-            ROOT . DS . 'tests' . DS . 'test_app' . DS . 'Plugin' . DS . 'Company' . DS . 'TestPluginThree' . DS . 'resources' . DS . 'locales' . DS . $locale . DS . 'LC_MESSAGES' . DS,
         ];
         $result = $loader->translationsFolders();
         $this->assertEquals($expected, $result);

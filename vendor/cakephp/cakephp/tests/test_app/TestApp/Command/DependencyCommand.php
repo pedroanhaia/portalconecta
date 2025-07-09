@@ -14,10 +14,11 @@ class DependencyCommand extends Command
 
     public function __construct(stdClass $inject)
     {
+        parent::__construct();
         $this->inject = $inject;
     }
 
-    public function execute(Arguments $args, ConsoleIo $io): int
+    public function execute(Arguments $args, ConsoleIo $io): ?int
     {
         $io->out('Dependency Command');
         $io->out('constructor inject: ' . json_encode($this->inject));

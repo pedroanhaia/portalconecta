@@ -20,7 +20,6 @@ use Cake\TestSuite\TestCase;
 use Cake\View\Form\NullContext;
 use Cake\View\StringTemplate;
 use Cake\View\Widget\CheckboxWidget;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Checkbox test case
@@ -174,9 +173,9 @@ class CheckboxWidgetTest extends TestCase
     /**
      * Test rendering checked checkboxes with value.
      *
+     * @dataProvider checkedProvider
      * @param mixed $checked
      */
-    #[DataProvider('checkedProvider')]
     public function testRenderCheckedValue($checked): void
     {
         $checkbox = new CheckboxWidget($this->templates);
@@ -216,9 +215,9 @@ class CheckboxWidgetTest extends TestCase
     /**
      * Test rendering unchecked checkboxes
      *
+     * @dataProvider uncheckedProvider
      * @param mixed $checked
      */
-    #[DataProvider('uncheckedProvider')]
     public function testRenderUnCheckedValue($checked): void
     {
         $checkbox = new CheckboxWidget($this->templates);

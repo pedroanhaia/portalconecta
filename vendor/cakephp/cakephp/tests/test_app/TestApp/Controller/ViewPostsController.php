@@ -24,7 +24,7 @@ class ViewPostsController extends Controller
      *
      * @var string
      */
-    protected string $name = 'Posts';
+    public $name = 'Posts';
 
     /**
      * index method

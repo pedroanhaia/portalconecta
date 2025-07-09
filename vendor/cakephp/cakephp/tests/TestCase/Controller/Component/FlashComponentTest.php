@@ -68,6 +68,8 @@ class FlashComponentTest extends TestCase
 
     /**
      * testSet method
+     *
+     * @covers \Cake\Controller\Component\FlashComponent::set
      */
     public function testSet(): void
     {
@@ -160,6 +162,8 @@ class FlashComponentTest extends TestCase
 
     /**
      * test setting messages with using the clear option
+     *
+     * @covers \Cake\Controller\Component\FlashComponent::set
      */
     public function testSetWithClear(): void
     {
@@ -192,6 +196,8 @@ class FlashComponentTest extends TestCase
 
     /**
      * testSetWithException method
+     *
+     * @covers \Cake\Controller\Component\FlashComponent::set
      */
     public function testSetWithException(): void
     {
@@ -233,6 +239,8 @@ class FlashComponentTest extends TestCase
 
     /**
      * Test magic call method.
+     *
+     * @covers \Cake\Controller\Component\FlashComponent::__call
      */
     public function testCall(): void
     {
@@ -275,6 +283,8 @@ class FlashComponentTest extends TestCase
 
     /**
      * Test a magic call with the "clear" flag to true
+     *
+     * @covers \Cake\Controller\Component\FlashComponent::set
      */
     public function testCallWithClear(): void
     {

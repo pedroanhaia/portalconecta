@@ -2,34 +2,30 @@
 declare(strict_types=1);
 
 /**
- * CakePHP : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP Project
  * @since         0.1.0
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 namespace Bake\Test\TestCase\Command;
 
 use Bake\Command\TemplateCommand;
-use Bake\Test\App\Model\Enum\ArticleStatus;
-use Bake\Test\App\Model\Enum\BakeUserStatus;
 use Bake\Test\App\Model\Table\BakeArticlesTable;
 use Bake\Test\TestCase\TestCase;
+use Cake\Command\Command;
 use Cake\Console\Arguments;
-use Cake\Console\CommandInterface;
 use Cake\Console\ConsoleIo;
 use Cake\Console\Exception\StopException;
 use Cake\Core\Configure;
 use Cake\Core\Plugin;
-use Cake\Database\Type\EnumType;
 use Cake\View\Exception\MissingTemplateException;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * TemplateCommand test
@@ -39,15 +35,15 @@ class TemplateCommandTest extends TestCase
     /**
      * Fixtures
      *
-     * @var list<string>
+     * @var array
      */
-    protected array $fixtures = [
-        'plugin.Bake.Articles',
-        'plugin.Bake.Tags',
-        'plugin.Bake.ArticlesTags',
-        'plugin.Bake.Posts',
-        'plugin.Bake.Users',
-        'plugin.Bake.Comments',
+    protected $fixtures = [
+        'core.Articles',
+        'core.Tags',
+        'core.ArticlesTags',
+        'core.Posts',
+        'core.Comments',
+        'core.TestPluginComments',
         'plugin.Bake.BakeArticles',
         'plugin.Bake.BakeTemplateAuthors',
         'plugin.Bake.BakeTemplateRoles',
@@ -69,6 +65,7 @@ class TemplateCommandTest extends TestCase
         $this->_compareBasePath = Plugin::path('Bake') . 'tests' . DS . 'comparisons' . DS . 'Template' . DS;
 
         $this->setAppNamespace('Bake\Test\App');
+        $this->useCommandRunner();
 
         $this->getTableLocator()->get('TemplateTaskComments', [
             'className' => 'Bake\Test\App\Model\Table\TemplateTaskCommentsTable',
@@ -99,17 +96,17 @@ class TemplateCommandTest extends TestCase
         $this->assertSame('Comments', $command->controllerName);
         $this->assertSame(
             'Bake\Test\App\Controller\CommentsController',
-            $command->controllerClass,
+            $command->controllerClass
         );
     }
 
     /**
      * Test the controller() method.
      *
-     * @param string $name
+     * @param $name
+     * @dataProvider nameVariations
      * @return void
      */
-    #[DataProvider('nameVariations')]
     public function testControllerVariations($name)
     {
         $command = new TemplateCommand();
@@ -133,7 +130,7 @@ class TemplateCommandTest extends TestCase
         $this->assertSame('Tests', $command->controllerName);
         $this->assertSame(
             'BakeTest\Controller\TestsController',
-            $command->controllerClass,
+            $command->controllerClass
         );
     }
 
@@ -151,7 +148,7 @@ class TemplateCommandTest extends TestCase
         $this->assertSame('Posts', $command->controllerName);
         $this->assertSame(
             'Bake\Test\App\Controller\Admin\PostsController',
-            $command->controllerClass,
+            $command->controllerClass
         );
 
         $command->plugin = 'BakeTest';
@@ -159,7 +156,7 @@ class TemplateCommandTest extends TestCase
         $this->assertSame('Comments', $command->controllerName);
         $this->assertSame(
             'BakeTest\Controller\Admin\CommentsController',
-            $command->controllerClass,
+            $command->controllerClass
         );
     }
 
@@ -177,7 +174,7 @@ class TemplateCommandTest extends TestCase
         $this->assertSame('Posts', $command->controllerName);
         $this->assertSame(
             'Bake\Test\App\Controller\Admin\Management\PostsController',
-            $command->controllerClass,
+            $command->controllerClass
         );
     }
 
@@ -195,7 +192,7 @@ class TemplateCommandTest extends TestCase
         $this->assertSame('Posts', $command->controllerName);
         $this->assertSame(
             'Bake\Test\App\Controller\PostsController',
-            $command->controllerClass,
+            $command->controllerClass
         );
     }
 
@@ -226,7 +223,7 @@ class TemplateCommandTest extends TestCase
         $command->model('BakeTestComments');
         $this->assertSame(
             'BakeTest.BakeTestComments',
-            $command->modelName,
+            $command->modelName
         );
     }
 
@@ -447,48 +444,7 @@ class TemplateCommandTest extends TestCase
         $this->generatedFile = ROOT . 'templates/Authors/view.php';
         $this->exec('bake template authors view');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
-        $this->assertFileExists($this->generatedFile);
-
-        $result = file_get_contents($this->generatedFile);
-        $this->assertSameAsFile(__FUNCTION__ . '.php', $result);
-    }
-
-    /**
-     * test baking view with enum class
-     *
-     * @return void
-     */
-    public function testBakeViewEnum()
-    {
-        $table = $this->fetchTable('BakeUsers');
-        $table->associations()->removeAll();
-        $table->getSchema()->setColumnType('status', EnumType::from(BakeUserStatus::class));
-
-        $this->generatedFile = ROOT . 'templates/BakeUsers/view.php';
-        $this->exec('bake template bake_users view');
-
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
-        $this->assertFileExists($this->generatedFile);
-
-        $result = file_get_contents($this->generatedFile);
-        $this->assertSameAsFile(__FUNCTION__ . '.php', $result);
-    }
-
-    /**
-     * test baking view with enum class
-     *
-     * @return void
-     */
-    public function testBakeViewEnumNoLabel()
-    {
-        $table = $this->fetchTable('Articles');
-        $table->getSchema()->setColumnType('published', EnumType::from(ArticleStatus::class));
-
-        $this->generatedFile = ROOT . 'templates/Articles/view.php';
-        $this->exec('bake template articles view');
-
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileExists($this->generatedFile);
 
         $result = file_get_contents($this->generatedFile);
@@ -505,7 +461,7 @@ class TemplateCommandTest extends TestCase
         $this->generatedFile = ROOT . 'templates/HiddenFields/view.php';
         $this->exec('bake template HiddenFields view');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileExists($this->generatedFile);
 
         $result = file_get_contents($this->generatedFile);
@@ -522,7 +478,7 @@ class TemplateCommandTest extends TestCase
         $this->generatedFile = ROOT . 'templates/Authors/edit.php';
         $this->exec('bake template authors edit');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileExists($this->generatedFile);
 
         $result = file_get_contents($this->generatedFile);
@@ -539,7 +495,7 @@ class TemplateCommandTest extends TestCase
         $this->generatedFile = ROOT . 'templates/Articles/edit.php';
         $this->exec('bake template articles edit');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileExists($this->generatedFile);
 
         $result = file_get_contents($this->generatedFile);
@@ -556,7 +512,7 @@ class TemplateCommandTest extends TestCase
         $this->generatedFile = ROOT . 'templates/TemplateTaskComments/index.php';
         $this->exec('bake template template_task_comments index');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileExists($this->generatedFile);
 
         $result = file_get_contents($this->generatedFile);
@@ -573,7 +529,7 @@ class TemplateCommandTest extends TestCase
         $this->generatedFile = ROOT . 'templates/HiddenFields/index.php';
         $this->exec('bake template HiddenFields index');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileExists($this->generatedFile);
 
         $result = file_get_contents($this->generatedFile);
@@ -590,47 +546,7 @@ class TemplateCommandTest extends TestCase
         $this->generatedFile = ROOT . 'templates/TemplateTaskComments/index.php';
         $this->exec('bake template template_task_comments --index-columns 3 index');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
-        $this->assertFileExists($this->generatedFile);
-
-        $result = file_get_contents($this->generatedFile);
-        $this->assertSameAsFile(__FUNCTION__ . '.php', $result);
-    }
-
-    /**
-     * test bake template with index enum types
-     *
-     * @return void
-     */
-    public function testBakeIndexWithEnumWithLabel()
-    {
-        $table = $this->fetchTable('BakeUsers');
-        $table->getSchema()->setColumnType('status', EnumType::from(BakeUserStatus::class));
-
-        $this->generatedFile = ROOT . 'templates/BakeUsers/index.php';
-        $this->exec('bake template bake_users index');
-
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
-        $this->assertFileExists($this->generatedFile);
-
-        $result = file_get_contents($this->generatedFile);
-        $this->assertSameAsFile(__FUNCTION__ . '.php', $result);
-    }
-
-    /**
-     * test bake template with index enum types
-     *
-     * @return void
-     */
-    public function testBakeIndexWithEnumNoLabel()
-    {
-        $table = $this->fetchTable('Articles');
-        $table->getSchema()->setColumnType('published', EnumType::from(ArticleStatus::class));
-
-        $this->generatedFile = ROOT . 'templates/Articles/index.php';
-        $this->exec('bake template articles index');
-
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileExists($this->generatedFile);
 
         $result = file_get_contents($this->generatedFile);
@@ -654,7 +570,7 @@ class TemplateCommandTest extends TestCase
         $this->generatedFile = $path . 'Comments/index.php';
         $this->exec('bake template BakeTest.comments index');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileExists($this->generatedFile);
         $this->assertFileContains('$comment->article->id', $this->generatedFile);
     }
@@ -671,10 +587,10 @@ class TemplateCommandTest extends TestCase
             APP . '../templates/CategoryThreads/index.php',
         ];
         $this->exec('bake template CategoryThreads index');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
 
         $this->exec('bake template CategoryThreads add');
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
 
         $this->assertFilesExist($this->generatedFiles);
         $this->assertFileNotContains('rght', $this->generatedFiles[0]);
@@ -697,7 +613,7 @@ class TemplateCommandTest extends TestCase
         ];
         $this->exec('bake template CategoryThreads index');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertFileNotContains('New Parent Category', $this->generatedFiles[0]);
         $this->assertFileNotContains('List Parent Category', $this->generatedFiles[0]);
@@ -714,7 +630,7 @@ class TemplateCommandTest extends TestCase
         $this->generatedFile = ROOT . 'templates/CategoryThreads/view.php';
         $this->exec('bake template category_threads view');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileExists($this->generatedFile);
 
         $this->assertFileContains('Related Category Threads', $this->generatedFile);
@@ -742,7 +658,7 @@ class TemplateCommandTest extends TestCase
     {
         $this->exec('bake template');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertOutputContains('Possible tables to bake view templates for based on your current database:');
         $this->assertOutputContains('- Comments');
         $this->assertOutputContains('- Articles');
@@ -758,15 +674,15 @@ class TemplateCommandTest extends TestCase
         $this->generatedFile = ROOT . 'templates/TemplateTaskComments/view.php';
         $this->exec('bake template TemplateTaskComments view');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileExists($this->generatedFile);
         $this->assertFileDoesNotExist(
             ROOT . 'templates/TemplateTaskComments/edit.php',
-            'no extra files',
+            'no extra files'
         );
         $this->assertFileDoesNotExist(
             ROOT . 'templates/TemplateTaskComments/add.php',
-            'no extra files',
+            'no extra files'
         );
     }
 
@@ -784,15 +700,15 @@ class TemplateCommandTest extends TestCase
         ];
         $this->exec('bake template TemplateTaskComments');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertFileDoesNotExist(
             ROOT . 'templates/TemplateTaskComments/edit.php',
-            'no extra files',
+            'no extra files'
         );
         $this->assertFileDoesNotExist(
             ROOT . 'templates/TemplateTaskComments/view.php',
-            'no extra files',
+            'no extra files'
         );
     }
 
@@ -809,11 +725,11 @@ class TemplateCommandTest extends TestCase
         $this->generatedFile = $path . 'Comments/index.php';
         $this->exec('bake template --connection test TestBake.Comments index');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileExists($this->generatedFile);
         $this->assertFileDoesNotExist(
             $path . 'Comments/view.php',
-            'No other templates made',
+            'No other templates made'
         );
     }
 
@@ -842,7 +758,7 @@ class TemplateCommandTest extends TestCase
         ];
         $this->exec('bake template --controller Blog Posts');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
         $this->assertOutputNotContains('No bake template found');
         $this->assertErrorEmpty();
@@ -861,7 +777,7 @@ class TemplateCommandTest extends TestCase
         ];
         $this->exec('bake template --prefix Admin Posts');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFilesExist($this->generatedFiles);
     }
 
@@ -875,7 +791,7 @@ class TemplateCommandTest extends TestCase
         $this->generatedFile = ROOT . 'templates/TemplateTaskComments/list.php';
         $this->exec('bake template TemplateTaskComments index list');
 
-        $this->assertExitCode(CommandInterface::CODE_SUCCESS);
+        $this->assertExitCode(Command::CODE_SUCCESS);
         $this->assertFileExists($this->generatedFile);
         $this->assertFileContains('Template Task Comments', $this->generatedFile);
     }
@@ -889,6 +805,6 @@ class TemplateCommandTest extends TestCase
     {
         $this->exec('bake template MissingTableClass');
 
-        $this->assertExitCode(CommandInterface::CODE_ERROR);
+        $this->assertExitCode(Command::CODE_ERROR);
     }
 }

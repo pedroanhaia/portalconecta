@@ -30,7 +30,7 @@ class ConsoleLogTest extends TestCase
      */
     public function testConsoleOutputlogs(): void
     {
-        $output = $this->getMockBuilder(ConsoleOutput::class)->getMock();
+        $output = $this->getMockBuilder('Cake\Console\ConsoleOutput')->getMock();
 
         $message = ' Error: oh noes</error>';
         $output->expects($this->once())
@@ -46,7 +46,7 @@ class ConsoleLogTest extends TestCase
     /**
      * Test writing to a file stream
      */
-    public function testLogToFileStream(): void
+    public function testlogToFileStream(): void
     {
         $filename = tempnam(sys_get_temp_dir(), 'cake_log_test');
         $log = new ConsoleLog([
@@ -136,5 +136,23 @@ class ConsoleLogTest extends TestCase
 
         $entry = json_decode($line, true);
         $this->assertSame('oh "noes"', $entry['message']);
+    }
+
+    /**
+     * Test deprecated dateFormat option
+     */
+    public function testDeprecatedDateFormat(): void
+    {
+        $this->deprecated(function (): void {
+            $filename = tempnam(sys_get_temp_dir(), 'cake_log_test');
+            $log = new ConsoleLog([
+                'stream' => $filename,
+                'dateFormat' => 'c',
+            ]);
+            $log->log('error', 'oh noes');
+            $fh = fopen($filename, 'r');
+            $line = fgets($fh);
+            $this->assertMatchesRegularExpression('/2[0-9]{3}-[0-9]+-[0-9]+T[0-9]+:[0-9]+:[0-9]+\+\d{2}:\d{2} error: oh noes/', $line);
+        });
     }
 }

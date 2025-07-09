@@ -17,14 +17,12 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\Database\Type;
 
 use Cake\Chronos\ChronosDate;
-use Cake\Database\Driver;
+use Cake\Core\Configure;
 use Cake\Database\Type\DateType;
-use Cake\I18n\Date;
-use Cake\I18n\DateTime;
+use Cake\I18n\FrozenDate;
+use Cake\I18n\Time;
 use Cake\TestSuite\TestCase;
-use DateTime as NativeDateTime;
 use DateTimeImmutable;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Test for the Date type.
@@ -53,8 +51,14 @@ class DateTypeTest extends TestCase
     {
         parent::setUp();
         $this->type = new DateType();
-        $this->driver = $this->getMockBuilder(Driver::class)->getMock();
+        $this->driver = $this->getMockBuilder('Cake\Database\Driver')->getMock();
 
+        Configure::write('Error.ignoredDeprecationPaths', [
+            'src/Database/Type/DateType.php',
+            'src/I18n/Date.php',
+            'src/I18n/Time.php',
+            'tests/TestCase/Database/Type/DateTypeTest.php',
+        ]);
         $this->originalTimeZone = date_default_timezone_get();
     }
 
@@ -64,15 +68,8 @@ class DateTypeTest extends TestCase
     public function tearDown(): void
     {
         parent::tearDown();
+        $this->type->useLocaleParser(false)->setLocaleFormat(null);
         date_default_timezone_set($this->originalTimeZone);
-    }
-
-    /**
-     * Test getDateClassName
-     */
-    public function testGetDateClassName(): void
-    {
-        $this->assertSame(Date::class, $this->type->getDateClassName());
     }
 
     /**
@@ -84,7 +81,7 @@ class DateTypeTest extends TestCase
         $this->assertNull($this->type->toPHP('0000-00-00', $this->driver));
 
         $result = $this->type->toPHP('2001-01-04', $this->driver);
-        $this->assertInstanceOf(Date::class, $result);
+        $this->assertInstanceOf(DateTimeImmutable::class, $result);
         $this->assertSame('2001', $result->format('Y'));
         $this->assertSame('01', $result->format('m'));
         $this->assertSame('04', $result->format('d'));
@@ -103,13 +100,13 @@ class DateTypeTest extends TestCase
         ];
         $expected = [
             'a' => null,
-            'b' => new Date('2001-01-04'),
-            'c' => new Date('2001-01-04'),
-            'd' => new Date('2001-01-04'),
+            'b' => new ChronosDate('2001-01-04'),
+            'c' => new ChronosDate('2001-01-04'),
+            'd' => new ChronosDate('2001-01-04'),
         ];
         $this->assertEquals(
             $expected,
-            $this->type->manyToPHP($values, array_keys($values), $this->driver),
+            $this->type->manyToPHP($values, array_keys($values), $this->driver)
         );
     }
 
@@ -122,11 +119,11 @@ class DateTypeTest extends TestCase
         $result = $this->type->toDatabase($value, $this->driver);
         $this->assertSame($value, $result);
 
-        $date = new Date('2013-08-12');
+        $date = new ChronosDate('2013-08-12');
         $result = $this->type->toDatabase($date, $this->driver);
         $this->assertSame('2013-08-12', $result);
 
-        $date = new DateTime('2013-08-12 15:16:18');
+        $date = new Time('2013-08-12 15:16:18');
         $result = $this->type->toDatabase($date, $this->driver);
         $this->assertSame('2013-08-12', $result);
     }
@@ -136,9 +133,12 @@ class DateTypeTest extends TestCase
      *
      * @return array
      */
-    public static function marshalProvider(): array
+    public function marshalProvider(): array
     {
-        $date = new Date('@1392387900');
+        Configure::write('Error.ignoredDeprecationPaths', [
+            'src/I18n/Date.php',
+        ]);
+        $date = new ChronosDate('@1392387900');
         $data = [
             // invalid types.
             [null, null],
@@ -152,11 +152,7 @@ class DateTypeTest extends TestCase
             // valid string types
             ['1392387900', $date],
             [1392387900, $date],
-            ['2014-02-14', new Date('2014-02-14')],
-
-            [new Date('2014-02-14'), new Date('2014-02-14')],
-            [new NativeDateTime('2014-02-14'), new Date('2014-02-14')],
-            [new DateTimeImmutable('2014-02-14'), new Date('2014-02-14')],
+            ['2014-02-14', new ChronosDate('2014-02-14')],
 
             // valid array types
             [
@@ -165,7 +161,7 @@ class DateTypeTest extends TestCase
             ],
             [
                 ['year' => 2014, 'month' => 2, 'day' => 14, 'hour' => 13, 'minute' => 14, 'second' => 15],
-                new Date('2014-02-14'),
+                new ChronosDate('2014-02-14'),
             ],
             [
                 [
@@ -173,7 +169,7 @@ class DateTypeTest extends TestCase
                     'hour' => 1, 'minute' => 14, 'second' => 15,
                     'meridian' => 'am',
                 ],
-                new Date('2014-02-14'),
+                new ChronosDate('2014-02-14'),
             ],
             [
                 [
@@ -181,25 +177,18 @@ class DateTypeTest extends TestCase
                     'hour' => 1, 'minute' => 14, 'second' => 15,
                     'meridian' => 'pm',
                 ],
-                new Date('2014-02-14'),
+                new ChronosDate('2014-02-14'),
             ],
             [
                 [
                     'year' => 2014, 'month' => 2, 'day' => 14,
                 ],
-                new Date('2014-02-14'),
+                new ChronosDate('2014-02-14'),
             ],
             [
-                [
-                    'year' => '2014', 'month' => '02', 'day' => '14',
-                    'hour' => 'farts', 'minute' => 'farts',
-                ],
-                new Date('2014-02-14'),
+                new FrozenDate('2023-04-26'),
+                new ChronosDate('2023-04-26'),
             ],
-            // [
-            //     new ChronosDate('2023-04-26'),
-            //     new ChronosDate('2023-04-26'),
-            // ],
 
             // Invalid array types
             [
@@ -210,7 +199,15 @@ class DateTypeTest extends TestCase
                 ['year' => 'farts', 'month' => 'derp', 'day' => 'farts'],
                 null,
             ],
+            [
+                [
+                    'year' => '2014', 'month' => '02', 'day' => '14',
+                    'hour' => 'farts', 'minute' => 'farts',
+                ],
+                new ChronosDate('2014-02-14'),
+            ],
         ];
+        Configure::delete('Error.ignoredDeprecationPaths');
 
         return $data;
     }
@@ -218,12 +215,16 @@ class DateTypeTest extends TestCase
     /**
      * test marshaling data.
      *
+     * @dataProvider marshalProvider
      * @param mixed $value
      * @param mixed $expected
      */
-    #[DataProvider('marshalProvider')]
     public function testMarshal($value, $expected): void
     {
+        $result = $this->type->marshal($value);
+        $this->assertEquals($expected, $result);
+
+        $this->type->useMutable();
         $result = $this->type->marshal($value);
         $this->assertEquals($expected, $result);
     }
@@ -234,9 +235,13 @@ class DateTypeTest extends TestCase
     public function testMarshalWithTimezone(): void
     {
         date_default_timezone_set('Europe/Vienna');
-        $value = new Date('2023-04-26');
-        $expected = new Date('2023-04-26');
+        $value = new FrozenDate('2023-04-26');
+        $expected = new ChronosDate('2023-04-26');
 
+        $result = $this->type->marshal($value);
+        $this->assertEquals($expected, $result);
+
+        $this->type->useMutable();
         $result = $this->type->marshal($value);
         $this->assertEquals($expected, $result);
     }
@@ -252,6 +257,10 @@ class DateTypeTest extends TestCase
         $expected = new ChronosDate('13-10-2013');
         $result = $this->type->marshal('10/13/2013');
         $this->assertSame($expected->format('Y-m-d'), $result->format('Y-m-d'));
+
+        $this->type->useMutable();
+        $result = $this->type->marshal('10/13/2013');
+        $this->assertSame($expected->format('Y-m-d'), $result->format('Y-m-d'));
     }
 
     /**
@@ -265,5 +274,23 @@ class DateTypeTest extends TestCase
         $expected = new ChronosDate('13-10-2013');
         $result = $this->type->marshal('13 Oct, 2013');
         $this->assertSame($expected->format('Y-m-d'), $result->format('Y-m-d'));
+
+        $this->type->useMutable();
+        $result = $this->type->marshal('13 Oct, 2013');
+        $this->assertSame($expected->format('Y-m-d'), $result->format('Y-m-d'));
+    }
+
+    /**
+     * Test that toImmutable changes all the methods to create frozen time instances.
+     */
+    public function testToImmutableAndToMutable(): void
+    {
+        $this->type->useImmutable();
+        $this->assertInstanceOf('DateTimeImmutable', $this->type->marshal('2015-11-01'));
+        $this->assertInstanceOf('DateTimeImmutable', $this->type->toPHP('2015-11-01', $this->driver));
+
+        $this->type->useMutable();
+        $this->assertInstanceOf('DateTime', $this->type->marshal('2015-11-01'));
+        $this->assertInstanceOf('DateTime', $this->type->toPHP('2015-11-01', $this->driver));
     }
 }

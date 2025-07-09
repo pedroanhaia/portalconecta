@@ -1,38 +1,30 @@
 {#
 /**
- * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP(tm) Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
  * @since         2.0.0
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 #}
 {% set annotations = DocBlock.buildTableAnnotations(associations, associationInfo, behaviors, entity, namespace) %}
-{% set generatedFunctions = ['initialize'] %}
-{{ element('Bake.file_header', {
-    namespace: fileBuilder.namespace,
-    classImports: fileBuilder.classImports(['Cake\\ORM\\Query', 'Cake\\ORM\\RulesChecker', 'Cake\\ORM\\Table', 'Cake\\Validation\\Validator']),
-}) }}
+<?php
+declare(strict_types=1);
+
+namespace {{ namespace }}\Model\Table;
+
+{% set uses = ['use Cake\\ORM\\Query;', 'use Cake\\ORM\\RulesChecker;', 'use Cake\\ORM\\Table;', 'use Cake\\Validation\\Validator;'] %}
+{{ uses|join('\n')|raw }}
 
 {{ DocBlock.classDescription(name, 'Model', annotations)|raw }}
-class {{ name }}Table extends Table{{ fileBuilder.classBuilder.implements ? ' implements ' ~ fileBuilder.classBuilder.implements|join(', ') : '' }}
+class {{ name }}Table extends Table
 {
-{% set userConstants = fileBuilder.classBuilder.userConstants([]) %}
-{% if userConstants %}
-    {{~ Bake.concat('\n\n', userConstants) }}
-
-{% endif %}
-{% set userProperties = fileBuilder.classBuilder.userProperties([]) %}
-{% if userProperties %}
-    {{~ Bake.concat('\n\n', userProperties) }}
-
-{% endif %}
     /**
      * Initialize method
      *
@@ -89,7 +81,6 @@ class {{ name }}Table extends Table{{ fileBuilder.classBuilder.implements ? ' im
 {{- "\n" }}
 
 {%- if validation %}
-{% set generatedFunctions = generatedFunctions|merge(['validationDefault']) %}
 
     /**
      * Default validation rules.
@@ -117,7 +108,6 @@ class {{ name }}Table extends Table{{ fileBuilder.classBuilder.implements ? ' im
 {% endif %}
 
 {%- if rulesChecker %}
-{% set generatedFunctions = generatedFunctions|merge(['buildRules']) %}
 
     /**
      * Returns a rules checker object that will be used for validating
@@ -142,7 +132,6 @@ class {{ name }}Table extends Table{{ fileBuilder.classBuilder.implements ? ' im
 {% endif %}
 
 {%- if connection is not same as('default') %}
-{% set generatedFunctions = generatedFunctions|merge(['defaultConnectionName']) %}
 
     /**
      * Returns the database connection name to use by default.
@@ -153,10 +142,5 @@ class {{ name }}Table extends Table{{ fileBuilder.classBuilder.implements ? ' im
     {
         return '{{ connection }}';
     }
-{% endif %}
-{% set userFunctions = fileBuilder.classBuilder.userFunctions(generatedFunctions) %}
-{% if userFunctions %}
-
-    {{~ Bake.concat('\n\n', userFunctions) }}
 {% endif %}
 }

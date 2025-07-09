@@ -25,15 +25,13 @@ use Cake\Http\CorsBuilder;
 use Cake\Http\Exception\NotFoundException;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
-use Cake\I18n\DateTime;
+use Cake\I18n\FrozenTime;
 use Cake\TestSuite\TestCase;
 use DateTime as NativeDateTime;
 use DateTimeImmutable;
 use DateTimeZone;
 use InvalidArgumentException;
 use Laminas\Diactoros\Stream;
-use PHPUnit\Framework\Attributes\DataProvider;
-use Psr\Http\Message\StreamInterface;
 
 /**
  * ResponseTest
@@ -117,15 +115,15 @@ class ResponseTest extends TestCase
 
         $this->assertSame(
             'application/pdf',
-            $response->withType('pdf')->getType(),
+            $response->withType('pdf')->getType()
         );
         $this->assertSame(
             'custom/stuff',
-            $response->withType('custom/stuff')->getType(),
+            $response->withType('custom/stuff')->getType()
         );
         $this->assertSame(
             'application/json',
-            $response->withType('json')->getType(),
+            $response->withType('json')->getType()
         );
     }
 
@@ -156,7 +154,7 @@ class ResponseTest extends TestCase
         $this->assertSame(
             'text/html; charset=UTF-8',
             $response->getHeaderLine('Content-Type'),
-            'Default content-type should match',
+            'Default content-type should match'
         );
 
         $new = $response->withType('pdf');
@@ -165,7 +163,7 @@ class ResponseTest extends TestCase
         $this->assertSame(
             'text/html; charset=UTF-8',
             $response->getHeaderLine('Content-Type'),
-            'Original object should not be modified',
+            'Original object should not be modified'
         );
         $this->assertSame('application/pdf', $new->getHeaderLine('Content-Type'));
 
@@ -183,17 +181,17 @@ class ResponseTest extends TestCase
         $this->assertSame(
             'application/json',
             $response->withType('application/json')->getHeaderLine('Content-Type'),
-            'Should not add charset to explicit type',
+            'Should not add charset to explicit type'
         );
         $this->assertSame(
             'custom/stuff',
             $response->withType('custom/stuff')->getHeaderLine('Content-Type'),
-            'Should allow arbitrary types',
+            'Should allow arbitrary types'
         );
         $this->assertSame(
             'text/html; charset=UTF-8',
             $response->withType('text/html; charset=UTF-8')->getHeaderLine('Content-Type'),
-            'Should allow charset types',
+            'Should allow charset types'
         );
     }
 
@@ -203,7 +201,7 @@ class ResponseTest extends TestCase
     public function testWithTypeInvalidType(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('`beans` is an invalid content type');
+        $this->expectExceptionMessage('"beans" is an invalid content type');
         $response = new Response();
         $response->withType('beans');
     }
@@ -241,7 +239,7 @@ class ResponseTest extends TestCase
         $this->assertSame('', $new->getType());
         $this->assertFalse(
             $new->hasHeader('Content-Type'),
-            'Type should not be retained because of status code.',
+            'Type should not be retained because of status code.'
         );
 
         $response = new Response();
@@ -295,8 +293,7 @@ class ResponseTest extends TestCase
     public function testWithCache(): void
     {
         $response = new Response();
-        $since = time();
-        $time = $since;
+        $since = $time = time();
 
         $new = $response->withCache($since, $time);
         $this->assertFalse($response->hasHeader('Date'));
@@ -576,6 +573,26 @@ class ResponseTest extends TestCase
     }
 
     /**
+     * Tests that the response is able to be marked as not modified
+     */
+    public function testNotModified(): void
+    {
+        $response = new Response();
+        $response = $response->withStringBody('something')
+            ->withStatus(200)
+            ->withLength(100)
+            ->withModified('now');
+
+        $this->deprecated(function () use ($response) {
+            $response->notModified();
+        });
+        $this->assertFalse($response->hasHeader('Content-Length'));
+        $this->assertFalse($response->hasHeader('Modified'));
+        $this->assertEmpty((string)$response->getBody());
+        $this->assertSame(304, $response->getStatusCode());
+    }
+
+    /**
      * Tests withNotModified()
      */
     public function testWithNotModified(): void
@@ -614,6 +631,11 @@ class ResponseTest extends TestCase
         $response = $response->withEtag('something')
             ->withHeader('Content-Length', 99);
         $this->assertTrue($response->isNotModified($request));
+
+        $this->deprecated(function () use ($response, $request) {
+            $this->assertTrue($response->checkNotModified($request));
+            $this->assertFalse($response->hasHeader('Content-Type'), 'etags match, should be unmodified');
+        });
     }
 
     /**
@@ -628,6 +650,11 @@ class ResponseTest extends TestCase
         $response = $response->withEtag('something', true)
             ->withHeader('Content-Length', 99);
         $this->assertTrue($response->isNotModified($request));
+
+        $this->deprecated(function () use ($request, $response) {
+            $this->assertTrue($response->checkNotModified($request));
+            $this->assertFalse($response->hasHeader('Content-Type'), 'etags match, should be unmodified');
+        });
     }
 
     /**
@@ -644,6 +671,11 @@ class ResponseTest extends TestCase
             ->withEtag('something', true)
             ->withHeader('Content-Length', 99);
         $this->assertTrue($response->isNotModified($request));
+
+        $this->deprecated(function () use ($request, $response) {
+            $this->assertTrue($response->checkNotModified($request));
+            $this->assertFalse($response->hasHeader('Content-Length'), 'etags match, should be unmodified');
+        });
     }
 
     /**
@@ -660,6 +692,11 @@ class ResponseTest extends TestCase
             ->withEtag('something', true)
             ->withHeader('Content-Length', 99);
         $this->assertFalse($response->isNotModified($request));
+
+        $this->deprecated(function () use ($request, $response) {
+            $this->assertFalse($response->checkNotModified($request));
+            $this->assertTrue($response->hasHeader('Content-Length'), 'timestamp in response is newer');
+        });
     }
 
     /**
@@ -676,6 +713,10 @@ class ResponseTest extends TestCase
             ->withEtag('something', true)
             ->withHeader('Content-Length', 99);
         $this->assertFalse($response->isNotModified($request));
+        $this->deprecated(function () use ($request, $response) {
+            $this->assertFalse($response->checkNotModified($request));
+            $this->assertTrue($response->hasHeader('Content-Length'), 'etags do not match');
+        });
     }
 
     /**
@@ -690,6 +731,11 @@ class ResponseTest extends TestCase
         $response = $response->withModified('2012-01-01 00:00:00')
             ->withHeader('Content-Length', 99);
         $this->assertTrue($response->isNotModified($request));
+
+        $this->deprecated(function () use ($request, $response) {
+            $this->assertTrue($response->checkNotModified($request));
+            $this->assertFalse($response->hasHeader('Content-Length'), 'modified time matches');
+        });
     }
 
     /**
@@ -702,6 +748,11 @@ class ResponseTest extends TestCase
             ->withHeader('If-Modified-Since', '2012-01-01 00:00:00');
         $response = new Response();
         $this->assertFalse($response->isNotModified($request));
+
+        $this->deprecated(function () use ($request, $response) {
+            $this->assertFalse($response->checkNotModified($request));
+            $this->assertSame(200, $response->getStatusCode());
+        });
     }
 
     /**
@@ -736,17 +787,14 @@ class ResponseTest extends TestCase
         $this->assertNull($response->getCookie('testing'), 'withCookie does not mutate');
         $this->assertSame('abc123', $new->getCookie('testing')['value']);
 
-        $new = $response->withCookie(new Cookie('testing', 0.99));
-        $this->assertEquals(0.99, $new->getCookie('testing')['value']);
-
         $new = $response->withCookie(new Cookie('testing', 99));
-        $this->assertEquals(99, $new->getCookie('testing')['value']);
+        $this->assertSame(99, $new->getCookie('testing')['value']);
 
         $new = $response->withCookie(new Cookie('testing', false));
-        $this->assertSame('', $new->getCookie('testing')['value']);
+        $this->assertFalse($new->getCookie('testing')['value']);
 
         $new = $response->withCookie(new Cookie('testing', true));
-        $this->assertSame('1', $new->getCookie('testing')['value']);
+        $this->assertTrue($new->getCookie('testing')['value']);
     }
 
     /**
@@ -765,7 +813,7 @@ class ResponseTest extends TestCase
             $expiry,
             '/test',
             '',
-            true,
+            true
         );
 
         $new = $response->withCookie($cookie);
@@ -810,7 +858,7 @@ class ResponseTest extends TestCase
         $new = $response->withExpiredCookie(new Cookie('testing'));
 
         $this->assertSame(0, $response->getCookie('testing')['expires']);
-        $this->assertLessThan(DateTime::createFromTimestamp(1), (string)$new->getCookie('testing')['expires']);
+        $this->assertLessThan(FrozenTime::createFromTimestamp(1), (string)$new->getCookie('testing')['expires']);
     }
 
     /**
@@ -833,7 +881,7 @@ class ResponseTest extends TestCase
         $cookie = Cookie::create(
             $options['name'],
             $options['value'],
-            $options['options'],
+            $options['options']
         );
 
         $response = new Response();
@@ -846,7 +894,7 @@ class ResponseTest extends TestCase
         $expiredCookie = $response->withExpiredCookie($cookie);
 
         $this->assertSame($expected['expires'], (string)$response->getCookie('testing')['expires']);
-        $this->assertLessThan(DateTime::createFromTimestamp(1), (string)$expiredCookie->getCookie('testing')['expires']);
+        $this->assertLessThan(FrozenTime::createFromTimestamp(1), (string)$expiredCookie->getCookie('testing')['expires']);
     }
 
     public function testWithExpiredCookieObject(): void
@@ -862,7 +910,7 @@ class ResponseTest extends TestCase
         $this->assertSame(1, $new->getCookie('yay')['expires']);
     }
 
-    public function testWithExpiredCookieNotUtc(): void
+    public function testWithExpiredCookieNotUtc()
     {
         date_default_timezone_set('Europe/Paris');
 
@@ -1008,7 +1056,7 @@ class ResponseTest extends TestCase
      *
      * @return array
      */
-    public static function invalidFileProvider(): array
+    public function invalidFileProvider(): array
     {
         return [
             ['my/../cat.gif', 'The requested file contains `..` and will not be read.'],
@@ -1020,8 +1068,9 @@ class ResponseTest extends TestCase
 
     /**
      * test withFile and invalid paths
+     *
+     * @dataProvider invalidFileProvider
      */
-    #[DataProvider('invalidFileProvider')]
     public function testWithFileInvalidPath(string $path, string $expectedMessage): void
     {
         $this->expectException(NotFoundException::class);
@@ -1042,25 +1091,25 @@ class ResponseTest extends TestCase
             [
                 'name' => 'something_special.css',
                 'download' => true,
-            ],
+            ]
         );
         $this->assertSame(
             'text/html; charset=UTF-8',
             $response->getHeaderLine('Content-Type'),
-            'No mutation',
+            'No mutation'
         );
         $this->assertSame(
             'text/css; charset=UTF-8',
-            $new->getHeaderLine('Content-Type'),
+            $new->getHeaderLine('Content-Type')
         );
         $this->assertSame(
             'attachment; filename="something_special.css"',
-            $new->getHeaderLine('Content-Disposition'),
+            $new->getHeaderLine('Content-Disposition')
         );
         $this->assertSame('bytes', $new->getHeaderLine('Accept-Ranges'));
         $this->assertSame('binary', $new->getHeaderLine('Content-Transfer-Encoding'));
         $body = $new->getBody();
-        $this->assertInstanceOf(Stream::class, $body);
+        $this->assertInstanceOf('Laminas\Diactoros\Stream', $body);
 
         $expected = '/* this is the test asset css file */';
         $this->assertSame($expected, trim($body->getContents()));
@@ -1078,7 +1127,7 @@ class ResponseTest extends TestCase
         $this->assertSame('text/html; charset=UTF-8', $new->getHeaderLine('Content-Type'));
         $this->assertSame(
             'attachment; filename="no_section.ini"',
-            $new->getHeaderLine('Content-Disposition'),
+            $new->getHeaderLine('Content-Disposition')
         );
         $this->assertSame('bytes', $new->getHeaderLine('Accept-Ranges'));
         $body = $new->getBody();
@@ -1098,7 +1147,7 @@ class ResponseTest extends TestCase
         $this->assertSame('application/octet-stream', $new->getHeaderLine('Content-Type'));
         $this->assertSame(
             'attachment; filename="no_section.ini"',
-            $new->getHeaderLine('Content-Disposition'),
+            $new->getHeaderLine('Content-Disposition')
         );
     }
 
@@ -1125,7 +1174,7 @@ class ResponseTest extends TestCase
         ]);
         $this->assertSame(
             'text/html; charset=UTF-8',
-            $new->getHeaderLine('Content-Type'),
+            $new->getHeaderLine('Content-Type')
         );
         $this->assertFalse($new->hasHeader('Content-Disposition'));
         $this->assertFalse($new->hasHeader('Content-Transfer-Encoding'));
@@ -1175,19 +1224,20 @@ class ResponseTest extends TestCase
 
     /**
      * Test withFile() & the various range offset types.
+     *
+     * @dataProvider rangeProvider
      */
-    #[DataProvider('rangeProvider')]
     public function testWithFileRangeOffsets(string $range, int $length, string $offsetResponse): void
     {
         $_SERVER['HTTP_RANGE'] = $range;
         $response = new Response();
         $new = $response->withFile(
             TEST_APP . 'vendor' . DS . 'css' . DS . 'test_asset.css',
-            ['download' => true],
+            ['download' => true]
         );
         $this->assertSame(
             'attachment; filename="test_asset.css"',
-            $new->getHeaderLine('Content-Disposition'),
+            $new->getHeaderLine('Content-Disposition')
         );
         $this->assertSame('binary', $new->getHeaderLine('Content-Transfer-Encoding'));
         $this->assertSame('bytes', $new->getHeaderLine('Accept-Ranges'));
@@ -1204,12 +1254,12 @@ class ResponseTest extends TestCase
         $response = new Response();
         $new = $response->withFile(
             TEST_APP . 'vendor' . DS . 'css' . DS . 'test_asset.css',
-            ['download' => true],
+            ['download' => true]
         );
 
         $this->assertSame(
             'attachment; filename="test_asset.css"',
-            $new->getHeaderLine('Content-Disposition'),
+            $new->getHeaderLine('Content-Disposition')
         );
         $this->assertSame('binary', $new->getHeaderLine('Content-Transfer-Encoding'));
         $this->assertSame('bytes', $new->getHeaderLine('Accept-Ranges'));
@@ -1223,7 +1273,7 @@ class ResponseTest extends TestCase
      *
      * @return array
      */
-    public static function invalidFileRangeProvider(): array
+    public function invalidFileRangeProvider(): array
     {
         return [
             // malformed range
@@ -1240,20 +1290,21 @@ class ResponseTest extends TestCase
 
     /**
      * Test withFile() and invalid ranges
+     *
+     * @dataProvider invalidFileRangeProvider
      */
-    #[DataProvider('invalidFileRangeProvider')]
     public function testWithFileInvalidRange(string $range): void
     {
         $_SERVER['HTTP_RANGE'] = $range;
         $response = new Response();
         $new = $response->withFile(
             TEST_APP . 'vendor' . DS . 'css' . DS . 'test_asset.css',
-            ['download' => true],
+            ['download' => true]
         );
 
         $this->assertSame(
             'attachment; filename="test_asset.css"',
-            $new->getHeaderLine('Content-Disposition'),
+            $new->getHeaderLine('Content-Disposition')
         );
         $this->assertSame('binary', $new->getHeaderLine('Content-Transfer-Encoding'));
         $this->assertSame('bytes', $new->getHeaderLine('Accept-Ranges'));
@@ -1271,12 +1322,12 @@ class ResponseTest extends TestCase
         $response = new Response();
         $new = $response->withFile(
             TEST_APP . 'vendor' . DS . 'css' . DS . 'test_asset.css',
-            ['download' => true],
+            ['download' => true]
         );
 
         $this->assertSame(
             'attachment; filename="test_asset.css"',
-            $new->getHeaderLine('Content-Disposition'),
+            $new->getHeaderLine('Content-Disposition')
         );
         $this->assertSame('binary', $new->getHeaderLine('Content-Transfer-Encoding'));
         $this->assertSame('bytes', $new->getHeaderLine('Accept-Ranges'));
@@ -1434,7 +1485,7 @@ class ResponseTest extends TestCase
     {
         $response = new Response();
         $stream = $response->getBody();
-        $this->assertInstanceOf(StreamInterface::class, $stream);
+        $this->assertInstanceOf('Psr\Http\Message\StreamInterface', $stream);
     }
 
     /**

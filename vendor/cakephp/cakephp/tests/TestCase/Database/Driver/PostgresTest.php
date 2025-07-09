@@ -16,10 +16,9 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Database\Driver;
 
-use Cake\Database\Connection;
 use Cake\Database\Driver\Postgres;
-use Cake\Database\DriverFeatureEnum;
-use Cake\Database\Query\SelectQuery;
+use Cake\Database\DriverInterface;
+use Cake\Database\Query;
 use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\TestCase;
 use PDO;
@@ -34,8 +33,8 @@ class PostgresTest extends TestCase
      */
     public function testConnectionConfigDefault(): void
     {
-        $driver = $this->getMockBuilder(Postgres::class)
-            ->onlyMethods(['createPdo'])
+        $driver = $this->getMockBuilder('Cake\Database\Driver\Postgres')
+            ->onlyMethods(['_connect', 'getConnection'])
             ->getMock();
         $dsn = 'pgsql:host=localhost;port=5432;dbname=cake';
         $expected = [
@@ -50,7 +49,6 @@ class PostgresTest extends TestCase
             'timezone' => null,
             'flags' => [],
             'init' => [],
-            'log' => false,
         ];
 
         $expected['flags'] += [
@@ -59,26 +57,28 @@ class PostgresTest extends TestCase
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         ];
 
-        $connection = $this->getMockBuilder('PDO')
-            ->disableOriginalConstructor()
-            ->onlyMethods(['exec', 'quote'])
+        $connection = $this->getMockBuilder('stdClass')
+            ->addMethods(['exec', 'quote'])
             ->getMock();
         $connection->expects($this->any())
             ->method('quote')
-            ->willReturnArgument(0);
+            ->will($this->onConsecutiveCalls(
+                $this->returnArgument(0),
+                $this->returnArgument(0),
+                $this->returnArgument(0)
+            ));
 
         $connection->expects($this->exactly(2))
             ->method('exec')
-            ->with(
-                ...self::withConsecutive(
-                    ['SET NAMES utf8'],
-                    ['SET search_path TO public'],
-                ),
+            ->withConsecutive(
+                ['SET NAMES utf8'],
+                ['SET search_path TO public']
             );
 
-        $driver->expects($this->once())->method('createPdo')
-            ->with($dsn, $expected)
-            ->willReturn($connection);
+        $driver->expects($this->once())->method('_connect')
+            ->with($dsn, $expected);
+        $driver->expects($this->any())->method('getConnection')
+            ->will($this->returnValue($connection));
 
         $driver->connect();
     }
@@ -100,10 +100,9 @@ class PostgresTest extends TestCase
             'timezone' => 'Antarctica',
             'schema' => 'fooblic',
             'init' => ['Execute this', 'this too'],
-            'log' => false,
         ];
-        $driver = $this->getMockBuilder(Postgres::class)
-            ->onlyMethods(['createPdo'])
+        $driver = $this->getMockBuilder('Cake\Database\Driver\Postgres')
+            ->onlyMethods(['_connect', 'getConnection', 'setConnection'])
             ->setConstructorArgs([$config])
             ->getMock();
         $dsn = 'pgsql:host=foo;port=3440;dbname=bar';
@@ -115,29 +114,33 @@ class PostgresTest extends TestCase
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         ];
 
-        $connection = $this->getMockBuilder('PDO')
-            ->disableOriginalConstructor()
-            ->onlyMethods(['exec', 'quote'])
+        $connection = $this->getMockBuilder('stdClass')
+            ->addMethods(['exec', 'quote'])
             ->getMock();
         $connection->expects($this->any())
             ->method('quote')
-            ->willReturnArgument(0);
+            ->will($this->onConsecutiveCalls(
+                $this->returnArgument(0),
+                $this->returnArgument(0),
+                $this->returnArgument(0)
+            ));
 
         $connection->expects($this->exactly(5))
             ->method('exec')
-            ->with(
-                ...self::withConsecutive(
-                    ['SET NAMES a-language'],
-                    ['SET search_path TO fooblic'],
-                    ['Execute this'],
-                    ['this too'],
-                    ['SET timezone = Antarctica'],
-                ),
+            ->withConsecutive(
+                ['SET NAMES a-language'],
+                ['SET search_path TO fooblic'],
+                ['Execute this'],
+                ['this too'],
+                ['SET timezone = Antarctica']
             );
 
-        $driver->expects($this->once())->method('createPdo')
-            ->with($dsn, $expected)
-            ->willReturn($connection);
+        $driver->setConnection($connection);
+        $driver->expects($this->once())->method('_connect')
+            ->with($dsn, $expected);
+
+        $driver->expects($this->any())->method('getConnection')
+            ->will($this->returnValue($connection));
 
         $driver->connect();
     }
@@ -147,19 +150,31 @@ class PostgresTest extends TestCase
      */
     public function testInsertReturning(): void
     {
-        $driver = $this->getMockBuilder(Postgres::class)
-            ->onlyMethods(['createPdo', 'getPdo', 'connect', 'enabled'])
+        $driver = $this->getMockBuilder('Cake\Database\Driver\Postgres')
+            ->onlyMethods(['_connect', 'getConnection'])
             ->setConstructorArgs([[]])
             ->getMock();
-        $driver->method('enabled')->willReturn(true);
-        $connection = new Connection(['driver' => $driver, 'log' => false]);
+        $connection = $this
+            ->getMockBuilder('Cake\Database\Connection')
+            ->onlyMethods(['connect'])
+            ->disableOriginalConstructor()
+            ->getMock();
 
-        $query = $connection->insertQuery('articles', ['id' => 1, 'title' => 'foo']);
-        $this->assertStringEndsWith(' RETURNING *', $query->sql());
+        $query = new Query($connection);
+        $query->insert(['id', 'title'])
+            ->into('articles')
+            ->values([1, 'foo']);
+        $translator = $driver->queryTranslator('insert');
+        $query = $translator($query);
+        $this->assertSame('RETURNING *', $query->clause('epilog'));
 
-        $query = $connection->insertQuery('articles', ['id' => 1, 'title' => 'foo']);
-        $query->epilog('FOO');
-        $this->assertStringEndsWith(' FOO', $query->sql());
+        $query = new Query($connection);
+        $query->insert(['id', 'title'])
+            ->into('articles')
+            ->values([1, 'foo'])
+            ->epilog('FOO');
+        $query = $translator($query);
+        $this->assertSame('FOO', $query->clause('epilog'));
     }
 
     /**
@@ -167,22 +182,25 @@ class PostgresTest extends TestCase
      */
     public function testHavingReplacesAlias(): void
     {
-        $driver = $this->getMockBuilder(Postgres::class)
-            ->onlyMethods(['connect', 'getPdo', 'version', 'enabled'])
+        $driver = $this->getMockBuilder('Cake\Database\Driver\Postgres')
+            ->onlyMethods(['connect', 'getConnection', 'version', 'enabled'])
             ->setConstructorArgs([[]])
             ->getMock();
         $driver->method('enabled')
-            ->willReturn(true);
+            ->will($this->returnValue(true));
 
-        $connection = new Connection(['driver' => $driver, 'log' => false]);
+        $connection = $this->getMockBuilder('\Cake\Database\Connection')
+            ->onlyMethods(['connect'])
+            ->setConstructorArgs([['driver' => $driver, 'log' => false]])
+            ->getMock();
 
-        $query = new SelectQuery($connection);
+        $query = new Query($connection);
         $query
             ->select([
                 'posts.author_id',
                 'post_count' => $query->func()->count('posts.id'),
             ])
-            ->groupBy(['posts.author_id'])
+            ->group(['posts.author_id'])
             ->having([$query->newExpr()->gte('post_count', 2, 'integer')]);
 
         $expected = 'SELECT posts.author_id, (COUNT(posts.id)) AS "post_count" ' .
@@ -195,22 +213,25 @@ class PostgresTest extends TestCase
      */
     public function testHavingWhenNoAliasIsUsed(): void
     {
-        $driver = $this->getMockBuilder(Postgres::class)
-            ->onlyMethods(['connect', 'getPdo', 'version', 'enabled'])
+        $driver = $this->getMockBuilder('Cake\Database\Driver\Postgres')
+            ->onlyMethods(['connect', 'getConnection', 'version', 'enabled'])
             ->setConstructorArgs([[]])
             ->getMock();
         $driver->method('enabled')
-            ->willReturn(true);
+            ->will($this->returnValue(true));
 
-        $connection = new Connection(['driver' => $driver, 'log' => false]);
+        $connection = $this->getMockBuilder('\Cake\Database\Connection')
+            ->onlyMethods(['connect'])
+            ->setConstructorArgs([['driver' => $driver, 'log' => false]])
+            ->getMock();
 
-        $query = new SelectQuery($connection);
+        $query = new Query($connection);
         $query
             ->select([
                 'posts.author_id',
                 'post_count' => $query->func()->count('posts.id'),
             ])
-            ->groupBy(['posts.author_id'])
+            ->group(['posts.author_id'])
             ->having([$query->newExpr()->gte('posts.author_id', 2, 'integer')]);
 
         $expected = 'SELECT posts.author_id, (COUNT(posts.id)) AS "post_count" ' .
@@ -226,15 +247,12 @@ class PostgresTest extends TestCase
         $driver = ConnectionManager::get('test')->getDriver();
         $this->skipIf(!$driver instanceof Postgres);
 
-        $this->assertTrue($driver->supports(DriverFeatureEnum::CTE));
-        $this->assertTrue($driver->supports(DriverFeatureEnum::JSON));
-        $this->assertTrue($driver->supports(DriverFeatureEnum::SAVEPOINT));
-        $this->assertTrue($driver->supports(DriverFeatureEnum::TRUNCATE_WITH_CONSTRAINTS));
-        $this->assertTrue($driver->supports(DriverFeatureEnum::WINDOW));
-        $this->assertTrue($driver->supports(DriverFeatureEnum::INTERSECT));
-        $this->assertTrue($driver->supports(DriverFeatureEnum::INTERSECT_ALL));
-        $this->assertTrue($driver->supports(DriverFeatureEnum::SET_OPERATIONS_ORDER_BY));
+        $this->assertTrue($driver->supports(DriverInterface::FEATURE_CTE));
+        $this->assertTrue($driver->supports(DriverInterface::FEATURE_JSON));
+        $this->assertTrue($driver->supports(DriverInterface::FEATURE_SAVEPOINT));
+        $this->assertTrue($driver->supports(DriverInterface::FEATURE_QUOTE));
+        $this->assertTrue($driver->supports(DriverInterface::FEATURE_WINDOW));
 
-        $this->assertFalse($driver->supports(DriverFeatureEnum::DISABLE_CONSTRAINT_WITHOUT_TRANSACTION));
+        $this->assertFalse($driver->supports('this-is-fake'));
     }
 }

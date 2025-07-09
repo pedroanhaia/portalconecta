@@ -7,7 +7,7 @@ use Cake\Controller\Component\PaginatorComponent;
 
 class CustomPaginatorComponent extends PaginatorComponent
 {
-    protected array $_defaultConfig = [
+    protected $_defaultConfig = [
         'page' => 1,
         'limit' => 20,
         'maxLimit' => 100,

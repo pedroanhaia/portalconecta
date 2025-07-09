@@ -30,7 +30,7 @@ class TupleComparisonTest extends TestCase
     /**
      * Tests generating a function with no arguments
      */
-    public function testSimpleTuple(): void
+    public function testsSimpleTuple(): void
     {
         $f = new TupleComparison(['field1', 'field2'], [1, 2], ['integer', 'integer'], '=');
         $binder = new ValueBinder();
@@ -77,7 +77,7 @@ class TupleComparisonTest extends TestCase
             ['field1', 'field2'],
             [[1, 2], [3, 4]],
             ['integer', 'integer'],
-            'IN',
+            'IN'
         );
         $binder = new ValueBinder();
         $this->assertSame('(field1, field2) IN ((:tuple0,:tuple1), (:tuple2,:tuple3))', $f->sql($binder));
@@ -95,6 +95,7 @@ class TupleComparisonTest extends TestCase
         $value1 = new QueryExpression(['a' => 1]);
         $field2 = new QueryExpression(['b' => 2]);
         $f = new TupleComparison(['field1', $field2], [$value1, 2], ['integer', 'integer'], '=');
+        $binder = new ValueBinder();
         $expressions = [];
 
         $collector = function ($e) use (&$expressions): void {
@@ -110,7 +111,7 @@ class TupleComparisonTest extends TestCase
             ['field1', $field2],
             [[1, 2], [3, $value1]],
             ['integer', 'integer'],
-            'IN',
+            'IN'
         );
         $expressions = [];
         $f->traverse($collector);
@@ -152,7 +153,7 @@ class TupleComparisonTest extends TestCase
             ['field1', 'field2'],
             [1, 1],
             ['integer', 'integer'],
-            'IN',
+            'IN'
         );
     }
 
@@ -165,7 +166,7 @@ class TupleComparisonTest extends TestCase
             ['field1', 'field2'],
             [[1, 1], [2, 2]],
             ['integer', 'integer'],
-            '=',
+            '='
         );
     }
 }

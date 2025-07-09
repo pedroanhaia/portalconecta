@@ -28,8 +28,7 @@ use Cake\Routing\RouteCollection;
 use Cake\Routing\Router;
 use Cake\TestSuite\TestCase;
 use InvalidArgumentException;
-use PHPUnit\Framework\Attributes\DataProvider;
-use TestApp\Routing\Route\DashedRoute;
+use RuntimeException;
 
 /**
  * RouteBuilder test case
@@ -110,7 +109,7 @@ class RouteBuilderTest extends TestCase
             $this->collection,
             '/l',
             [],
-            ['routeClass' => 'InflectedRoute'],
+            ['routeClass' => 'InflectedRoute']
         );
         $routes->connect('/{controller}', ['action' => 'index']);
         $routes->connect('/{controller}/{action}/*');
@@ -121,12 +120,12 @@ class RouteBuilderTest extends TestCase
 
         $this->collection = new RouteCollection();
         $routes = new RouteBuilder($this->collection, '/l');
-        $this->assertSame($routes, $routes->setRouteClass(DashedRoute::class));
-        $this->assertSame(DashedRoute::class, $routes->getRouteClass());
+        $this->assertSame($routes, $routes->setRouteClass('TestApp\Routing\Route\DashedRoute'));
+        $this->assertSame('TestApp\Routing\Route\DashedRoute', $routes->getRouteClass());
 
         $routes->connect('/{controller}', ['action' => 'index']);
         $all = $this->collection->routes();
-        $this->assertInstanceOf(DashedRoute::class, $all[0]);
+        $this->assertInstanceOf('TestApp\Routing\Route\DashedRoute', $all[0]);
     }
 
     /**
@@ -167,20 +166,22 @@ class RouteBuilderTest extends TestCase
         $routes = new RouteBuilder($this->collection, '/articles', ['controller' => 'Articles']);
         $routes->connect('/', ['action' => 'index']);
 
-        $expected = [
-            'plugin' => null,
-            'controller' => 'Articles',
-            'action' => 'index',
-            'pass' => [],
-            '_matchedRoute' => '/articles',
-        ];
-        $result = $this->collection->parseRequest(new ServerRequest(['url' => '/articles']));
-        unset($result['_route']);
-        $this->assertEquals($expected, $result);
+        $this->deprecated(function () {
+            $expected = [
+                'plugin' => null,
+                'controller' => 'Articles',
+                'action' => 'index',
+                'pass' => [],
+                '_matchedRoute' => '/articles',
+            ];
+            $result = $this->collection->parse('/articles');
+            unset($result['_route']);
+            $this->assertEquals($expected, $result);
 
-        $result = $this->collection->parseRequest(new ServerRequest(['url' => '/articles/']));
-        unset($result['_route']);
-        $this->assertEquals($expected, $result);
+            $result = $this->collection->parse('/articles/');
+            unset($result['_route']);
+            $this->assertEquals($expected, $result);
+        });
     }
 
     /**
@@ -200,20 +201,22 @@ class RouteBuilderTest extends TestCase
     {
         $routes = new RouteBuilder($this->collection, '/');
         $routes->connect('/my-articles/view', 'Articles::view');
-        $expected = [
-            'pass' => [],
-            'controller' => 'Articles',
-            'action' => 'view',
-            'plugin' => null,
-            '_matchedRoute' => '/my-articles/view',
-        ];
-        $result = $this->collection->parseRequest(new ServerRequest(['url' => '/my-articles/view']));
-        unset($result['_route']);
-        $this->assertEquals($expected, $result);
+        $this->deprecated(function () {
+            $expected = [
+                'pass' => [],
+                'controller' => 'Articles',
+                'action' => 'view',
+                'plugin' => null,
+                '_matchedRoute' => '/my-articles/view',
+            ];
+            $result = $this->collection->parse('/my-articles/view');
+            unset($result['_route']);
+            $this->assertEquals($expected, $result);
 
-        $url = $expected['_matchedRoute'];
-        unset($expected['_matchedRoute']);
-        $this->assertSame($url, '/' . $this->collection->match($expected, []));
+            $url = $expected['_matchedRoute'];
+            unset($expected['_matchedRoute']);
+            $this->assertSame($url, '/' . $this->collection->match($expected, []));
+        });
     }
 
     /**
@@ -223,21 +226,23 @@ class RouteBuilderTest extends TestCase
     {
         $routes = new RouteBuilder($this->collection, '/');
         $routes->connect('/admin/bookmarks', 'Admin/Bookmarks::index');
-        $expected = [
-            'pass' => [],
-            'plugin' => null,
-            'prefix' => 'Admin',
-            'controller' => 'Bookmarks',
-            'action' => 'index',
-            '_matchedRoute' => '/admin/bookmarks',
-        ];
-        $result = $this->collection->parseRequest(new ServerRequest(['url' => '/admin/bookmarks']));
-        unset($result['_route']);
-        $this->assertEquals($expected, $result);
+        $this->deprecated(function () {
+            $expected = [
+                'pass' => [],
+                'plugin' => null,
+                'prefix' => 'Admin',
+                'controller' => 'Bookmarks',
+                'action' => 'index',
+                '_matchedRoute' => '/admin/bookmarks',
+            ];
+            $result = $this->collection->parse('/admin/bookmarks');
+            unset($result['_route']);
+            $this->assertEquals($expected, $result);
 
-        $url = $expected['_matchedRoute'];
-        unset($expected['_matchedRoute']);
-        $this->assertSame($url, '/' . $this->collection->match($expected, []));
+            $url = $expected['_matchedRoute'];
+            unset($expected['_matchedRoute']);
+            $this->assertSame($url, '/' . $this->collection->match($expected, []));
+        });
     }
 
     /**
@@ -247,20 +252,22 @@ class RouteBuilderTest extends TestCase
     {
         $routes = new RouteBuilder($this->collection, '/');
         $routes->connect('/blog/articles/view', 'Blog.Articles::view');
-        $expected = [
-            'pass' => [],
-            'plugin' => 'Blog',
-            'controller' => 'Articles',
-            'action' => 'view',
-            '_matchedRoute' => '/blog/articles/view',
-        ];
-        $result = $this->collection->parseRequest(new ServerRequest(['url' => '/blog/articles/view']));
-        unset($result['_route']);
-        $this->assertEquals($expected, $result);
+        $this->deprecated(function () {
+            $expected = [
+                'pass' => [],
+                'plugin' => 'Blog',
+                'controller' => 'Articles',
+                'action' => 'view',
+                '_matchedRoute' => '/blog/articles/view',
+            ];
+            $result = $this->collection->parse('/blog/articles/view');
+            unset($result['_route']);
+            $this->assertEquals($expected, $result);
 
-        $url = $expected['_matchedRoute'];
-        unset($expected['_matchedRoute']);
-        $this->assertSame($url, '/' . $this->collection->match($expected, []));
+            $url = $expected['_matchedRoute'];
+            unset($expected['_matchedRoute']);
+            $this->assertSame($url, '/' . $this->collection->match($expected, []));
+        });
     }
 
     /**
@@ -270,21 +277,23 @@ class RouteBuilderTest extends TestCase
     {
         $routes = new RouteBuilder($this->collection, '/');
         $routes->connect('/admin/blog/articles/view', 'Vendor/Blog.Management/Admin/Articles::view');
-        $expected = [
-            'pass' => [],
-            'plugin' => 'Vendor/Blog',
-            'prefix' => 'Management/Admin',
-            'controller' => 'Articles',
-            'action' => 'view',
-            '_matchedRoute' => '/admin/blog/articles/view',
-        ];
-        $result = $this->collection->parseRequest(new ServerRequest(['url' => '/admin/blog/articles/view']));
-        unset($result['_route']);
-        $this->assertEquals($expected, $result);
+        $this->deprecated(function () {
+            $expected = [
+                'pass' => [],
+                'plugin' => 'Vendor/Blog',
+                'prefix' => 'Management/Admin',
+                'controller' => 'Articles',
+                'action' => 'view',
+                '_matchedRoute' => '/admin/blog/articles/view',
+            ];
+            $result = $this->collection->parse('/admin/blog/articles/view');
+            unset($result['_route']);
+            $this->assertEquals($expected, $result);
 
-        $url = $expected['_matchedRoute'];
-        unset($expected['_matchedRoute']);
-        $this->assertSame($url, '/' . $this->collection->match($expected, []));
+            $url = $expected['_matchedRoute'];
+            unset($expected['_matchedRoute']);
+            $this->assertSame($url, '/' . $this->collection->match($expected, []));
+        });
     }
 
     /**
@@ -318,7 +327,7 @@ class RouteBuilderTest extends TestCase
             $this->collection,
             '/l',
             [],
-            ['extensions' => ['json']],
+            ['extensions' => ['json']]
         );
         $this->assertEquals(['json'], $routes->getExtensions());
 
@@ -343,7 +352,7 @@ class RouteBuilderTest extends TestCase
             $this->collection,
             '/l',
             [],
-            ['extensions' => ['json']],
+            ['extensions' => ['json']]
         );
         $this->assertEquals(['json'], $routes->getExtensions());
 
@@ -488,7 +497,7 @@ class RouteBuilderTest extends TestCase
             $route = $this->collection->routes()[0];
             $this->assertEquals(
                 ['key' => 'value', 'plugin' => 'Contacts', 'action' => 'index'],
-                $route->defaults,
+                $route->defaults
             );
         });
         $this->assertSame($routes, $res);
@@ -537,7 +546,7 @@ class RouteBuilderTest extends TestCase
         $this->assertSame('/api/articles', $all[4]->template);
         $this->assertEquals(
             ['controller', 'action', '_method', 'prefix', 'plugin'],
-            array_keys($all[0]->defaults),
+            array_keys($all[0]->defaults)
         );
         $this->assertSame('json', $all[0]->options['_ext']);
         $this->assertSame('Articles', $all[0]->defaults['controller']);
@@ -559,7 +568,7 @@ class RouteBuilderTest extends TestCase
         $this->assertSame(
             '/api/posts/{article_id}/comments',
             $all[4]->template,
-            'parameter name should reflect resource name',
+            'parameter name should reflect resource name'
         );
     }
 
@@ -606,7 +615,7 @@ class RouteBuilderTest extends TestCase
         $this->assertSame('/api/blog-posts', $all[4]->template);
         $this->assertEquals(
             ['controller', 'action', '_method', 'prefix', 'plugin'],
-            array_keys($all[0]->defaults),
+            array_keys($all[0]->defaults)
         );
         $this->assertSame('BlogPosts', $all[0]->defaults['controller']);
     }
@@ -622,7 +631,7 @@ class RouteBuilderTest extends TestCase
             ['inflect' => 'dasherize'],
             function (RouteBuilder $routes): void {
                 $routes->resources('Attributes');
-            },
+            }
         );
 
         $all = $this->collection->routes();
@@ -653,7 +662,7 @@ class RouteBuilderTest extends TestCase
         $this->assertSame('/api/articles/delete_all', $all[1]->template, 'Path defaults to key name.');
         $this->assertEquals(
             ['controller', 'action', '_method', 'prefix', 'plugin'],
-            array_keys($all[5]->defaults),
+            array_keys($all[5]->defaults)
         );
         $this->assertSame('Articles', $all[5]->defaults['controller']);
         $this->assertSame('deleteAll', $all[1]->defaults['action']);
@@ -661,7 +670,7 @@ class RouteBuilderTest extends TestCase
         $this->assertSame('/api/articles/updateAll', $all[0]->template, 'Explicit path option');
         $this->assertEquals(
             ['controller', 'action', '_method', 'prefix', 'plugin'],
-            array_keys($all[6]->defaults),
+            array_keys($all[6]->defaults)
         );
         $this->assertSame('Articles', $all[6]->defaults['controller']);
         $this->assertSame('updateAll', $all[0]->defaults['action']);
@@ -686,13 +695,10 @@ class RouteBuilderTest extends TestCase
         $this->assertSame('Articles', $all[0]->defaults['controller']);
         $this->assertSame('conditions', $all[0]->defaults['action']);
 
-        $result = $this->collection->parseRequest(new ServerRequest([
-            'url' => '/api/articles/conditions',
-            'environment' => [
-                'REQUEST_METHOD' => 'DELETE',
-            ],
-        ]));
-        $this->assertNotNull($result);
+        $this->deprecated(function () {
+            $result = $this->collection->parse('/api/articles/conditions', 'DELETE');
+            $this->assertNotNull($result);
+        });
     }
 
     /**
@@ -733,55 +739,32 @@ class RouteBuilderTest extends TestCase
         $routes = new RouteBuilder($this->collection, '/');
         $routes->resources('Articles');
 
-        $result = $this->collection->parseRequest(new ServerRequest([
-            'url' => '/articles',
-            'environment' => [
-                'REQUEST_METHOD' => 'GET',
-            ],
-        ]));
-        $this->assertSame('Articles', $result['controller']);
-        $this->assertSame('index', $result['action']);
-        $this->assertEquals([], $result['pass']);
+        $this->deprecated(function () {
+            $result = $this->collection->parse('/articles', 'GET');
+            $this->assertSame('Articles', $result['controller']);
+            $this->assertSame('index', $result['action']);
+            $this->assertEquals([], $result['pass']);
 
-        $result = $this->collection->parseRequest(new ServerRequest([
-            'url' => '/articles/1',
-            'environment' => [
-                'REQUEST_METHOD' => 'GET',
-            ],
-        ]));
-        $this->assertSame('Articles', $result['controller']);
-        $this->assertSame('view', $result['action']);
-        $this->assertEquals([1], $result['pass']);
+            $result = $this->collection->parse('/articles/1', 'GET');
+            $this->assertSame('Articles', $result['controller']);
+            $this->assertSame('view', $result['action']);
+            $this->assertEquals([1], $result['pass']);
 
-        $result = $this->collection->parseRequest(new ServerRequest([
-            'url' => '/articles',
-            'environment' => [
-                'REQUEST_METHOD' => 'POST',
-            ],
-        ]));
-        $this->assertSame('Articles', $result['controller']);
-        $this->assertSame('add', $result['action']);
-        $this->assertEquals([], $result['pass']);
+            $result = $this->collection->parse('/articles', 'POST');
+            $this->assertSame('Articles', $result['controller']);
+            $this->assertSame('add', $result['action']);
+            $this->assertEquals([], $result['pass']);
 
-        $result = $this->collection->parseRequest(new ServerRequest([
-            'url' => '/articles/1',
-            'environment' => [
-                'REQUEST_METHOD' => 'PUT',
-            ],
-        ]));
-        $this->assertSame('Articles', $result['controller']);
-        $this->assertSame('edit', $result['action']);
-        $this->assertEquals([1], $result['pass']);
+            $result = $this->collection->parse('/articles/1', 'PUT');
+            $this->assertSame('Articles', $result['controller']);
+            $this->assertSame('edit', $result['action']);
+            $this->assertEquals([1], $result['pass']);
 
-        $result = $this->collection->parseRequest(new ServerRequest([
-            'url' => '/articles/1',
-            'environment' => [
-                'REQUEST_METHOD' => 'DELETE',
-            ],
-        ]));
-        $this->assertSame('Articles', $result['controller']);
-        $this->assertSame('delete', $result['action']);
-        $this->assertEquals([1], $result['pass']);
+            $result = $this->collection->parse('/articles/1', 'DELETE');
+            $this->assertSame('Articles', $result['controller']);
+            $this->assertSame('delete', $result['action']);
+            $this->assertEquals([1], $result['pass']);
+        });
     }
 
     /**
@@ -886,11 +869,11 @@ class RouteBuilderTest extends TestCase
     public function testDefaultRouteClassFallbacks(): void
     {
         $routes = new RouteBuilder($this->collection, '/api', ['prefix' => 'Api']);
-        $routes->setRouteClass(DashedRoute::class);
+        $routes->setRouteClass('TestApp\Routing\Route\DashedRoute');
         $routes->fallbacks();
 
         $all = $this->collection->routes();
-        $this->assertInstanceOf(DashedRoute::class, $all[0]);
+        $this->assertInstanceOf('TestApp\Routing\Route\DashedRoute', $all[0]);
     }
 
     /**
@@ -929,11 +912,11 @@ class RouteBuilderTest extends TestCase
      */
     public function testScopeException(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Need a valid Closure to connect routes.');
+        $this->expectException(\InvalidArgumentException::class);
+        $this->expectExceptionMessage('Need a valid callable to connect routes. Got `string` instead.');
 
         $routes = new RouteBuilder($this->collection, '/api', ['prefix' => 'Api']);
-        $routes->scope('/v1', ['fail'], null);
+        $routes->scope('/v1', 'fail');
     }
 
     /**
@@ -945,7 +928,7 @@ class RouteBuilderTest extends TestCase
             $this->collection,
             '/api',
             ['prefix' => 'Api'],
-            ['middleware' => ['auth']],
+            ['middleware' => ['auth']]
         );
         $routes->scope('/v1', function (RouteBuilder $routes): void {
             $this->assertSame(['auth'], $routes->getMiddleware(), 'Should inherit middleware');
@@ -1010,13 +993,13 @@ class RouteBuilderTest extends TestCase
      */
     public function testMiddlewareGroupOverlap(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage("Cannot add middleware group 'test'. A middleware by this name has already been registered.");
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot add middleware group \'test\'. A middleware by this name has already been registered.');
         $func = function (): void {
         };
         $routes = new RouteBuilder($this->collection, '/api');
         $routes->registerMiddleware('test', $func);
-        $routes->middlewareGroup('test', ['test']);
+        $result = $routes->middlewareGroup('test', ['test']);
     }
 
     /**
@@ -1024,8 +1007,8 @@ class RouteBuilderTest extends TestCase
      */
     public function testApplyMiddlewareInvalidName(): void
     {
-        $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Cannot apply `bad` middleware or middleware group. Use `registerMiddleware()` to register middleware');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot apply \'bad\' middleware or middleware group. Use registerMiddleware() to register middleware');
         $routes = new RouteBuilder($this->collection, '/api');
         $routes->applyMiddleware('bad');
     }
@@ -1112,8 +1095,9 @@ class RouteBuilderTest extends TestCase
 
     /**
      * Test that the HTTP method helpers create the right kind of routes.
+     *
+     * @dataProvider httpMethodProvider
      */
-    #[DataProvider('httpMethodProvider')]
     public function testHttpMethods(string $method): void
     {
         $routes = new RouteBuilder($this->collection, '/', [], ['namePrefix' => 'app:']);
@@ -1128,14 +1112,15 @@ class RouteBuilderTest extends TestCase
         $this->assertSame('/bookmarks/{id}', $route->template);
         $this->assertEquals(
             ['plugin' => null, 'controller' => 'Bookmarks', 'action' => 'view', '_method' => $method],
-            $route->defaults,
+            $route->defaults
         );
     }
 
     /**
      * Test that the HTTP method helpers create the right kind of routes.
+     *
+     * @dataProvider httpMethodProvider
      */
-    #[DataProvider('httpMethodProvider')]
     public function testHttpMethodsStringTarget(string $method): void
     {
         $routes = new RouteBuilder($this->collection, '/', [], ['namePrefix' => 'app:']);
@@ -1150,7 +1135,7 @@ class RouteBuilderTest extends TestCase
         $this->assertSame('/bookmarks/{id}', $route->template);
         $this->assertEquals(
             ['plugin' => null, 'controller' => 'Bookmarks', 'action' => 'view', '_method' => $method],
-            $route->defaults,
+            $route->defaults
         );
     }
 
@@ -1171,20 +1156,11 @@ class RouteBuilderTest extends TestCase
         });
         $this->assertCount(2, $this->collection->routes());
         $this->assertEquals(['faq', 'article:update'], array_keys($this->collection->named()));
-        $this->assertNotEmpty($this->collection->parseRequest(new ServerRequest([
-            'url' => '/faq/things_you_know',
-            'environment' => [
-                'REQUEST_METHOD' => 'GET',
-                'HTTP_HOST' => 'docs.example.com',
-            ],
-        ])));
-        $result = $this->collection->parseRequest(new ServerRequest([
-            'url' => '/articles/123',
-            'environment' => [
-                'REQUEST_METHOD' => 'POST',
-            ],
-        ]));
-        $this->assertEquals(['123'], $result['pass']);
+        $this->deprecated(function () {
+            $this->assertNotEmpty($this->collection->parse('/faq/things_you_know', 'GET'));
+            $result = $this->collection->parse('/articles/123', 'POST');
+            $this->assertEquals(['123'], $result['pass']);
+        });
     }
 
     /**

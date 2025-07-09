@@ -21,7 +21,6 @@ use Cake\Database\Log\QueryLogger;
 use Cake\Log\Log;
 use Cake\TestSuite\TestCase;
 use Psr\Log\LogLevel;
-use Stringable;
 
 /**
  * Tests QueryLogger class
@@ -36,7 +35,6 @@ class QueryLoggerTest extends TestCase
         parent::tearDown();
         Log::drop('queryLoggerTest');
         Log::drop('queryLoggerTest2');
-        Log::drop('newScope');
     }
 
     /**
@@ -47,18 +45,12 @@ class QueryLoggerTest extends TestCase
     {
         $logger = new QueryLogger(['connection' => '']);
         $query = new LoggedQuery();
-        $query->setContext([
-            'query' => 'SELECT a FROM b where a = ? AND b = ? AND c = ?',
-            'params' => ['string', '3', null],
-        ]);
+        $query->query = 'SELECT a FROM b where a = ? AND b = ? AND c = ?';
+        $query->params = ['string', '3', null];
 
         Log::setConfig('queryLoggerTest', [
             'className' => 'Array',
             'scopes' => ['queriesLog'],
-        ]);
-        Log::setConfig('newScope', [
-            'className' => 'Array',
-            'scopes' => ['cake.database.queries'],
         ]);
         Log::setConfig('queryLoggerTest2', [
             'className' => 'Array',
@@ -67,7 +59,6 @@ class QueryLoggerTest extends TestCase
         $logger->log(LogLevel::DEBUG, $query, compact('query'));
 
         $this->assertCount(1, Log::engine('queryLoggerTest')->read());
-        $this->assertCount(1, Log::engine('newScope')->read());
         $this->assertCount(0, Log::engine('queryLoggerTest2')->read());
     }
 
@@ -76,14 +67,14 @@ class QueryLoggerTest extends TestCase
      */
     public function testLogFunctionStringable(): void
     {
+        $this->skipIf(version_compare(PHP_VERSION, '8.0', '<'), 'Stringable exists since 8.0');
         Log::setConfig('queryLoggerTest', [
             'className' => 'Array',
             'scopes' => ['queriesLog'],
         ]);
 
         $logger = new QueryLogger(['connection' => '']);
-
-        $stringable = new class implements Stringable
+        $stringable = new class implements \Stringable
         {
             public function __toString(): string
             {
@@ -104,7 +95,7 @@ class QueryLoggerTest extends TestCase
     {
         $logger = new QueryLogger(['connection' => 'test']);
         $query = new LoggedQuery();
-        $query->setContext(['query' => 'SELECT a']);
+        $query->query = 'SELECT a';
 
         Log::setConfig('queryLoggerTest', [
             'className' => 'Array',

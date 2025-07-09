@@ -12,7 +12,7 @@ class TestStringTemplate
     use StringTemplateTrait;
 
     /**
-     * @var array<string, mixed>
+     * @var array
      */
     protected $_defaultConfig = [];
 }

@@ -33,7 +33,7 @@ class ConfiguredComponent extends Component
      *
      * @var array
      */
-    protected array $components = [];
+    protected $components = [];
 
     /**
      * Constructor

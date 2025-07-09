@@ -25,9 +25,9 @@ class ArticlesCell extends Cell
     /**
      * valid cell options.
      *
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $_validCellOptions = ['limit', 'page'];
+    protected $_validCellOptions = ['limit', 'page'];
 
     /**
      * Counter used to test the cache cell feature
@@ -35,8 +35,6 @@ class ArticlesCell extends Cell
      * @var int
      */
     public $counter = 0;
-
-    public $limit = 1;
 
     /**
      * Default cell action.

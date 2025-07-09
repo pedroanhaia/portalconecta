@@ -22,8 +22,6 @@ use Cake\Mailer\Transport\DebugTransport;
 use Cake\TestSuite\TestCase;
 use InvalidArgumentException;
 use Laminas\Diactoros\UploadedFile;
-use PHPUnit\Framework\Attributes\DataProvider;
-use ReflectionClass;
 use TestApp\Mailer\TestMessage;
 use function Cake\Core\env;
 
@@ -363,7 +361,7 @@ HTML;
         $this->assertSame($this->message, $result);
 
         $this->expectException(InvalidArgumentException::class);
-        $this->message->setFrom(['cake@cakephp.org' => 'CakePHP', 'fail@cakephp.org' => 'From can only be one address']);
+        $result = $this->message->setFrom(['cake@cakephp.org' => 'CakePHP', 'fail@cakephp.org' => 'From can only be one address']);
     }
 
     /**
@@ -485,9 +483,9 @@ HTML;
     /**
      * testBuildInvalidData
      *
+     * @dataProvider invalidEmails
      * @param array|string $value
      */
-    #[DataProvider('invalidEmails')]
     public function testInvalidEmail($value): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -497,9 +495,9 @@ HTML;
     /**
      * testBuildInvalidData
      *
+     * @dataProvider invalidEmails
      * @param array|string $value
      */
-    #[DataProvider('invalidEmails')]
     public function testInvalidEmailAdd($value): void
     {
         $this->expectException(InvalidArgumentException::class);
@@ -573,7 +571,7 @@ HTML;
     public function testUnsetEmailPattern(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('Invalid email set for `to`. You passed `fail.@example.com`.');
+        $this->expectExceptionMessage('Invalid email set for "to". You passed "fail.@example.com".');
         $email = new Message();
         $this->assertSame(Message::EMAIL_PATTERN, $email->getEmailPattern());
 
@@ -590,7 +588,7 @@ HTML;
     public function testEmptyTo(): void
     {
         $this->expectException(InvalidArgumentException::class);
-        $this->expectExceptionMessage('The email set for `to` is empty.');
+        $this->expectExceptionMessage('The email set for "to" is empty.');
         $email = new Message();
         $email->setTo('');
     }
@@ -797,7 +795,7 @@ HTML;
     public function testDomain(): void
     {
         $result = $this->message->getDomain();
-        $expected = env('HTTP_HOST') ?: php_uname('n');
+        $expected = env('HTTP_HOST') ? env('HTTP_HOST') : php_uname('n');
         $this->assertSame($expected, $result);
 
         $this->message->setDomain('example.org');
@@ -874,16 +872,16 @@ HTML;
             filesize(__FILE__),
             UPLOAD_ERR_OK,
             'MessageTest.php',
-            'text/x-php',
+            'text/x-php'
         );
 
         $this->message->setAttachments([
-            CAKE . 'Mailer' . DS . 'Message.php',
+            CAKE . 'basics.php',
             $uploadedFile,
         ]);
         $expected = [
-            'Message.php' => [
-                'file' => CAKE . 'Mailer' . DS . 'Message.php',
+            'basics.php' => [
+                'file' => CAKE . 'basics.php',
                 'mimetype' => 'text/x-php',
             ],
             'MessageTest.php' => [
@@ -897,7 +895,7 @@ HTML;
         $this->assertSame([], $this->message->getAttachments());
 
         $this->message->setAttachments([
-            ['file' => __FILE__, 'mimetype' => 'text/plain'],
+            ['file' => CAKE . 'basics.php', 'mimetype' => 'text/plain'],
         ]);
         $this->message->addAttachments([CORE_PATH . 'config' . DS . 'bootstrap.php']);
         $this->message->addAttachments([CORE_PATH . 'config' . DS . 'bootstrap.php']);
@@ -906,14 +904,14 @@ HTML;
             'license' => CORE_PATH . 'LICENSE',
         ]);
         $expected = [
-            'MessageTest.php' => ['file' => __FILE__, 'mimetype' => 'text/plain'],
+            'basics.php' => ['file' => CAKE . 'basics.php', 'mimetype' => 'text/plain'],
             'bootstrap.php' => ['file' => CORE_PATH . 'config' . DS . 'bootstrap.php', 'mimetype' => 'text/x-php'],
             'other.txt' => ['file' => CORE_PATH . 'config' . DS . 'bootstrap.php', 'mimetype' => 'text/x-php'],
             'license' => ['file' => CORE_PATH . 'LICENSE', 'mimetype' => 'text/plain'],
         ];
         $this->assertSame($expected, $this->message->getAttachments());
         $this->expectException(InvalidArgumentException::class);
-        $this->message->setAttachments([['nofile' => __FILE__, 'mimetype' => 'text/plain']]);
+        $this->message->setAttachments([['nofile' => CAKE . 'basics.php', 'mimetype' => 'text/plain']]);
     }
 
     /**
@@ -924,6 +922,7 @@ HTML;
         $this->message->setAttachments(['cake.icon.gif' => [
             'data' => 'test',
         ]]);
+        $result = $this->message->getAttachments();
         $expected = [
             'cake.icon.gif' => [
                 'data' => base64_encode('test') . "\r\n",
@@ -937,7 +936,7 @@ HTML;
     {
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage(
-            'File must be a filepath or UploadedFileInterface instance. Found `boolean` instead.',
+            'File must be a filepath or UploadedFileInterface instance. Found `boolean` instead.'
         );
 
         $this->message->setAttachments(['cake.icon.gif' => [
@@ -1020,7 +1019,7 @@ HTML;
             filesize(__FILE__),
             UPLOAD_ERR_OK,
             'MessageTest.php',
-            'text/x-php',
+            'text/x-php'
         );
         $chunks = base64_encode(file_get_contents(__FILE__));
 
@@ -1251,10 +1250,10 @@ HTML;
     {
         $message = new Message(['transport' => 'debug']);
 
-        if ($charset) {
+        if (!empty($charset)) {
             $message->setCharset($charset);
         }
-        if ($headerCharset) {
+        if (!empty($headerCharset)) {
             $message->setHeaderCharset($headerCharset);
         }
 
@@ -1275,10 +1274,10 @@ HTML;
     {
         $message = new Message();
 
-        if ($charset) {
+        if (!empty($charset)) {
             $message->setCharset($charset);
         }
-        if ($headerCharset) {
+        if (!empty($headerCharset)) {
             $message->setHeaderCharset($headerCharset);
         }
 
@@ -1300,7 +1299,7 @@ HTML;
         foreach ($lines as $line) {
             $this->assertTrue(
                 strlen($line) <= Message::LINE_LENGTH_MUST,
-                'Line length exceeds the max. limit of Message::LINE_LENGTH_MUST',
+                'Line length exceeds the max. limit of Message::LINE_LENGTH_MUST'
             );
         }
     }
@@ -1308,7 +1307,7 @@ HTML;
     public function testSerialization(): void
     {
         $message = new Message();
-        $reflection = new ReflectionClass($message);
+        $reflection = new \ReflectionClass($message);
         $property = $reflection->getProperty('serializableProperties');
         $property->setAccessible(true);
         $serializableProperties = $property->getValue($message);

@@ -22,9 +22,21 @@ use Cake\TestSuite\Fixture\TestFixture;
 class CommentsFixture extends TestFixture
 {
     /**
+     * fields property
+     *
+     * @var array
+     */
+    public $fields = [
+        'id' => ['type' => 'integer'],
+        'article_id' => ['type' => 'integer', 'null' => false],
+        'comment' => 'text',
+        '_constraints' => ['primary' => ['type' => 'primary', 'columns' => ['id']]],
+    ];
+
+    /**
      * records property
      *
      * @var array
      */
-    public array $records = [];
+    public $records = [];
 }

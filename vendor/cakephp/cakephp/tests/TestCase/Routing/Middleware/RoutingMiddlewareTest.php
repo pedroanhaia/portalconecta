@@ -16,23 +16,25 @@ declare(strict_types=1);
  */
 namespace Cake\Test\TestCase\Routing\Middleware;
 
+use Cake\Cache\Cache;
+use Cake\Cache\Exception\InvalidArgumentException as CacheInvalidArgumentException;
 use Cake\Core\Configure;
+use Cake\Core\HttpApplicationInterface;
 use Cake\Http\ServerRequestFactory;
+use Cake\Routing\Exception\FailedRouteCacheException;
 use Cake\Routing\Exception\MissingRouteException;
 use Cake\Routing\Middleware\RoutingMiddleware;
 use Cake\Routing\Route\Route;
 use Cake\Routing\RouteBuilder;
+use Cake\Routing\RouteCollection;
 use Cake\Routing\Router;
 use Cake\Routing\RoutingApplicationInterface;
 use Cake\TestSuite\TestCase;
-use Closure;
 use Laminas\Diactoros\Response;
-use PHPUnit\Framework\Attributes\DataProvider;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
 use TestApp\Application;
 use TestApp\Http\TestRequestHandler;
 use TestApp\Middleware\DumbMiddleware;
+use TestApp\Middleware\UnserializableMiddleware;
 use TestApp\Routing\Route\HeaderRedirectRoute;
 
 /**
@@ -60,6 +62,17 @@ class RoutingMiddlewareTest extends TestCase
         $this->log = [];
 
         Configure::write('App.base', '');
+    }
+
+    public function tearDown(): void
+    {
+        parent::tearDown();
+
+        Cache::enable();
+        if (in_array('_cake_router_', Cache::configured(), true)) {
+            Cache::clear('_cake_router_');
+        }
+        Cache::drop('_cake_router_');
     }
 
     /**
@@ -196,28 +209,15 @@ class RoutingMiddlewareTest extends TestCase
         Router::reload();
 
         $request = ServerRequestFactory::fromGlobals(['REQUEST_URI' => '/app/articles']);
-        $app = new class (CONFIG) extends Application {
-            public function pluginRoutes(RouteBuilder $routes): RouteBuilder
-            {
-                $routes->connect('/app/articles', ['controller' => 'Articles', 'action' => 'index']);
-
-                return $routes;
-            }
-        };
+        $app = $this->getMockBuilder(Application::class)
+            ->onlyMethods(['pluginRoutes'])
+            ->setConstructorArgs([CONFIG])
+            ->getMock();
+        $app->expects($this->once())
+            ->method('pluginRoutes')
+            ->with($this->isInstanceOf(RouteBuilder::class));
         $middleware = new RoutingMiddleware($app);
-        $middleware->process($request, new TestRequestHandler(function ($req) {
-            $expected = [
-                'controller' => 'Articles',
-                'action' => 'index',
-                'plugin' => null,
-                'pass' => [],
-                '_ext' => null,
-                '_matchedRoute' => '/app/articles',
-            ];
-            $this->assertEquals($expected, $req->getAttribute('params'));
-
-            return new Response();
-        }));
+        $middleware->process($request, new TestRequestHandler());
     }
 
     /**
@@ -263,7 +263,7 @@ class RoutingMiddlewareTest extends TestCase
                 'REQUEST_URI' => '/articles-patch',
             ],
             null,
-            ['_method' => 'PATCH'],
+            ['_method' => 'PATCH']
         );
         $handler = new TestRequestHandler(function ($req) {
             $expected = [
@@ -318,7 +318,7 @@ class RoutingMiddlewareTest extends TestCase
             return new Response();
         });
         $middleware = new RoutingMiddleware($app);
-        $middleware->process($request, $app);
+        $result = $middleware->process($request, $app);
         $this->assertSame(['second', 'first', 'last'], $this->log);
     }
 
@@ -357,7 +357,7 @@ class RoutingMiddlewareTest extends TestCase
             $this->fail('Should not be invoked as first should be ignored.');
         });
         $middleware = new RoutingMiddleware($this->app());
-        $middleware->process($request, $handler);
+        $result = $middleware->process($request, $handler);
 
         $this->assertSame(['first', 'second'], $this->log);
     }
@@ -394,7 +394,7 @@ class RoutingMiddlewareTest extends TestCase
             $this->fail('Should not be invoked as first should be ignored.');
         });
         $middleware = new RoutingMiddleware($this->app());
-        $middleware->process($request, $handler);
+        $result = $middleware->process($request, $handler);
 
         $this->assertSame(['first'], $this->log);
     }
@@ -404,8 +404,9 @@ class RoutingMiddlewareTest extends TestCase
      *
      * Re-opening a scope should not inherit middleware declared
      * in the first context.
+     *
+     * @dataProvider scopedMiddlewareUrlProvider
      */
-    #[DataProvider('scopedMiddlewareUrlProvider')]
     public function testInvokeScopedMiddlewareIsolatedScopes(string $url, array $expected): void
     {
         $this->builder->registerMiddleware('first', function ($request, $handler) {
@@ -439,7 +440,7 @@ class RoutingMiddlewareTest extends TestCase
             return new Response();
         });
         $middleware = new RoutingMiddleware($app);
-        $middleware->process($request, $app);
+        $result = $middleware->process($request, $app);
         $this->assertSame($expected, $this->log);
     }
 
@@ -448,7 +449,7 @@ class RoutingMiddlewareTest extends TestCase
      *
      * @return array
      */
-    public static function scopedMiddlewareUrlProvider(): array
+    public function scopedMiddlewareUrlProvider(): array
     {
         return [
             ['/api/ping', ['first', 'last']],
@@ -457,15 +458,131 @@ class RoutingMiddlewareTest extends TestCase
     }
 
     /**
+     * Test we store route collection in cache.
+     */
+    public function testCacheRoutes(): void
+    {
+        Configure::write('Error.ignoredDeprecationPaths', [
+            'tests/TestCase/Routing/Middleware/RoutingMiddlewareTest.php',
+        ]);
+        $cacheConfigName = '_cake_router_';
+        Cache::setConfig($cacheConfigName, [
+            'engine' => 'File',
+            'path' => CACHE,
+        ]);
+        $request = ServerRequestFactory::fromGlobals(['REQUEST_URI' => '/articles']);
+        $handler = new TestRequestHandler(function ($req) use ($cacheConfigName) {
+            $routeCollection = Cache::read('routeCollection', $cacheConfigName);
+            $this->assertInstanceOf(RouteCollection::class, $routeCollection);
+
+            return new Response();
+        });
+        $app = new Application(CONFIG);
+        $middleware = new RoutingMiddleware($app, $cacheConfigName);
+        $middleware->process($request, $handler);
+        Configure::delete('Error.ignoredDeprecationPaths');
+    }
+
+    /**
+     * Test we don't cache routes if cache is disabled.
+     */
+    public function testCacheNotUsedIfCacheDisabled(): void
+    {
+        Configure::write('Error.ignoredDeprecationPaths', [
+            'tests/TestCase/Routing/Middleware/RoutingMiddlewareTest.php',
+        ]);
+        $cacheConfigName = '_cake_router_';
+        Cache::drop($cacheConfigName);
+        Cache::disable();
+        Cache::setConfig($cacheConfigName, [
+            'engine' => 'File',
+            'path' => CACHE,
+        ]);
+        $request = ServerRequestFactory::fromGlobals(['REQUEST_URI' => '/articles']);
+        $handler = new TestRequestHandler(function ($req) use ($cacheConfigName) {
+            $routeCollection = Cache::read('routeCollection', $cacheConfigName);
+            $this->assertNull($routeCollection);
+
+            return new Response();
+        });
+        $app = new Application(CONFIG);
+        $middleware = new RoutingMiddleware($app, $cacheConfigName);
+        $middleware->process($request, $handler);
+        Configure::delete('Error.ignoredDeprecationPaths');
+    }
+
+    /**
+     * Test cache name is used
+     */
+    public function testCacheConfigNotFound(): void
+    {
+        Configure::write('Error.ignoredDeprecationPaths', [
+            'tests/TestCase/Routing/Middleware/RoutingMiddlewareTest.php',
+        ]);
+        $this->expectException(CacheInvalidArgumentException::class);
+        $this->expectExceptionMessage('The "notfound" cache configuration does not exist.');
+
+        Cache::setConfig('_cake_router_', [
+            'engine' => 'File',
+            'path' => CACHE,
+        ]);
+        $request = ServerRequestFactory::fromGlobals(['REQUEST_URI' => '/articles']);
+        $app = new Application(CONFIG);
+        $middleware = new RoutingMiddleware($app, 'notfound');
+        $middleware->process($request, new TestRequestHandler());
+        Configure::delete('Error.ignoredDeprecationPaths');
+    }
+
+    public function testFailedRouteCache(): void
+    {
+        Cache::setConfig('_cake_router_', [
+            'engine' => 'File',
+            'path' => CACHE,
+        ]);
+
+        $app = $this->createMock(Application::class);
+        $this->expectDeprecation();
+        $this->expectDeprecationMessage(
+            'Use of routing cache is deprecated and will be removed in 5.0. ' .
+            'Upgrade to the new `CakeDC/CachedRouting` plugin. ' .
+            'See https://github.com/CakeDC/cakephp-cached-routing'
+        );
+        new RoutingMiddleware($app, '_cake_router_');
+    }
+
+    public function testDeprecatedRouteCache(): void
+    {
+        Configure::write('Error.ignoredDeprecationPaths', [
+            'tests/TestCase/Routing/Middleware/RoutingMiddlewareTest.php',
+        ]);
+        Cache::setConfig('_cake_router_', [
+            'engine' => 'File',
+            'path' => CACHE,
+        ]);
+
+        $app = $this->createMock(Application::class);
+        $app
+            ->method('routes')
+            ->will($this->returnCallback(function (RouteBuilder $routes) use ($app) {
+                return $routes->registerMiddleware('should fail', new UnserializableMiddleware($app));
+            }));
+
+        $middleware = new RoutingMiddleware($app, '_cake_router_');
+        $request = ServerRequestFactory::fromGlobals(['REQUEST_URI' => '/articles']);
+
+        $this->expectException(FailedRouteCacheException::class);
+        $this->expectExceptionMessage('Unable to cache route collection.');
+        $middleware->process($request, new TestRequestHandler());
+        Configure::delete('Error.ignoredDeprecationPaths');
+    }
+
+    /**
      * Test middleware works without an application implementing ContainerApplicationInterface
      */
     public function testAppWithoutContainerApplicationInterface(): void
     {
-        $app = new class implements RoutingApplicationInterface {
-            public function routes(RouteBuilder $routes): void
-            {
-            }
-        };
+        /** @var \Cake\Core\HttpApplicationInterface|\PHPUnit\Framework\MockObject\MockObject $app */
+        $app = $this->createMock(RoutingApplicationInterface::class);
         $this->builder->scope('/', function (RouteBuilder $routes): void {
             $routes->connect('/testpath', ['controller' => 'Articles', 'action' => 'index']);
         });
@@ -501,27 +618,19 @@ class RoutingMiddlewareTest extends TestCase
      *
      * @param callable|null $handleCallback Callback for "handle" method.
      */
-    protected function app(?callable $handleCallback = null): Application
+    protected function app($handleCallback = null): HttpApplicationInterface
     {
-        $app = new class (CONFIG) extends Application {
-            public ?Closure $handleCallback;
+        $mock = $this->createMock(Application::class);
+        $mock->method('routes')
+            ->will($this->returnCallback(function (RouteBuilder $routes) {
+                return $routes;
+            }));
 
-            public function routes(RouteBuilder $routes): void
-            {
-            }
+        if ($handleCallback) {
+            $mock->method('handle')
+                ->will($this->returnCallback($handleCallback));
+        }
 
-            public function handle(ServerRequestInterface $request): ResponseInterface
-            {
-                if ($this->handleCallback) {
-                    return ($this->handleCallback)($request);
-                }
-
-                return parent::handle($request); // TODO: Change the autogenerated stub
-            }
-        };
-
-        $app->handleCallback = $handleCallback;
-
-        return $app;
+        return $mock;
     }
 }

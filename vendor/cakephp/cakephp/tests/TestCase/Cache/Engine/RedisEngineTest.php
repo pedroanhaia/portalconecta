@@ -20,7 +20,6 @@ use Cake\Cache\Cache;
 use Cake\Cache\Engine\RedisEngine;
 use Cake\TestSuite\TestCase;
 use DateInterval;
-use Redis;
 use function Cake\Core\env;
 
 /**
@@ -189,7 +188,7 @@ class RedisEngineTest extends TestCase
     public function testConnectTransient(): void
     {
         $Redis = $this->createPartialMock(RedisEngine::class, ['_createRedisInstance']);
-        $phpredis = $this->createMock(Redis::class);
+        $phpredis = $this->createMock(\Redis::class);
 
         $phpredis->expects($this->once())
             ->method('select')
@@ -216,7 +215,7 @@ class RedisEngineTest extends TestCase
         $this->assertTrue($Redis->init($config + Cache::pool('redis')->getConfig()));
 
         $Redis = $this->createPartialMock(RedisEngine::class, ['_createRedisInstance']);
-        $phpredis = $this->createMock(Redis::class);
+        $phpredis = $this->createMock(\Redis::class);
 
         $phpredis->expects($this->once())
             ->method('select')
@@ -250,7 +249,7 @@ class RedisEngineTest extends TestCase
     public function testConnectTransientContext(): void
     {
         $Redis = $this->createPartialMock(RedisEngine::class, ['_createRedisInstance']);
-        $phpredis = $this->createMock(Redis::class);
+        $phpredis = $this->createMock(\Redis::class);
 
         $cafile = ROOT . DS . 'vendor' . DS . 'composer' . DS . 'ca-bundle' . DS . 'res' . DS . 'cacert.pem';
 
@@ -274,7 +273,7 @@ class RedisEngineTest extends TestCase
                 null,
                 0,
                 0.0,
-                $context,
+                $context
             )
             ->willReturn(true);
 
@@ -297,7 +296,7 @@ class RedisEngineTest extends TestCase
     public function testConnectPersistent(): void
     {
         $Redis = $this->createPartialMock(RedisEngine::class, ['_createRedisInstance']);
-        $phpredis = $this->createMock(Redis::class);
+        $phpredis = $this->createMock(\Redis::class);
 
         $expectedPersistentId = $this->port . $Redis->getConfig('timeout') . $Redis->getConfig('database');
 
@@ -312,7 +311,7 @@ class RedisEngineTest extends TestCase
                 $Redis->getConfig('server'),
                 (int)$this->port,
                 (int)$Redis->getConfig('timeout'),
-                $expectedPersistentId,
+                $expectedPersistentId
             )
             ->willReturn(true);
 
@@ -326,7 +325,7 @@ class RedisEngineTest extends TestCase
         $this->assertTrue($Redis->init($config + Cache::pool('redis')->getConfig()));
 
         $Redis = $this->createPartialMock(RedisEngine::class, ['_createRedisInstance']);
-        $phpredis = $this->createMock(Redis::class);
+        $phpredis = $this->createMock(\Redis::class);
 
         $phpredis->expects($this->once())
             ->method('select')
@@ -339,7 +338,7 @@ class RedisEngineTest extends TestCase
                 'tls://' . $Redis->getConfig('server'),
                 (int)$this->port,
                 (int)$Redis->getConfig('timeout'),
-                $expectedPersistentId,
+                $expectedPersistentId
             )
             ->willReturn(true);
 
@@ -360,7 +359,7 @@ class RedisEngineTest extends TestCase
     public function testConnectPersistentContext(): void
     {
         $Redis = $this->createPartialMock(RedisEngine::class, ['_createRedisInstance']);
-        $phpredis = $this->createMock(Redis::class);
+        $phpredis = $this->createMock(\Redis::class);
 
         $expectedPersistentId = $this->port . $Redis->getConfig('timeout') . $Redis->getConfig('database');
 
@@ -386,7 +385,7 @@ class RedisEngineTest extends TestCase
                 $expectedPersistentId,
                 0,
                 0.0,
-                $context,
+                $context
             )
             ->willReturn(true);
 
@@ -453,13 +452,13 @@ class RedisEngineTest extends TestCase
      */
     public function testWriteNumbers(): void
     {
-        Cache::write('test-counter', 1, 'redis');
+        $result = Cache::write('test-counter', 1, 'redis');
         $this->assertSame(1, Cache::read('test-counter', 'redis'));
 
-        Cache::write('test-counter', 0, 'redis');
+        $result = Cache::write('test-counter', 0, 'redis');
         $this->assertSame(0, Cache::read('test-counter', 'redis'));
 
-        Cache::write('test-counter', -1, 'redis');
+        $result = Cache::write('test-counter', -1, 'redis');
         $this->assertSame(-1, Cache::read('test-counter', 'redis'));
     }
 

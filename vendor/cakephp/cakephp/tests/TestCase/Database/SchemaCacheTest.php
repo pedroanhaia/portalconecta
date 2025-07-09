@@ -30,9 +30,9 @@ class SchemaCacheTest extends TestCase
     /**
      * Fixtures.
      *
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $fixtures = ['core.Articles', 'core.Tags'];
+    protected $fixtures = ['core.Articles', 'core.Tags'];
 
     /**
      * Cache Engine Mock

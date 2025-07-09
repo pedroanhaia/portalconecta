@@ -17,18 +17,16 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\ORM\Association;
 
 use ArrayObject;
-use Cake\Database\Exception\DatabaseException;
 use Cake\Database\Expression\IdentifierExpression;
 use Cake\Database\Expression\QueryExpression;
 use Cake\Database\TypeMap;
 use Cake\Event\Event;
 use Cake\ORM\Association\BelongsTo;
 use Cake\ORM\Entity;
-use Cake\ORM\Query\SelectQuery;
-use Cake\ORM\Table;
+use Cake\ORM\Query;
 use Cake\TestSuite\TestCase;
 use InvalidArgumentException;
-use Mockery;
+use RuntimeException;
 
 /**
  * Tests BelongsTo class
@@ -38,9 +36,9 @@ class BelongsToTest extends TestCase
     /**
      * Fixtures to use.
      *
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $fixtures = ['core.Articles', 'core.Authors', 'core.Comments'];
+    protected $fixtures = ['core.Articles', 'core.Authors', 'core.Comments'];
 
     /**
      * @var \Cake\ORM\Table|\PHPUnit\Framework\MockObject\MockObject
@@ -104,29 +102,6 @@ class BelongsToTest extends TestCase
         $this->assertSame('company_id', $assoc->getForeignKey());
         $this->assertSame($assoc, $assoc->setForeignKey('another_key'));
         $this->assertSame('another_key', $assoc->getForeignKey());
-    }
-
-    /**
-     * Tests that the default foreign key condition generation can be disabled.
-     */
-    public function testDisableForeignKey(): void
-    {
-        $table = $this->getTableLocator()->get('Articles');
-        $assoc = $table
-            ->belongsTo('Authors')
-            ->setForeignKey('author_id');
-
-        $article = $table->find()->contain(['Authors'])->orderByAsc('Articles.id')->first();
-        $this->assertSame('mariano', $article->author->name);
-
-        $assoc
-            ->setForeignKey(false)
-            ->setConditions([
-                'Authors.name' => 'larry',
-            ]);
-
-        $article = $table->find()->contain(['Authors'])->orderByAsc('Articles.id')->first();
-        $this->assertSame('larry', $article->author->name);
     }
 
     /**
@@ -209,7 +184,7 @@ class BelongsToTest extends TestCase
         $this->assertSame(
             'integer',
             $query->getTypeMap()->type('Companies__id'),
-            'Associations should map types.',
+            'Associations should map types.'
         );
     }
 
@@ -275,8 +250,8 @@ class BelongsToTest extends TestCase
      */
     public function testAttachToMultiPrimaryKeyMismatch(): void
     {
-        $this->expectException(DatabaseException::class);
-        $this->expectExceptionMessage('Cannot match provided foreignKey for `Companies`, got `(company_id)` but expected foreign key for `(id, tenant_id)`');
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Cannot match provided foreignKey for "Companies", got "(company_id)" but expected foreign key for "(id, tenant_id)"');
         $this->company->setPrimaryKey(['id', 'tenant_id']);
         $query = $this->client->selectQuery();
         $config = [
@@ -294,7 +269,7 @@ class BelongsToTest extends TestCase
      */
     public function testCascadeDelete(): void
     {
-        $mock = $this->getMockBuilder(Table::class)
+        $mock = $this->getMockBuilder('Cake\ORM\Table')
             ->disableOriginalConstructor()
             ->getMock();
         $config = [
@@ -316,14 +291,16 @@ class BelongsToTest extends TestCase
      */
     public function testSaveAssociatedOnlyEntities(): void
     {
-        $mock = Mockery::mock(Table::class)
-            ->shouldAllowMockingMethod('saveAssociated')
-            ->makePartial();
+        $mock = $this->getMockBuilder('Cake\ORM\Table')
+            ->addMethods(['saveAssociated'])
+            ->disableOriginalConstructor()
+            ->getMock();
         $config = [
             'sourceTable' => $this->client,
             'targetTable' => $mock,
         ];
-        $mock->shouldNotReceive('saveAssociated');
+        $mock->expects($this->never())
+            ->method('saveAssociated');
 
         $entity = new Entity([
             'title' => 'A Title',
@@ -352,7 +329,7 @@ class BelongsToTest extends TestCase
      */
     public function testPropertyNoPlugin(): void
     {
-        $mock = $this->getMockBuilder(Table::class)
+        $mock = $this->getMockBuilder('Cake\ORM\Table')
             ->disableOriginalConstructor()
             ->getMock();
         $config = [
@@ -376,7 +353,7 @@ class BelongsToTest extends TestCase
         $called = false;
         $this->company->getEventManager()->on('Model.beforeFind', function ($event, $query, $options) use (&$called): void {
             $this->assertInstanceOf(Event::class, $event);
-            $this->assertInstanceOf(SelectQuery::class, $query);
+            $this->assertInstanceOf(Query::class, $query);
             $this->assertInstanceOf(ArrayObject::class, $options);
             $called = true;
         });
@@ -462,7 +439,7 @@ class BelongsToTest extends TestCase
     {
         $this->setAppNamespace('TestApp');
         $articles = $this->getTableLocator()->get('Articles');
-        $articles->associations()->get('Authors')
+        $articles->belongsTo('Authors')
             ->setFinder('formatted');
 
         $query = $articles->find()

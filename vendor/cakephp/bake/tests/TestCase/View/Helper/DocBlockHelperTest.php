@@ -2,17 +2,17 @@
 declare(strict_types=1);
 
 /**
- * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP(tm) Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
  * @since         1.9.5
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
 namespace Bake\Test\TestCase\View\Helper;
@@ -26,12 +26,12 @@ use Cake\ORM\Association\BelongsToMany;
 use Cake\ORM\Association\HasMany;
 use Cake\ORM\Association\HasOne;
 use Cake\TestSuite\TestCase;
-use PHPUnit\Framework\Attributes\CoversClass;
 
 /**
  * DocBlockHelper Test
+ *
+ * @coversDefaultClass \Bake\View\Helper\DocBlockHelper
  */
-#[CoversClass(DocBlockHelper::class)]
 class DocBlockHelperTest extends TestCase
 {
     /**
@@ -74,6 +74,7 @@ class DocBlockHelperTest extends TestCase
      * Tests the classDescription method including annotation spacing
      *
      * @return void
+     * @covers ::classDescription
      */
     public function testClassDescription()
     {
@@ -93,6 +94,7 @@ class DocBlockHelperTest extends TestCase
      * Tests the associatedEntityTypeToHintType method
      *
      * @return void
+     * @covers ::associatedEntityTypeToHintType
      */
     public function testAssociatedEntityTypeToHintType()
     {
@@ -129,73 +131,19 @@ class DocBlockHelperTest extends TestCase
      * Tests the buildEntityPropertyHintTypeMap method
      *
      * @return void
+     * @covers ::buildEntityPropertyHintTypeMap
      */
     public function testBuildEntityPropertyHintTypeMap()
     {
-        $map = [
-            'string' => [
-                'char',
-                'string',
-                'text',
-                'uuid',
-                'decimal',
-            ],
-            'int' => [
-                'integer',
-                'biginteger',
-                'smallinteger',
-                'tinyinteger',
-            ],
-            'float' => [
-                'float',
-            ],
-            'bool' => [
-                'boolean',
-            ],
-            'array' => [
-                'array',
-                'json',
-            ],
-            'string|resource' => [
-                'binary',
-            ],
-            '\Cake\I18n\Date' => [
-                'date',
-            ],
-            '\Cake\I18n\DateTime' => [
-                'datetime',
-                'datetimefractional',
-                'timestamp',
-                'timestampfractional',
-                'timestamptimezone',
-            ],
-            '\Cake\I18n\Time' => [
-                'time',
-            ],
-        ];
-
-        foreach ($map as $return => $colTypes) {
-            foreach ($colTypes as $colType) {
-                $schema = [
-                    'col_to_check' => [
-                        'type' => $colType,
-                        'null' => false,
-                        'kind' => 'column',
-                    ],
-                ];
-                $assocEntityType = $this->DocBlockHelper->buildEntityPropertyHintTypeMap($schema);
-                $expected = [
-                    'col_to_check' => $return,
-                ];
-                $this->assertEquals($expected, $assocEntityType);
-            }
-        }
+        $this->markTestIncomplete('Not implemented yet');
     }
 
     /**
      * Tests the buildEntityAssociationHintTypeMap method
      *
      * @return void
+     * @covers ::buildEntityAssociationHintTypeMap
+     * @covers ::_insertAfter
      */
     public function testBuildEntityAssociationHintTypeMap()
     {
@@ -206,6 +154,7 @@ class DocBlockHelperTest extends TestCase
      * Tests the columnTypeToHintType method
      *
      * @return void
+     * @covers ::columnTypeToHintType
      */
     public function testColumnTypeToHintType()
     {
@@ -216,6 +165,7 @@ class DocBlockHelperTest extends TestCase
      * Tests the propertyHints method
      *
      * @return void
+     * @covers ::propertyHints
      */
     public function testPropertyHints()
     {
@@ -226,6 +176,7 @@ class DocBlockHelperTest extends TestCase
      * Tests the buildTableAnnotations method
      *
      * @return void
+     * @covers ::buildTableAnnotations
      */
     public function testBuildTableAnnotations()
     {

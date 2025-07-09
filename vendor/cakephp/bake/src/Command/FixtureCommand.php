@@ -2,27 +2,29 @@
 declare(strict_types=1);
 
 /**
- * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * Licensed under The MIT License
  * For full copyright and license information, please see the LICENSE.txt
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
- * @link          https://cakephp.org CakePHP(tm) Project
+ * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
+ * @link          http://cakephp.org CakePHP(tm) Project
  * @since         0.1.0
- * @license       https://www.opensource.org/licenses/mit-license.php MIT License
+ * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 namespace Bake\Command;
 
 use Bake\Utility\TableScanner;
+use Bake\Utility\TemplateRenderer;
 use Brick\VarExporter\VarExporter;
 use Cake\Console\Arguments;
 use Cake\Console\ConsoleIo;
 use Cake\Console\ConsoleOptionParser;
+use Cake\Console\Exception\StopException;
 use Cake\Core\Configure;
-use Cake\Database\Exception\DatabaseException;
+use Cake\Database\Exception;
 use Cake\Database\Schema\TableSchemaInterface;
 use Cake\Datasource\ConnectionManager;
 use Cake\Utility\Inflector;
@@ -159,14 +161,14 @@ class FixtureCommand extends BakeCommand
 
         try {
             $data = $this->readSchema($model, $useTable);
-        } catch (DatabaseException $e) {
+        } catch (Exception $e) {
             $this->getTableLocator()->remove($model);
             $useTable = Inflector::underscore($model);
             $table = $useTable;
             $data = $this->readSchema($model, $useTable);
         }
 
-        $this->validateNames($data, $io);
+        $this->validateNames($data);
 
         if ($modelImport === null) {
             $schema = $this->_generateSchema($data);
@@ -212,18 +214,16 @@ class FixtureCommand extends BakeCommand
      * Validates table and column names are supported.
      *
      * @param \Cake\Database\Schema\TableSchemaInterface $schema Table schema
-     * @param \Cake\Console\ConsoleIo $io Console io
      * @return void
      * @throws \Cake\Console\Exception\StopException When table or column names are not supported
      */
-    public function validateNames(TableSchemaInterface $schema, ConsoleIo $io): void
+    public function validateNames(TableSchemaInterface $schema): void
     {
         foreach ($schema->columns() as $column) {
-            if (!$this->isValidColumnName($column)) {
-                $io->abort(sprintf(
-                    'Unable to bake model. Table column name must start with a letter or underscore and
-                    cannot contain special characters. Found `%s`.',
-                    $column
+            if (!is_string($column) || !ctype_alpha($column[0])) {
+                throw new StopException(sprintf(
+                    'Unable to bake table with integer column names or names that start with digits. Found `%s`.',
+                    (string)$column
                 ));
             }
         }
@@ -235,7 +235,7 @@ class FixtureCommand extends BakeCommand
      * @param \Cake\Console\Arguments $args The CLI arguments.
      * @param \Cake\Console\ConsoleIo $io The console io instance.
      * @param string $model name of the model being generated
-     * @param array<string, mixed> $otherVars Contents of the fixture file.
+     * @param array $otherVars Contents of the fixture file.
      * @return void
      */
     public function generateFixtureFile(Arguments $args, ConsoleIo $io, string $model, array $otherVars): void
@@ -260,13 +260,13 @@ class FixtureCommand extends BakeCommand
         $path = $this->getPath($args);
         $filename = $vars['name'] . 'Fixture.php';
 
-        $contents = $this->createTemplateRenderer()
-            ->set('model', $model)
-            ->set($vars)
-            ->generate('Bake.tests/fixture');
+        $renderer = new TemplateRenderer($args->getOption('theme'));
+        $renderer->set('model', $model);
+        $renderer->set($vars);
+        $content = $renderer->generate('Bake.tests/fixture');
 
-        $io->out("\n" . sprintf('Baking test fixture for %s...', $model), 1, ConsoleIo::NORMAL);
-        $io->createFile($path . $filename, $contents, $this->force);
+        $io->out("\n" . sprintf('Baking test fixture for %s...', $model), 1, ConsoleIo::QUIET);
+        $io->createFile($path . $filename, $content, $args->getOption('force'));
         $emptyFile = $path . '.gitkeep';
         $this->deleteEmptyFile($emptyFile, $io);
     }
@@ -430,7 +430,6 @@ class FixtureCommand extends BakeCommand
      *
      * @param array $records Array of records to be converted to string
      * @return string A string value of the $records array.
-     * @throws \Brick\VarExporter\ExportException
      */
     protected function _makeRecordString(array $records): string
     {

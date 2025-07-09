@@ -17,7 +17,6 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\ORM;
 
 use Cake\TestSuite\TestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
 
 /**
  * Integration tests for using the bindingKey in associations
@@ -27,9 +26,9 @@ class BindingKeyTest extends TestCase
     /**
      * Fixture to be used
      *
-     * @var list<string>
+     * @var array<string>
      */
-    protected array $fixtures = [
+    protected $fixtures = [
         'core.AuthUsers',
         'core.SiteAuthors',
         'core.Users',
@@ -40,7 +39,7 @@ class BindingKeyTest extends TestCase
      *
      * @return array
      */
-    public static function strategiesProviderJoinable(): array
+    public function strategiesProviderJoinable(): array
     {
         return [['join'], ['select']];
     }
@@ -50,15 +49,16 @@ class BindingKeyTest extends TestCase
      *
      * @return array
      */
-    public static function strategiesProviderExternal(): array
+    public function strategiesProviderExternal(): array
     {
         return [['subquery'], ['select']];
     }
 
     /**
      * Tests that bindingKey can be used in belongsTo associations
+     *
+     * @dataProvider strategiesProviderJoinable
      */
-    #[DataProvider('strategiesProviderJoinable')]
     public function testBelongsto(string $strategy): void
     {
         $users = $this->getTableLocator()->get('Users');
@@ -75,20 +75,21 @@ class BindingKeyTest extends TestCase
         $expected = array_combine($expected, $expected);
         $this->assertEquals(
             $expected,
-            $result->all()->combine('username', 'auth_user.username')->toArray(),
+            $result->all()->combine('username', 'auth_user.username')->toArray()
         );
 
         $expected = [1 => 1, 2 => 5, 3 => 2, 4 => 4];
         $this->assertEquals(
             $expected,
-            $result->all()->combine('id', 'auth_user.id')->toArray(),
+            $result->all()->combine('id', 'auth_user.id')->toArray()
         );
     }
 
     /**
      * Tests that bindingKey can be used in hasOne associations
+     *
+     * @dataProvider strategiesProviderJoinable
      */
-    #[DataProvider('strategiesProviderJoinable')]
     public function testHasOne(string $strategy): void
     {
         $users = $this->getTableLocator()->get('Users');
@@ -109,8 +110,9 @@ class BindingKeyTest extends TestCase
 
     /**
      * Tests that bindingKey can be used in hasOne associations
+     *
+     * @dataProvider strategiesProviderExternal
      */
-    #[DataProvider('strategiesProviderExternal')]
     public function testHasMany(string $strategy): void
     {
         $users = $this->getTableLocator()->get('Users');

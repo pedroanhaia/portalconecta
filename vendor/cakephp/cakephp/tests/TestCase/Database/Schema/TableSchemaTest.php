@@ -17,13 +17,11 @@ declare(strict_types=1);
 namespace Cake\Test\TestCase\Database\Schema;
 
 use Cake\Database\Driver\Postgres;
-use Cake\Database\Driver\Sqlite;
 use Cake\Database\Exception\DatabaseException;
 use Cake\Database\Schema\TableSchema;
 use Cake\Database\TypeFactory;
 use Cake\Datasource\ConnectionManager;
 use Cake\TestSuite\TestCase;
-use PHPUnit\Framework\Attributes\DataProvider;
 use TestApp\Database\Type\IntType;
 
 /**
@@ -31,7 +29,7 @@ use TestApp\Database\Type\IntType;
  */
 class TableSchemaTest extends TestCase
 {
-    protected array $fixtures = [
+    protected $fixtures = [
         'core.Articles',
         'core.Tags',
         'core.ArticlesTags',
@@ -171,11 +169,8 @@ class TableSchemaTest extends TestCase
             'null' => false,
         ]);
         $this->assertSame('string', $table->getColumnType('title'));
-        $this->assertSame('string', $table->baseColumnType('title'));
-
         $table->setColumnType('title', 'json');
         $this->assertSame('json', $table->getColumnType('title'));
-        $this->assertSame('json', $table->baseColumnType('title'));
     }
 
     /**
@@ -370,8 +365,9 @@ class TableSchemaTest extends TestCase
     /**
      * Test that an exception is raised when constraints
      * are added for fields that do not exist.
+     *
+     * @dataProvider addConstraintErrorProvider
      */
-    #[DataProvider('addConstraintErrorProvider')]
     public function testAddConstraintError(array $props): void
     {
         $this->expectException(DatabaseException::class);
@@ -417,8 +413,9 @@ class TableSchemaTest extends TestCase
     /**
      * Test that an exception is raised when indexes
      * are added for fields that do not exist.
+     *
+     * @dataProvider addIndexErrorProvider
      */
-    #[DataProvider('addIndexErrorProvider')]
     public function testAddIndexError(array $props): void
     {
         $this->expectException(DatabaseException::class);
@@ -447,7 +444,7 @@ class TableSchemaTest extends TestCase
 
         $this->assertEquals(
             ['author_idx', 'texty'],
-            $table->indexes(),
+            $table->indexes()
         );
     }
 
@@ -486,7 +483,7 @@ class TableSchemaTest extends TestCase
             'engine' => 'InnoDB',
         ];
         $return = $table->setOptions($options);
-        $this->assertInstanceOf(TableSchema::class, $return);
+        $this->assertInstanceOf('Cake\Database\Schema\TableSchema', $return);
         $this->assertEquals($options, $table->getOptions());
     }
 
@@ -513,13 +510,7 @@ class TableSchemaTest extends TestCase
     public function testConstraintForeignKey(): void
     {
         $table = $this->getTableLocator()->get('ArticlesTags');
-
-        $name = 'tag_id_fk';
-        if ($table->getConnection()->getDriver() instanceof Sqlite) {
-            $name = 'tag_id_0_fk';
-        }
-
-        $compositeConstraint = $table->getSchema()->getConstraint($name);
+        $compositeConstraint = $table->getSchema()->getConstraint('tag_id_fk');
         $expected = [
             'type' => 'foreign',
             'columns' => ['tag_id'],
@@ -530,7 +521,7 @@ class TableSchemaTest extends TestCase
         ];
         $this->assertEquals($expected, $compositeConstraint);
 
-        $expectedSubstring = "CONSTRAINT <{$name}> FOREIGN KEY \\(<tag_id>\\) REFERENCES <tags> \\(<id>\\)";
+        $expectedSubstring = 'CONSTRAINT <tag_id_fk> FOREIGN KEY \(<tag_id>\) REFERENCES <tags> \(<id>\)';
         $this->assertQuotedQuery($expectedSubstring, $table->getSchema()->createSql(ConnectionManager::get('test'))[0]);
     }
 
@@ -544,15 +535,9 @@ class TableSchemaTest extends TestCase
         $connection = $table->getConnection();
         $this->skipIf(
             $connection->getDriver() instanceof Postgres,
-            'Constraints get dropped in postgres for some reason',
+            'Constraints get dropped in postgres for some reason'
         );
-
-        $name = 'product_category_fk';
-        if ($table->getConnection()->getDriver() instanceof Sqlite) {
-            $name = 'product_category_product_id_0_fk';
-        }
-
-        $compositeConstraint = $table->getSchema()->getConstraint($name);
+        $compositeConstraint = $table->getSchema()->getConstraint('product_category_fk');
         $expected = [
             'type' => 'foreign',
             'columns' => [
@@ -569,7 +554,7 @@ class TableSchemaTest extends TestCase
         ];
         $this->assertEquals($expected, $compositeConstraint);
 
-        $expectedSubstring = "CONSTRAINT <{$name}> FOREIGN KEY \\(<product_category>, <product_id>\\)" .
+        $expectedSubstring = 'CONSTRAINT <product_category_fk> FOREIGN KEY \(<product_category>, <product_id>\)' .
             ' REFERENCES <products> \(<category>, <id>\)';
 
         $this->assertQuotedQuery($expectedSubstring, $table->getSchema()->createSql(ConnectionManager::get('test'))[0]);
@@ -606,8 +591,9 @@ class TableSchemaTest extends TestCase
 
     /**
      * Add a foreign key constraint with bad data
+     *
+     * @dataProvider badForeignKeyProvider
      */
-    #[DataProvider('badForeignKeyProvider')]
     public function testAddConstraintForeignKeyBadData(array $data): void
     {
         $this->expectException(DatabaseException::class);

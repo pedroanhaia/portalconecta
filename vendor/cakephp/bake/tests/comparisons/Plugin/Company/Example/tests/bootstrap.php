@@ -17,7 +17,7 @@ $findRoot = function ($root) {
         }
     } while ($root !== $lastRoot);
 
-    throw new Exception('Cannot find the root of the application, unable to run tests');
+    throw new Exception("Cannot find the root of the application, unable to run tests");
 };
 $root = $findRoot(__FILE__);
 unset($findRoot);
@@ -49,7 +49,7 @@ if (file_exists($root . '/config/bootstrap.php')) {
  * using migrations to provide schema for your plugin,
  * and using \Migrations\TestSuite\Migrator to load schema.
  */
-use Cake\TestSuite\Fixture\SchemaLoader;
+use Cake\TestSuite\Schema\SchemaManager;
 
 // Load a schema dump file.
-(new SchemaLoader())->loadSqlFiles('tests/schema.sql', 'test');
+SchemaManager::create('test', 'tests/schema.sql');

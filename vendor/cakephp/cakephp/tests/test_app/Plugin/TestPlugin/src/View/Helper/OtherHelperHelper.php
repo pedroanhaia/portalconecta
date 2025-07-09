@@ -23,8 +23,4 @@ use Cake\View\Helper;
  */
 class OtherHelperHelper extends Helper
 {
-    public function hello(): string
-    {
-        return 'hello other';
-    }
 }

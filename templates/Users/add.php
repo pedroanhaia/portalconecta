@@ -17,8 +17,12 @@
             <fieldset>
                 <legend><?= __('Add User') ?></legend>
                 <?php
+                    echo $this->Form->control('name');
+                    echo $this->Form->control('id_customer');
                     echo $this->Form->control('email');
                     echo $this->Form->control('password');
+                    echo $this->Form->control('dark_mode');
+                    echo $this->Form->control('type');
                     echo $this->Form->control('role');
                 ?>
             </fieldset>

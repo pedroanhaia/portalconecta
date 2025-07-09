@@ -12,14 +12,28 @@ class ArticlesFixture extends TestFixture
      *
      * @var string
      */
-    public string $table = 'articles';
+    public $table = 'articles';
+
+    /**
+     * Fields array
+     *
+     * @var array
+     */
+    public $fields = [
+        'id' => ['type' => 'integer'],
+        'name' => ['type' => 'string', 'length' => '255'],
+        'created' => ['type' => 'datetime'],
+        '_constraints' => [
+            'primary' => ['type' => 'primary', 'columns' => ['id']],
+        ],
+    ];
 
     /**
      * Records property
      *
      * @var array
      */
-    public array $records = [
+    public $records = [
         ['name' => 'Gandalf', 'created' => '2009-04-28 19:20:00'],
         ['name' => 'Captain Picard', 'created' => '2009-04-28 19:20:00'],
         ['name' => 'Chewbacca', 'created' => '2009-04-28 19:20:00'],
