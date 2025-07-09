@@ -60,17 +60,51 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 
 	public function middleware(MiddlewareQueue $middlewareQueue): MiddlewareQueue
 	{
+		$csrf = new CsrfProtectionMiddleware([
+            'httponly' => true,
+            //'disabled' => true,
+        ]);
+        
+        // Token check will be skipped when callback returns `true`.
+        $csrf->skipCheckCallback(function ($request) {
+            // Skip token check for API URLs.
+            if ($request->is(['post', 'json'])) {
+                return true;
+            }
+        });
 		$middlewareQueue
-			->add(new ErrorHandlerMiddleware(Configure::read('Error')))
-			->add(new AssetMiddleware())
-			->add(new RoutingMiddleware($this))
-			// O BodyParserMiddleware vem ANTES do AuthenticationMiddleware
-			->add(new BodyParserMiddleware())
-			->add(new AuthenticationMiddleware($this))
-			->add(new AuthorizationMiddleware($this))
-			->add(new CsrfProtectionMiddleware([
-				'httponly' => true,
-			]));
+			// Catch any exceptions in the lower layers,
+            // and make an error page/response
+            ->add(new ErrorHandlerMiddleware(Configure::read('Error'), $this))
+
+            // Handle plugin/theme assets like CakePHP normally does.
+            ->add(new AssetMiddleware([
+                'cacheTime' => Configure::read('Asset.cacheTime'),
+            ]))
+
+            // Add routing middleware.
+            // If you have a large number of routes connected, turning on routes
+            // caching in production could improve performance.
+            // See https://github.com/CakeDC/cakephp-cached-routing
+            ->add(new RoutingMiddleware($this))
+
+            // Parse various types of encoded request bodies so that they are
+            // available as array through $request->getData()
+            // https://book.cakephp.org/4/en/controllers/middleware.html#body-parser-middleware
+            ->add(new BodyParserMiddleware())
+
+            ->add(new MiddlewareCorsMiddleware([
+                'origin' => ['*'], // Configurar as origens permitidas conforme necessário
+                'methods' => ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'], // Métodos permitidos
+                'headers' => ['Authorization', 'Content-Type'], // Cabeçalhos permitidos
+                'credentials' => false, // Permitir credenciais (cookies)
+                'exposeHeaders' => [], // Cabeçalhos expostos
+                'maxAge' => 3600, // Tempo de vida da preflight request (em segundos)
+            ]))
+            ->add(new AuthenticationMiddleware($this))
+            ->add(new AuthorizationMiddleware($this))
+            ->add($csrf)
+            ;
 
 		return $middlewareQueue;
 	}
@@ -112,7 +146,9 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 	}
 	
 	public function getAuthorizationService(ServerRequestInterface $request): AuthorizationServiceInterface
-	{
-		return new AuthorizationService(new OrmResolver());
-	}
+    {
+        $resolver = new OrmResolver();
+
+        return new AuthorizationService($resolver);
+    }
 }
