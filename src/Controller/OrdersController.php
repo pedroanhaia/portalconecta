@@ -9,6 +9,8 @@ class OrdersController extends AppController
 		parent::beforeFilter($event);
 
 		$this->loadModel('Customers');
+		$this->loadModel('OrdersLog');
+		$this->loadModel('Comments');
 	}
 
 	public function index()
@@ -57,9 +59,32 @@ class OrdersController extends AppController
 
 	public function edit($id = null)
 	{
-		$order = $this->Orders->get($id, [
-			'contain' => [],
-		]);
+		$order = $this->Orders->findById($id)
+			->contain(['OrdersLog', 'OrdersLog.Users', 'OrdersLog.Comments', 'OrdersLog.Comments.Users'])
+		->first();
+
+		$newLog = [];
+
+		foreach ($order->orders_log as $entry) {
+			$mensagens = [];
+
+			foreach ($entry->comments as $c) {
+				$mensagens[] = [
+					'comentario' => $c->message,
+					'autor' => $c->user->name ?? 'Desconhecido'
+				];
+			}
+
+			$newLog[] = [
+				'id' => $entry->id,
+				'status' => $entry->new_status,
+				'data' => (new \Cake\I18n\FrozenTime($entry->modified))->i18nFormat('dd/MM/yyyy - HH:mm'),
+				'user' => [
+					'name' => $entry->user->name ?? 'Desconhecido'
+				],
+				'mensagens' => $mensagens
+			];
+		}
 
 		if ($this->request->is(['patch', 'post', 'put'])) {
 			$order = $this->Orders->patchEntity($order, $this->request->getData());
@@ -72,8 +97,86 @@ class OrdersController extends AppController
 			$this->Flash->error(__('The order could not be saved. Please, try again.'));
 		}
 
-		$this->set(compact('order'));
+		$this->set('order', $order);
+		$this->set('newLog', $newLog);
 	}
+
+	public function changeStatus()
+	{
+		$this->request->allowMethod(['post']);
+
+		$orderId = $this->request->getData('pedido_id');
+		$newStatus = (int)$this->request->getData('status');
+		$comentario = trim($this->request->getData('comentario'));
+
+		$order = $this->Orders->get($orderId);
+		$oldStatus = $order->status;
+		$order->status = $newStatus;
+
+		if ($this->Orders->save($order)) {
+			// Criar log de alteração
+			$log = $this->OrdersLog->newEntity([
+				'id_order' => $orderId,
+				'id_user' => $this->Authentication->getIdentity()->id,
+				'message' => $comentario ?: null,
+				'modified' => date('Y-m-d H:i:s'),
+				'old_status' => $oldStatus,
+				'new_status' => $newStatus,
+			]);
+
+			if ($this->OrdersLog->save($log)) {
+				// Salvar comentário, se houver
+				if (!empty($comentario)) {
+					$commentEntity = $this->Comments->newEntity([
+						'id_order' => $orderId,
+						'id_user' => $this->Authentication->getIdentity()->id,
+						'message' => $comentario,
+						'refcomment' => $log->id,
+					]);
+					$this->Comments->save($commentEntity);
+				}
+
+				// Recarregar todos os logs com seus comentários
+				$logs = $this->OrdersLog->find()
+					->where(['id_order' => $orderId])
+					->contain(['Users', 'Comments' => ['Users']])
+					->orderAsc('OrdersLog.modified')
+					->toArray();
+
+				$newLog = [];
+				foreach ($logs as $entry) {
+					$mensagens = [];
+					foreach ($entry->comments as $c) {
+						$mensagens[] = [
+							'comentario' => $c->message,
+							'autor' => $c->user->name ?? 'Desconhecido',
+						];
+					}
+
+					$newLog[] = [
+						'id' => $entry->id,
+						'status' => $entry->new_status,
+						'data' => (new \Cake\I18n\FrozenTime($entry->modified))->i18nFormat('dd/MM/yyyy - HH:mm'),
+						'user' => [
+							'name' => $entry->user->name ?? 'Desconhecido'
+						],
+						'mensagens' => $mensagens
+					];
+				}
+
+				return $this->response->withType('application/json')->withStringBody(json_encode([
+					'success' => true,
+					'new_log' => $newLog
+				]));
+			}
+		}
+
+		return $this->response->withType('application/json')->withStringBody(json_encode([
+			'success' => false,
+			'message' => 'Erro ao salvar o pedido.'
+		]));
+	}
+
 
 	public function delete($id = null)
 	{

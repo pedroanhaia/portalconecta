@@ -70,6 +70,29 @@
 			C_PedidosStatusEntregue => 		'Entregue',
 		]);
 
+		define('C_PedidosStatusView', [
+			C_PedidosStatusRecebido => [
+				'text' => 'Recebido',
+				'icon' => '<i class="fa-solid fa-file-circle-check"></i>',
+			],
+			C_PedidosStatusEmProjeto => [
+				'text' => 'Em projeto',
+				'icon' => '<i class="fa-solid fa-pen-ruler"></i>',
+			],
+			C_PedidosStatusEmFabricação => [
+				'text' => 'Em fabricação',
+				'icon' => '<i class="fa-solid fa-gears"></i>',
+			],
+			C_PedidosStatusEmTransporte => [
+				'text' => 'Em transporte',
+				'icon' => '<i class="fa-solid fa-truck"></i>',
+			],
+			C_PedidosStatusEntregue => [
+				'text' => 'Entregue',
+				'icon' => '<i class="fa-solid fa-flag"></i>',
+			],
+		]);
+
 		function PedidosStatus($status) {
 			if ($status == C_PedidosStatusRecebido)		return 'Recebido';
 			if ($status == C_PedidosStatusEmProjeto)	return 'Em projeto';

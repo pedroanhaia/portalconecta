@@ -34,5 +34,4 @@
 		clearMaskOnLostFocus: true,
 		autoUnmask: false
 	});
-
 </script>

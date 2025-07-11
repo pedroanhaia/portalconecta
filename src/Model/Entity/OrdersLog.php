@@ -29,7 +29,10 @@ class OrdersLog extends Entity
      */
     protected $_accessible = [
         'id_order' => true,
+        'id_user' => true,
         'message' => true,
+        'old_status' => true,
+        'new_status' => true,
         'type' => true,
         'role' => true,
         'created' => true,
