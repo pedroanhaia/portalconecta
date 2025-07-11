@@ -20,13 +20,12 @@ class UsersTable extends Table
 		$this->setPrimaryKey('id');
 
 		$this->addBehavior('Timestamp');
-
-		$this->belongsToMany('Quadros', [
-			'joinTable' => 'quadro_users',
-			'foreignKey' => 'id_user',
-			'targetForeignKey' => 'id_quadro',
+		
+		$this->belongsTo('Customers', [
+			'foreignKey' => 'id_customer',
+			'dependent' => true,
+			'cascadeCallbacks' => true,
 		]);
-
 	}
 
 	public function validationDefault(Validator $validator): Validator

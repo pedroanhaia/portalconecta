@@ -3,102 +3,64 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-/**
- * Customers Controller
- *
- * @method \App\Model\Entity\Customer[]|\Cake\Datasource\ResultSetInterface paginate($object = null, array $settings = [])
- */
 class CustomersController extends AppController
 {
-    /**
-     * Index method
-     *
-     * @return \Cake\Http\Response|null|void Renders view
-     */
-    public function index()
-    {
-        $customers = $this->paginate($this->Customers);
+	public function index() {
+		if($this->Authentication->getIdentity()->admin != 1) {
+			$this->Flash->error(__('Você não possui permissão para acessar esta página.'));
+			return $this->redirect(['controller' => 'Orders', 'action' => 'index']);
+		}
 
-        $this->set(compact('customers'));
-    }
+		$customers = $this->Customers->find()->toArray();
 
-    /**
-     * View method
-     *
-     * @param string|null $id Customer id.
-     * @return \Cake\Http\Response|null|void Renders view
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function view($id = null)
-    {
-        $customer = $this->Customers->get($id, [
-            'contain' => [],
-        ]);
+		$this->set('customers', $customers);
+	}
 
-        $this->set(compact('customer'));
-    }
+	public function add()
+	{
+		$customer = $this->Customers->newEmptyEntity();
+		if ($this->request->is('post')) {
+			$customer = $this->Customers->patchEntity($customer, $this->request->getData());
 
-    /**
-     * Add method
-     *
-     * @return \Cake\Http\Response|null|void Redirects on successful add, renders view otherwise.
-     */
-    public function add()
-    {
-        $customer = $this->Customers->newEmptyEntity();
-        if ($this->request->is('post')) {
-            $customer = $this->Customers->patchEntity($customer, $this->request->getData());
-            if ($this->Customers->save($customer)) {
-                $this->Flash->success(__('The customer has been saved.'));
+			if ($this->Customers->save($customer)) {
+				$this->Flash->success(__('Os dados da empresa foram salvos com sucesso.'));
+				return $this->redirect(['action' => 'index']);
+			}
 
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The customer could not be saved. Please, try again.'));
-        }
-        $this->set(compact('customer'));
-    }
+			$this->Flash->error(__('Não foi possível salvar os dados, tente novamente.'));
+		}
 
-    /**
-     * Edit method
-     *
-     * @param string|null $id Customer id.
-     * @return \Cake\Http\Response|null|void Redirects on successful edit, renders view otherwise.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function edit($id = null)
-    {
-        $customer = $this->Customers->get($id, [
-            'contain' => [],
-        ]);
-        if ($this->request->is(['patch', 'post', 'put'])) {
-            $customer = $this->Customers->patchEntity($customer, $this->request->getData());
-            if ($this->Customers->save($customer)) {
-                $this->Flash->success(__('The customer has been saved.'));
+		$this->set(compact('customer'));
+	}
 
-                return $this->redirect(['action' => 'index']);
-            }
-            $this->Flash->error(__('The customer could not be saved. Please, try again.'));
-        }
-        $this->set(compact('customer'));
-    }
+	public function edit($id = null)
+	{
+		$customer = $this->Customers->findById($id)->first();
+		if ($this->request->is(['patch', 'post', 'put'])) {
+			$customer = $this->Customers->patchEntity($customer, $this->request->getData());
 
-    /**
-     * Delete method
-     *
-     * @param string|null $id Customer id.
-     * @return \Cake\Http\Response|null|void Redirects to index.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function delete($id = null)
-    {
-        $this->request->allowMethod(['post', 'delete']);
-        $customer = $this->Customers->get($id);
-        if ($this->Customers->delete($customer)) {
-            $this->Flash->success(__('The customer has been deleted.'));
-        } else {
-            $this->Flash->error(__('The customer could not be deleted. Please, try again.'));
-        }
+			if ($this->Customers->save($customer)) {
+				$this->Flash->success(__('Os dados da empresa foram salvos com sucesso.'));
+				return $this->redirect(['action' => 'index']);
+			}
+			
+			$this->Flash->error(__('Não foi possível salvar os dados, tente novamente.'));
+		}
 
-        return $this->redirect(['action' => 'index']);
-    }
+		$this->set(compact('customer'));
+	}
+
+   
+	public function delete($id = null)
+	{
+		$this->request->allowMethod(['post', 'delete']);
+		$customer = $this->Customers->get($id);
+		if ($this->Customers->delete($customer)) {
+			$this->Flash->success(__('The customer has been deleted.'));
+		} else {
+			$this->Flash->error(__('The customer could not be deleted. Please, try again.'));
+		}
+
+		return $this->redirect(['action' => 'index']);
+	}
 }

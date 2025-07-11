@@ -42,33 +42,39 @@
 
 		define('C_AnosOpt', $anosOpt);
 
-	// Quadros - Visibilidade 
-		define('C_QuadrosVisibilidadeParticular',	1);
-		define('C_QuadrosVisibilidadeGrupo',		2);
-		define('C_QuadrosVisibilidadeLink',			2);
+	// Users - Função na empresa 
+		define('C_UsersTypeCliente',	1);
+		define('C_UsersTypeAdmin',		2);
 
-		define('C_QuadrosVisibilidades', [
-			C_QuadrosVisibilidadeParticular => 'Particular',
-			C_QuadrosVisibilidadeLink => 'Qualquer um com o link'
+		define('C_UsersTypeOpt', [
+			C_UsersTypeCliente => 'Cliente',
+			C_UsersTypeAdmin => 'Administrador'
 		]);
 
-		function QuadrosVisibilidade($vis) {
-			if ($vis == C_QuadrosVisibilidadeParticular) return 'Particular';
-			if ($vis == C_QuadrosVisibilidadeGrupo)      return 'Grupo';
-			if ($vis == C_QuadrosVisibilidadeGrupo)      return 'Qualquer um com o link';
+		function UsersType($type) {
+			if ($type == C_UsersTypeCliente) return 'Cliente';
+			if ($type == C_UsersTypeAdmin)	return 'Administrador';
 		}
-	// Quadros - BG Type
-		define('C_BgTypeColor', 1);
-		define('C_BgTypeImage', 2);
+	// Pedidos - Status
+		define('C_PedidosStatusRecebido',		1);
+		define('C_PedidosStatusEmProjeto',		2);
+		define('C_PedidosStatusEmFabricação',	3);
+		define('C_PedidosStatusEmTransporte',	4);
+		define('C_PedidosStatusEntregue',		5);
 
-		define('C_BgTypes', [
-			C_BgTypeColor => 'Cor',
-			C_BgTypeImage => 'Imagem'
+		define('C_PedidosStatusOpt', [
+			C_PedidosStatusRecebido => 		'Recebido',
+			C_PedidosStatusEmProjeto =>		'Em projeto',
+			C_PedidosStatusEmFabricação => 	'Em fabricação',
+			C_PedidosStatusEmTransporte => 	'Em transporte',
+			C_PedidosStatusEntregue => 		'Entregue',
 		]);
 
-		function BgTypeLabel($type) {
-			if ($type == C_BgTypeColor) return 'Cor';
-			if ($type == C_BgTypeImage) return 'Imagem';
+		function PedidosStatus($status) {
+			if ($status == C_PedidosStatusRecebido)		return 'Recebido';
+			if ($status == C_PedidosStatusEmProjeto)	return 'Em projeto';
+			if ($status == C_PedidosStatusEmFabricação)	return 'Em fabricação';
+			if ($status == C_PedidosStatusEmTransporte)	return 'Em transporte';
+			if ($status == C_PedidosStatusEntregue)		return 'Entregue';
 		}
-
 	// 

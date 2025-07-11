@@ -1,58 +1,84 @@
-<?php
-/**
- * @var \App\View\AppView $this
- * @var \App\Model\Entity\User[]|\Cake\Collection\CollectionInterface $users
- */
-?>
-<div class="users index content">
-    <?= $this->Html->link(__('New User'), ['action' => 'add'], ['class' => 'button float-right']) ?>
-    <h3><?= __('Users') ?></h3>
-    <div class="table-responsive">
-        <table>
-            <thead>
-                <tr>
-                    <th><?= $this->Paginator->sort('id') ?></th>
-                    <th><?= $this->Paginator->sort('name') ?></th>
-                    <th><?= $this->Paginator->sort('id_customer') ?></th>
-                    <th><?= $this->Paginator->sort('email') ?></th>
-                    <th><?= $this->Paginator->sort('dark_mode') ?></th>
-                    <th><?= $this->Paginator->sort('type') ?></th>
-                    <th><?= $this->Paginator->sort('role') ?></th>
-                    <th><?= $this->Paginator->sort('created') ?></th>
-                    <th><?= $this->Paginator->sort('modified') ?></th>
-                    <th class="actions"><?= __('Actions') ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($users as $user): ?>
-                <tr>
-                    <td><?= $this->Number->format($user->id) ?></td>
-                    <td><?= h($user->name) ?></td>
-                    <td><?= $this->Number->format($user->id_customer) ?></td>
-                    <td><?= h($user->email) ?></td>
-                    <td><?= $this->Number->format($user->dark_mode) ?></td>
-                    <td><?= $this->Number->format($user->type) ?></td>
-                    <td><?= $this->Number->format($user->role) ?></td>
-                    <td><?= h($user->created) ?></td>
-                    <td><?= h($user->modified) ?></td>
-                    <td class="actions">
-                        <?= $this->Html->link(__('View'), ['action' => 'view', $user->id]) ?>
-                        <?= $this->Html->link(__('Edit'), ['action' => 'edit', $user->id]) ?>
-                        <?= $this->Form->postLink(__('Delete'), ['action' => 'delete', $user->id], ['confirm' => __('Are you sure you want to delete # {0}?', $user->id)]) ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    <div class="paginator">
-        <ul class="pagination">
-            <?= $this->Paginator->first('<< ' . __('first')) ?>
-            <?= $this->Paginator->prev('< ' . __('previous')) ?>
-            <?= $this->Paginator->numbers() ?>
-            <?= $this->Paginator->next(__('next') . ' >') ?>
-            <?= $this->Paginator->last(__('last') . ' >>') ?>
-        </ul>
-        <p><?= $this->Paginator->counter(__('Page {{page}} of {{pages}}, showing {{current}} record(s) out of {{count}} total')) ?></p>
-    </div>
+<div class="content">
+    <div class="row">
+		<div class="col-12">
+			<?= $this->Html->link(__('Novo usuáiro'), ['action' => 'add'], ['class' => 'btn btn-lg btn-success float-right']) ?>
+			<h3> Usuários </h3>
+		</div>
+	</div>
+	<ul class="nav nav-tabs customtab" role="tablist">
+		<li class="nav-item"> <a class="nav-link active" data-toggle="tab" href="#customers" role="tab" aria-selected="true"><span class="hidden-sm-up"> </span> <span class="hidden-xs-down"> Clientes (<?= count($usersCustomer) ?>) </span></a> </li>
+		<li class="nav-item"> <a class="nav-link" data-toggle="tab" href="#admins" role="tab" aria-selected="false"><span class="hidden-sm-up"> </span> <span class="hidden-xs-down"> Admins (<?= count($usersAdmin) ?>) </span></a> </li>
+	</ul>
+    <div class="tab-content">
+		<div class="tab-pane active" id="customers">
+			<div class="table-responsive">
+				<table class="table table-hover table-row-clickable" id="table-customers">
+					<thead class="text-primary">
+						<tr>
+							<th> Nome </th>
+							<th> E-mail </th>
+							<th> Empresa </th>
+							<th> Função </th>
+							<th class="actions"> Ações </th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ($usersCustomer as $reg): ?>
+							<tr>
+								<td> <?= $reg->name ?> </td>
+								<td> <?= $reg->email ?> </td>
+								<td> <?= $reg->customer->cnpj . ' - ' . $reg->customer->name ?> </td>
+								<td> <?= UsersType($reg->type) ?> </td>
+								<td class="actions">
+									<?= $this->Html->link('<i class="fa fa-eye"></i>', ["action" => "view", $reg->id], ['rel' => 'tooltip', 'title' => 'Visualizar', 'class' => 'btn btn-info text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>
+									<?= $this->Html->link('<i class="fa fa-edit"></i>', ["action" => "edit", $reg->id], ['rel' => 'tooltip', 'title' => 'Editar', 'class' => 'btn btn-warning text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<div class="tab-pane" id="admins">
+			<div class="table-admins">
+				<table class="table table-hover table-row-clickable" id="table-admins">
+					<thead class="text-primary">
+						<tr>
+							<th> Nome </th>
+							<th> E-mail </th>
+							<th class="actions"> Ações </th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ($usersAdmin as $reg): ?>
+							<tr>
+								<td> <?= $reg->name ?> </td>
+								<td> <?= $reg->email ?> </td>
+								<td class="actions">
+									<?= $this->Html->link('<i class="fa fa-eye"></i>', ["action" => "view", $reg->id], ['rel' => 'tooltip', 'title' => 'Visualizar', 'class' => 'btn btn-info text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>
+									<?= $this->Html->link('<i class="fa fa-edit"></i>', ["action" => "edit", $reg->id], ['rel' => 'tooltip', 'title' => 'Editar', 'class' => 'btn btn-warning text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
 </div>
+<script>
+	$(document).ready(function() {
+		var dataTableAdmins = $('#table-admins').DataTable({"pageLength": 10, "language": datatableOptionsLanguage, "order" : [0, "asc"]});
+		var dataTableCustomers = $('#table-customers').DataTable({"pageLength": 10, "language": datatableOptionsLanguage, "order" : [0, "asc"]});
+
+		$('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
+			var targetTab = $(e.target).attr('href');
+            console.log(targetTab);
+			if (targetTab === '#admins') {
+				dataTableAdmins.columns.adjust().draw();
+			} else if (targetTab === '#customers') {
+				dataTableCustomers.columns.adjust().draw();
+			} 
+		});
+	});
+</script>

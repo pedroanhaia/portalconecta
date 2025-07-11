@@ -13,10 +13,15 @@
 	<?= $this->Html->meta('icon', '/webroot/img/logo.png'); ?>
 
 	<?= $this->Html->css(['https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css', 'https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css', 'https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css']) ?>
-	<?= $this->Html->css(['mainstyle','normalize.min', 'milligram.min', 'fonts', 'cake', 'sidebarstyle']) ?>
+	<?= $this->Html->css(['mainstyle','normalize.min', 'milligram.min', 'fonts', 'cake', 'sidebarstyle', 'buttons']) ?>
 
 	<?= $this->Html->script(['https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js']) ?>
 	<?= $this->Html->script(["https://code.jquery.com/jquery-3.7.1.min.js", 'selectfolder']) ?>
+
+	<!-- jQuery UI para datepicker e Mask -->
+	<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.9/jquery.inputmask.min.js"></script>
+	<link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
 
 	<!-- Selectpicker -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
@@ -28,6 +33,8 @@
 	<!-- Datatable -->
 	<?= $this->Html->css("/plugins/datatables/datatables.min") ?>
 	<?= $this->Html->script("/plugins/datatables/datatables.min") ?>
+
+	<base href="<?= $this->Url->build('/', ['fullBase' => true]) ?>">
 
 	<?= $this->fetch('meta') ?>
 	<?= $this->fetch('css') ?>
@@ -62,7 +69,7 @@
 						<?= $this->Html->link('<i class="fa-solid fa-industry icon"></i> ' . __('Clientes'), '/customers/index', ['escape' => false, 'class' => '']);?>
 					</li>
 					<li class="nav-link">
-						<?= $this->Html->link('<i class="fa-solid fa-gear icon"></i> ' . __('Configurações'), '/files/index', ['escape' => false, 'class' => '']);?>
+						<?= $this->Html->link('<i class="fa-solid fa-gear icon"></i> ' . __('Configurações'), '/config/index', ['escape' => false, 'class' => '']);?>
 					</li>
 					<li class="">
 						<?= $this->Html->link('<i class="bx bx-log-out icon"></i> ' . __('<span class="text nav-text">Logout</span>'), '/Users/logout', ['escape' => false, 'class' => '']);?>
@@ -87,7 +94,7 @@
 		</div>
 	</nav>
 	<main class="main">
-		<div class="container">
+		<div class="main-content">
 			<?= $this->Flash->render() ?>
 			<?= $this->element('preload'); ?>
 			<?= $this->fetch('content') ?>
@@ -98,18 +105,69 @@
 </body>
 </html>
 <script>
-	$('.open-sidebar').hide();
+	// Sidebar 
+		if (typeof body === 'undefined') {
+			document.addEventListener("DOMContentLoaded", function () {
+				const body = document.querySelector("body");
+				const sidebar = body.querySelector("nav.sidebar");
+				const toggle = body.querySelector(".toggle");
+				const modeSwitch = body.querySelector(".toggle-switch");
+				const modeText = body.querySelector(".mode-text");
 
-	$('.toggle-switch, .toggle').click(function(){
-		if($('.sidebar ').hasClass('close')) {
-			$('.mini-sidebar').show();
-			$('.open-sidebar').hide();
-		} else {
-			$('.mini-sidebar').hide();
-			$('.open-sidebar').show();
+				// Alternar sidebar
+				toggle.addEventListener("click", () => {
+					sidebar.classList.toggle("close");
+				});
+
+				// Alternar modo escuro
+				modeSwitch.addEventListener("click", () => {
+					const isDarkMode = body.classList.toggle("dark");
+
+					// Atualiza texto
+					modeText.innerText = isDarkMode ? "Modo claro" : "Modo escuro";
+
+					// Gerencia o carregamento do CSS
+					const darkCssId = "dark-mode-css";
+					let existingLink = document.getElementById(darkCssId);
+
+					if (isDarkMode && !existingLink) {
+						const link = document.createElement("link");
+						link.rel = "stylesheet";
+						link.href = "<?= $this->Url->css('dark') ?>";
+						link.id = darkCssId;
+						document.head.appendChild(link);
+					} else if (!isDarkMode && existingLink) {
+						existingLink.remove();
+					}
+
+					// Salva preferência
+					$.ajax({
+						url: '<?= $this->Url->build(["controller" => "Users", "action" => "darkmode"]) ?>',
+						method: 'POST',
+						data: { darkmode: isDarkMode ? 1 : 0 },
+						success: function () {
+							console.log('Preferência de tema salva.');
+						},
+						error: function () {
+							console.log('Erro ao salvar o tema.');
+						}
+					});
+				});
+
+				// Se já for modo escuro ao carregar
+				<?php if (!empty($userDarkMode) && $userDarkMode === 1): ?>
+					const darkCssId = "dark-mode-css";
+					const link = document.createElement("link");
+					link.rel = "stylesheet";
+					link.href = "<?= $this->Url->css('dark') ?>";
+					link.id = darkCssId;
+					document.head.appendChild(link);
+					body.classList.add("dark");
+					if (modeText) modeText.innerText = "Modo claro";
+				<?php endif; ?>
+			});
+
 		}
-	})
-
 	// Datatable 
 		var datatableOptions = {
 			"pageLength": 10,
@@ -163,68 +221,5 @@
 				"sSortDescending": ": Ordem descendente"
 			},
 		};
-	// Sidebar 
-		const body = document.querySelector('body');
-		const sidebar = body.querySelector('nav');
-		const toggle = body.querySelector(".toggle");
-		const modeSwitch = body.querySelector(".toggle-switch");
-		const modeText = body.querySelector(".mode-text");
-
-		toggle.addEventListener("click" , () =>{
-			sidebar.classList.toggle("close");
-		})
-
-		modeSwitch.addEventListener("click", () => {
-			const isDarkMode = body.classList.toggle("dark");
-
-			// Atualiza texto
-			modeText.innerText = isDarkMode ? "Modo claro" : "Modo escuro";
-
-			// Gerencia carregamento do CSS
-			const darkCssId = "dark-mode-css";
-			const existingLink = document.getElementById(darkCssId);
-
-			if (isDarkMode && !existingLink) {
-				const link = document.createElement("link");
-				link.rel = "stylesheet";
-				link.href = "<?= $this->Url->css('dark') ?>";
-				link.id = darkCssId;
-				document.head.appendChild(link);
-			} else if (!isDarkMode && existingLink) {
-				existingLink.remove();
-			}
-
-			// Envia preferência via AJAX
-			$.ajax({
-				url: '<?= $this->Url->build(["controller" => "Users", "action" => "darkmode"]) ?>',
-				method: 'POST',
-				data: { darkmode: isDarkMode ? 1 : 0 },
-				success: function (response) {
-					console.log('Preferência de tema salva.');
-				},
-				error: function () {
-					console.log('Erro ao salvar o tema.');
-				}
-			});
-		});
-
-		document.addEventListener("DOMContentLoaded", function () {
-			const body = document.querySelector("body");
-			const modeText = document.querySelector(".mode-text");
-
-			// Gerencia carregamento do CSS
-			const darkCssId = "dark-mode-css";
-			const existingLink = document.getElementById(darkCssId);
-
-			<?php if (!empty($darkMode) && $darkMode === 1): ?>
-				const link = document.createElement("link");
-				link.rel = "stylesheet";
-				link.href = "<?= $this->Url->css('dark') ?>";
-				link.id = darkCssId;
-				document.head.appendChild(link);
-				body.classList.add("dark");
-				if (modeText) modeText.innerText = "Modo claro";
-			<?php endif; ?>
-		});
-	// 
+	//
 </script>

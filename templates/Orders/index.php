@@ -1,58 +1,40 @@
-<?php
-/**
- * @var \App\View\AppView $this
- * @var \App\Model\Entity\Order[]|\Cake\Collection\CollectionInterface $orders
- */
-?>
-<div class="orders index content">
-    <?= $this->Html->link(__('New Order'), ['action' => 'add'], ['class' => 'button float-right']) ?>
-    <h3><?= __('Orders') ?></h3>
-    <div class="table-responsive">
-        <table>
-            <thead>
-                <tr>
-                    <th><?= $this->Paginator->sort('id') ?></th>
-                    <th><?= $this->Paginator->sort('number') ?></th>
-                    <th><?= $this->Paginator->sort('id_customer') ?></th>
-                    <th><?= $this->Paginator->sort('value') ?></th>
-                    <th><?= $this->Paginator->sort('status') ?></th>
-                    <th><?= $this->Paginator->sort('type') ?></th>
-                    <th><?= $this->Paginator->sort('role') ?></th>
-                    <th><?= $this->Paginator->sort('created') ?></th>
-                    <th><?= $this->Paginator->sort('modified') ?></th>
-                    <th class="actions"><?= __('Actions') ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($orders as $order): ?>
-                <tr>
-                    <td><?= $this->Number->format($order->id) ?></td>
-                    <td><?= $this->Number->format($order->number) ?></td>
-                    <td><?= $this->Number->format($order->id_customer) ?></td>
-                    <td><?= $this->Number->format($order->value) ?></td>
-                    <td><?= $this->Number->format($order->status) ?></td>
-                    <td><?= $this->Number->format($order->type) ?></td>
-                    <td><?= $this->Number->format($order->role) ?></td>
-                    <td><?= h($order->created) ?></td>
-                    <td><?= h($order->modified) ?></td>
-                    <td class="actions">
-                        <?= $this->Html->link(__('View'), ['action' => 'view', $order->id]) ?>
-                        <?= $this->Html->link(__('Edit'), ['action' => 'edit', $order->id]) ?>
-                        <?= $this->Form->postLink(__('Delete'), ['action' => 'delete', $order->id], ['confirm' => __('Are you sure you want to delete # {0}?', $order->id)]) ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    <div class="paginator">
-        <ul class="pagination">
-            <?= $this->Paginator->first('<< ' . __('first')) ?>
-            <?= $this->Paginator->prev('< ' . __('previous')) ?>
-            <?= $this->Paginator->numbers() ?>
-            <?= $this->Paginator->next(__('next') . ' >') ?>
-            <?= $this->Paginator->last(__('last') . ' >>') ?>
-        </ul>
-        <p><?= $this->Paginator->counter(__('Page {{page}} of {{pages}}, showing {{current}} record(s) out of {{count}} total')) ?></p>
-    </div>
+<div class="content">
+	<div class="row">
+		<div class="col-12">
+			<?= $this->Html->link(__('Novo pedido'), ['action' => 'add'], ['class' => 'btn btn-lg btn-success float-right']) ?>
+			<h3> Pedidos </h3>
+		</div>
+	</div>
+	<div class="table-responsive">
+		<table class="table table-hover table-row-clickable" id="table-orders">
+			<thead class="text-primary">
+				<tr>
+					<th> # </th>
+					<th> Empresa </th>
+					<th> Status </th>
+					<th> Última alteração  </th>
+					<th class="actions"> Ações </th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ($orders as $reg): ?>
+					<tr>
+						<td> <?= $reg->number ?> </td>
+						<td> <?= $reg->customer->cnpj . ' - ' . $reg->customer->name ?> </td>
+						<td> <?= PedidosStatus($reg->status) ?> </td>
+						<td> <?= date_format($reg->modified, 'd/m/Y - H:i') ?> </td>
+						<td class="actions">
+							<?= $this->Html->link('<i class="fa fa-eye"></i>', ["action" => "view", $reg->id], ['rel' => 'tooltip', 'title' => 'Visualizar', 'class' => 'btn btn-info text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>
+							<?= $this->Html->link('<i class="fa fa-edit"></i>', ["action" => "edit", $reg->id], ['rel' => 'tooltip', 'title' => 'Editar', 'class' => 'btn btn-warning text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+	</div>
 </div>
+<script>
+	$(document).ready(function() {
+		var dataTableCustomers = $('#table-orders').DataTable({"pageLength": 10, "language": datatableOptionsLanguage, "order" : [0, "asc"]});
+	});
+</script>

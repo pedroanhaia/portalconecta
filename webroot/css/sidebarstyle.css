@@ -329,3 +329,20 @@ header .image-text .profession{
 	color: var(--text-color);
 	padding: 12px 60px;
 }
+
+/* Exibe apenas o logo adequado baseado na sidebar */
+.sidebar .mini-sidebar {
+	display: none;
+}
+
+.sidebar .open-sidebar {
+	display: inline;
+}
+
+.sidebar.close .mini-sidebar {
+	display: inline;
+}
+
+.sidebar.close .open-sidebar {
+	display: none;
+}

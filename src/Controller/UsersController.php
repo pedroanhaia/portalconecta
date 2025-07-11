@@ -9,34 +9,47 @@ use Cake\Routing\Router;
 
 use function PHPUnit\Framework\isEmpty;
 
-/**
- * Users Controller
- *
- * @property \App\Model\Table\UsersTable $Users
- * @method \App\Model\Entity\User[]|\Cake\Datasource\ResultSetInterface paginate($object = null, array $settings = [])
- */
+
 class UsersController extends AppController
 {
 	public function beforeFilter(\Cake\Event\EventInterface $event) {
-		$this->Authentication->addUnauthenticatedActions(['login', 'add', 'register', 'verificaEmailExistente']);
+		$this->Authentication->addUnauthenticatedActions(['login']);
 		parent::beforeFilter($event);
+
+		$this->loadModel('Customers');
 	}
 
 	public function index() {
-		if($this->Authentication->getIdentity()->role != 1) {
+		if($this->Authentication->getIdentity()->admin != 1) {
 			$this->Flash->error(__('Você não possui permissão para acessar esta página.'));
 			return $this->redirect(['controller' => 'Orders', 'action' => 'index']);
 		}
 
-		$users = $this->paginate($this->Users);
+		$usersAdmin = $this->Users->findByAdmin(1)->toArray();
+		$usersCustomer = $this->Users->findByAdmin(0)
+			->contain(['Customers' => ['fields' => ['name', 'cnpj']]])
+			->order('Customers.name ASC')
+		->toArray();
 
-		$this->set(compact('users'));
+		$this->set('usersAdmin', $usersAdmin);
+		$this->set('usersCustomer', $usersCustomer);
 	}
 
 	public function add() {
 		$user = $this->Users->newEmptyEntity();
+		$customers = $this->Customers->find('all')->all();
+
+		$customersOpt = $customers->combine(
+			'id',
+			function ($row) {
+				return "{$row->cnpj} - {$row->name}";
+			}
+		)->toArray();
+
+
 		if ($this->request->is('post')) {
 			$user = $this->Users->patchEntity($user, $this->request->getData());
+			
 			if ($this->Users->save($user)) {
 				$this->Flash->success(__('Usuário cadastrado com sucesso!'));
 
@@ -44,7 +57,9 @@ class UsersController extends AppController
 			}
 			$this->Flash->error(__('Não foi possível cadastrar o usuário, tente novamente.'));
 		}
-		$this->set(compact('user'));
+		
+		$this->set('user', $user);
+		$this->set('customersOpt', $customersOpt);
 	}
 
 	public function register()
@@ -75,43 +90,37 @@ class UsersController extends AppController
 	}
 
 	public function edit($id = null) {
-		if($this->Authentication->getIdentity()->role != 1 && isset($id)) {
+		if($this->Authentication->getIdentity()->admin != 1 && $id != $this->Authentication->getIdentity()->id ) {
 			$this->Flash->error(__('Você não possui permissão para acessar esta página.'));
 			return $this->redirect(['controller' => 'Orders', 'action' => 'index']);
 		}
 		
-		$user = $this->Users->get($this->Authentication->getIdentity()->id, [
-			'contain' => [],
-		]);
+		if(empty($id)) $id = $this->Authentication->getIdentity()->id;
+		$user = $this->Users->get($id);
+
+		$customers = $this->Customers->find('all')->all();
+
+		$customersOpt = $customers->combine(
+			'id',
+			function ($row) {
+				return "{$row->cnpj} - {$row->name}";
+			}
+		)->toArray();
+
 
 		if ($this->request->is(['patch', 'post', 'put'])) {
-			$data = $this->request->getData();
-
-			/** @var \Laminas\Diactoros\UploadedFile|null $img */
-			$img = $data['img_edit'] ?? null;
-
-			$user = $this->Users->patchEntity($user, $data);
-
-			if ($img && $img->getError() === UPLOAD_ERR_OK) {
-				if ($user->img && file_exists(WWW_ROOT . $user->img)) {
-					@unlink(WWW_ROOT . $user->img);
-				}
-
-				$nome = 'img\\users_img\\' . $user->id . '-' . date('YmdHis') . '.png';
-				$img->moveTo(WWW_ROOT . $nome);
-
-				$user->img = $nome;
-			}
+			$user = $this->Users->patchEntity($user, $this->request->getData());
 
 			if ($this->Users->save($user)) {
 				$this->Flash->success(__('Dados salvos com sucesso!'));
-				return $this->redirect(['controller' => 'Quadros', 'action' => 'index']);
+				return $this->redirect(['controller' => 'Users', 'action' => 'index']);
 			}
 
 			$this->Flash->error(__('Não foi possível atualizar os dados, tente novamente.'));
 		}
 
-		$this->set(compact('user'));
+		$this->set('user', $user);
+		$this->set('customersOpt', $customersOpt);
 	}
 
 	public function delete($id = null) {
@@ -140,14 +149,7 @@ class UsersController extends AppController
 		}
 		
 		if ($this->request->is('POST')) {
-
-			debug($this->request->getData());
-
 			$user = $this->Users->findByEmail($this->request->getData('email'))->first();
-
-			debug($user);
-			debug($result);
-			die;
 
 			$result = $this->Authentication->getResult();
 			
@@ -198,7 +200,6 @@ class UsersController extends AppController
 
 	public function changepassword()
 	{
-		// $this->viewBuilder()->setLayout('quadros');
 		$user = $this->Users->get($this->Authentication->getIdentity()->getIdentifier());
 
 

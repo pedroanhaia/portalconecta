@@ -32,6 +32,7 @@ class AppController extends Controller
 	{
 		parent::initialize();
 
+		$this->loadModel('Users');
 		$this->loadComponent('Authorization.Authorization');
 		$this->loadComponent('Authentication.Authentication');
 		$this->loadComponent('Flash'); // <-- esta linha resolve o erro
@@ -46,6 +47,26 @@ class AppController extends Controller
 
 		if ($this->request->getParam('plugin') === 'DebugKit') {
 			$this->Authorization->skipAuthorization();
+		}
+
+
+		$userLogado = $this->Authentication->getIdentity();
+
+		if(!empty($userLogado)) {
+			$userData = $this->Authentication->getIdentity()->getOriginalData();
+			$userAtt = $this->Users->get($userData->id);
+
+			$currentController = $this->request->getParam('controller');
+			$currentAction = $this->request->getParam('action');
+			$this->set('currentAction', $currentAction);
+			$this->set('currentController', $currentController);
+			
+			
+			$this->set('userDarkMode', $userAtt->dark_mode);
+			$this->set('userId', $userData->id);
+			$this->set('userRole', $userAtt->role);
+			$this->set('userAdmin', $userAtt->admin);
+			$this->set('userName', $userAtt->name);
 		}
 	}
 	public function isAuthorized($user)	{

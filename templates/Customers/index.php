@@ -1,46 +1,36 @@
-<?php
-/**
- * @var \App\View\AppView $this
- * @var \App\Model\Entity\Customer[]|\Cake\Collection\CollectionInterface $customers
- */
-?>
-<div class="customers index content">
-    <?= $this->Html->link(__('New Customer'), ['action' => 'add'], ['class' => 'button float-right']) ?>
-    <h3><?= __('Customers') ?></h3>
-    <div class="table-responsive">
-        <table>
-            <thead>
-                <tr>
-                    <th><?= $this->Paginator->sort('id') ?></th>
-                    <th><?= $this->Paginator->sort('cnpj') ?></th>
-                    <th><?= $this->Paginator->sort('name') ?></th>
-                    <th class="actions"><?= __('Actions') ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($customers as $customer): ?>
-                <tr>
-                    <td><?= $this->Number->format($customer->id) ?></td>
-                    <td><?= h($customer->cnpj) ?></td>
-                    <td><?= h($customer->name) ?></td>
-                    <td class="actions">
-                        <?= $this->Html->link(__('View'), ['action' => 'view', $customer->id]) ?>
-                        <?= $this->Html->link(__('Edit'), ['action' => 'edit', $customer->id]) ?>
-                        <?= $this->Form->postLink(__('Delete'), ['action' => 'delete', $customer->id], ['confirm' => __('Are you sure you want to delete # {0}?', $customer->id)]) ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
-    <div class="paginator">
-        <ul class="pagination">
-            <?= $this->Paginator->first('<< ' . __('first')) ?>
-            <?= $this->Paginator->prev('< ' . __('previous')) ?>
-            <?= $this->Paginator->numbers() ?>
-            <?= $this->Paginator->next(__('next') . ' >') ?>
-            <?= $this->Paginator->last(__('last') . ' >>') ?>
-        </ul>
-        <p><?= $this->Paginator->counter(__('Page {{page}} of {{pages}}, showing {{current}} record(s) out of {{count}} total')) ?></p>
-    </div>
+<div class="content">
+	<div class="row">
+		<div class="col-12">
+			<?= $this->Html->link(__('Novo cliente'), ['action' => 'add'], ['class' => 'btn btn-lg btn-success float-right']) ?>
+			<h3> Clientes </h3>
+		</div>
+	</div>
+	<div class="table-responsive">
+		<table class="table table-hover table-row-clickable" id="table-customers">
+			<thead class="text-primary">
+				<tr>
+					<th> Nome </th>
+					<th> CNPJ </th>
+					<th class="actions"> Ações </th>
+				</tr>
+			</thead>
+			<tbody>
+				<?php foreach ($customers as $reg): ?>
+					<tr>
+						<td> <?= $reg->name ?> </td>
+						<td> <?= $reg->cnpj ?> </td>
+						<td class="actions">
+							<?= $this->Html->link('<i class="fa fa-eye"></i>', ["action" => "view", $reg->id], ['rel' => 'tooltip', 'title' => 'Visualizar', 'class' => 'btn btn-info text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>
+							<?= $this->Html->link('<i class="fa fa-edit"></i>', ["action" => "edit", $reg->id], ['rel' => 'tooltip', 'title' => 'Editar', 'class' => 'btn btn-warning text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>
+						</td>
+					</tr>
+				<?php endforeach; ?>
+			</tbody>
+		</table>
+	</div>
 </div>
+<script>
+	$(document).ready(function() {
+		var dataTableCustomers = $('#table-customers').DataTable({"pageLength": 10, "language": datatableOptionsLanguage, "order" : [0, "asc"]});
+	});
+</script>
