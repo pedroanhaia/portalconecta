@@ -51,7 +51,7 @@
 					<li class="nav-link logo-center">
 						<?= $this->Html->link(
 							$this->Html->image('logo.png', ['alt' => 'logo', 'class' => 'mini-sidebar']) ,
-							//$this->Html->image('logo.png', ['alt' => 'logo', 'class' => 'open-sidebar']),
+							$this->Html->image('logo.png', ['alt' => 'logo', 'class' => 'open-sidebar']),
 							['controller' => 'Orders', 'action' => 'index'],
 							['escape' => false]
 						); ?>
