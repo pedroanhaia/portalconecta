@@ -74,20 +74,20 @@ function statusHasComments($status, $comments) {
                     </div>
                 </div>
             </div>
-        </div>
-		<div class="orders form content">
-            <?= $this->Form->create($order) ?>
-            <fieldset>
-                <legend><?= __('Edit Order') ?></legend>
-                <?php
-                    echo $this->Form->control('number');
-                    echo $this->Form->control('id_customer', ['options' => $customersOpt, 'empty' => 'Selecione...']);
-                    echo $this->Form->control('value');
-                    echo $this->Form->control('status', ['options' => C_PedidosStatusOpt, 'empty' => 'Selecione...']);
-                ?>
-            </fieldset>
-            <?= $this->Form->button(__('Submit')) ?>
-            <?= $this->Form->end() ?>
+			<div class="orders form content">
+				<?= $this->Form->create($order) ?>
+				<fieldset>
+					<legend><?= __('Edit Order') ?></legend>
+					<?php
+						echo $this->Form->control('number');
+						echo $this->Form->control('id_customer', ['options' => $customersOpt, 'empty' => 'Selecione...']);
+						echo $this->Form->control('value');
+						echo $this->Form->control('status', ['options' => C_PedidosStatusOpt, 'empty' => 'Selecione...']);
+					?>
+				</fieldset>
+				<?= $this->Form->button(__('Submit')) ?>
+				<?= $this->Form->end() ?>
+			</div>
         </div>
         
     </div>
