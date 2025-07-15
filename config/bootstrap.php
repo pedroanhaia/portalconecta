@@ -229,36 +229,3 @@ TypeFactory::map('time', StringType::class);
 // and https://unicode-org.github.io/icu/userguide/format_parse/datetime/#datetime-format-syntax
 //\Cake\I18n\FrozenDate::setToStringFormat('dd.MM.yyyy');
 //\Cake\I18n\FrozenTime::setToStringFormat('dd.MM.yyyy HH:mm');
-
-// Constantes da Aplicação
-define('C_PedidosStatusRecebido', 1);
-define('C_PedidosStatusEmProjeto', 2);
-define('C_PedidosStatusEmFabricação', 3);
-define('C_PedidosStatusEmTransporte', 4);
-define('C_PedidosStatusEntregue', 5);
-
-define('C_PedidosStatus', [
-	C_PedidosStatusRecebido => 'Recebido',
-	C_PedidosStatusEmProjeto => 'Em projeto',
-	C_PedidosStatusEmFabricação => 'Em fabricação',
-	C_PedidosStatusEmTransporte => 'Em transporte',
-	C_PedidosStatusEntregue => 'Entregue',
-]);
-
-define('C_PedidosStatusView', [
-	C_PedidosStatusRecebido => ['text' => 'Recebido', 'icon' => '<i class="fas fa-inbox"></i>'],
-	C_PedidosStatusEmProjeto => ['text' => 'Em projeto', 'icon' => '<i class="fas fa-pencil-ruler"></i>'],
-	C_PedidosStatusEmFabricação => ['text' => 'Em fabricação', 'icon' => '<i class="fas fa-cogs"></i>'],
-	C_PedidosStatusEmTransporte => ['text' => 'Em transporte', 'icon' => '<i class="fas fa-truck"></i>'],
-	C_PedidosStatusEntregue => ['text' => 'Entregue', 'icon' => '<i class="fas fa-check-circle"></i>'],
-]);
-
-define('C_TipoPedido', [
-    1 => 'Padrão',
-    2 => 'Especial',
-]);
-
-define('C_FuncaoPedido', [
-    1 => 'Venda',
-    2 => 'Orçamento',
-]);
