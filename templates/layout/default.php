@@ -94,7 +94,7 @@
 			</div>
 		</div>
 	</nav>
-	<main class="main sidebar-collapsed">
+	<main class="main">
 		<div class="main-content">
 			<?= $this->Flash->render() ?>
 			<?= $this->element('preload'); ?>
