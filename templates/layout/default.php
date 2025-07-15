@@ -94,7 +94,7 @@
 			</div>
 		</div>
 	</nav>
-	<main class="main">
+	<main class="main sidebar-collapsed">
 		<div class="main-content">
 			<?= $this->Flash->render() ?>
 			<?= $this->element('preload'); ?>
@@ -109,7 +109,8 @@
 	// Sidebar 
 		if (typeof body === 'undefined') {
 			document.addEventListener("DOMContentLoaded", function () {
-				const body = document.querySelector("main");
+				const body = document.querySelector("body");
+				const main = body.querySelector("main");
 				const sidebar = body.querySelector("nav.sidebar");
 				const toggle = body.querySelector(".toggle");
 				const modeSwitch = body.querySelector(".toggle-switch");
@@ -118,12 +119,12 @@
 				// Alternar sidebar
 				toggle.addEventListener("click", () => {
 					sidebar.classList.toggle("close");
-                    body.classList.toggle("sidebar-collapsed");
+                    main.classList.toggle("sidebar-collapsed");
 				});
 
                 // Verifica o estado inicial da sidebar para aplicar a classe ao body
                 if (sidebar.classList.contains("close")) {
-                    body.classList.add("sidebar-collapsed");
+                    main.classList.add("sidebar-collapsed");
                 }
 
 				// Alternar modo escuro
