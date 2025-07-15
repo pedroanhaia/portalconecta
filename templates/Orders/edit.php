@@ -1,7 +1,7 @@
 <?php
 use Cake\Core\Configure;
 use Cake\I18n\FrozenTime;
-require_once __DIR__ . '/../vendor/KanbadaPackages/Constants.php';
+require_once __DIR__ . '../../vendor/KanbadaPackages/Constants.php';
 $statuses = C_PedidosStatusView;
 
 $currentStatus = $order->status;
