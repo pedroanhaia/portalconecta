@@ -40,13 +40,13 @@
 	<body>
 		<div class="overlay" id='overlayLogin'>
 			<?php 
-				$arrLogos = ['/webroot/img/Logo 4 - Tinta.gif', "/webroot/img/Logo 5 - 3D (Site's edition).gif"];
+				$arrLogos = ['/webroot/img/logo.png', "/webroot/img/logo.png"];
 				$img = $arrLogos[rand(0, 1)];
 			?>
 			<img src="<?= $this->Url->build($img, ['fullBase' => true]) ?>" alt="Logo" class="centered-gif">
 		</div>
 		<div class="overlay" id='overlayGira'>
-			<img src="<?= $this->Url->build('/webroot/img/Logo 3d transparente.gif', ['fullBase' => true]) ?>" alt="Logo" class="centered-gif-gira">
+			<img src="<?= $this->Url->build('/webroot/img/logo.png', ['fullBase' => true]) ?>" alt="Logo" class="centered-gif-gira">
 			<h3 id='overlayMsg'></h3>
 		</div>
 	</body>

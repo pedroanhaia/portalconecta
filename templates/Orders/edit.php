@@ -96,7 +96,6 @@ function statusHasComments($status, $comments) {
                             echo $this->Form->control('number');
                             echo $this->Form->control('id_customer', ['options' => $customersOpt, 'empty' => 'Selecione...']);
                             echo $this->Form->control('value');
-                            echo $this->Form->control('status', ['options' => C_PedidosStatusOpt, 'empty' => 'Selecione...']);
                         ?>
                     </fieldset>
                     <?= $this->Form->button(__('Submit')) ?>
