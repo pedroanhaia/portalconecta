@@ -124,8 +124,18 @@ class OrdersController extends AppController
 			$this->Flash->error(__('The order could not be saved. Please, try again.'));
 		}
 
+		$customers = $this->Customers->find('all')->all();
+
+		$customersOpt = $customers->combine(
+			'id',
+			function ($row) {
+				return "{$row->cnpj} - {$row->name}";
+			}
+		)->toArray();
+
 		$this->set('order', $order);
 		$this->set('newLog', $newLog);
+		$this->set('customersOpt', $customersOpt);
 	}
 
 	public function changeStatus()
