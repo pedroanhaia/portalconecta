@@ -52,44 +52,44 @@ function statusHasComments($status, $comments) {
             <?= $this->Form->button(__('Submit')) ?>
             <?= $this->Form->end() ?>
         </div>
+        
+        <div class="content">
+            <div class="card" >
+                <div class="card-body">
+                    <!-- Linha do tempo -->
+                    <div class="timeline">
+                        <div class="status-arrow"></div>
+                        <div class="status-bar">
+                            <?php foreach ($statuses as $key => $info): ?>
+                                <div class="status-step <?= ($key === $currentStatus) ? 'active' : (($key < $currentStatus) ? 'complete' : '') ?>" data-key="<?= $key ?>">
+                                    <?php if ($key === $currentStatus): ?>
+                                        <div class="logo-holder"><img src="<?= $this->Url->image('logo.png') ?>" class="logo-status" alt="logo" /></div>
+                                    <?php else: ?>
+                                        <div class="logo-holder"></div>
+                                    <?php endif; ?>
+                                    <div class="icon clickable-status" data-status="<?= $key ?>" data-text="<?= h($info['text']) ?>">
+                                        <?= $info['icon'] ?>
+                                    </div>
+                                    <span><?= h($info['text']) ?></span>
+                                </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+
+                    <!-- Histórico -->
+                    <div class="history">
+                        <h4>Histórico:</h4>
+                    </div>
+
+                    <!-- Adicionar comentário -->
+                    <div>
+                        <label for="comment">Adicionar comentário:</label>
+                        <textarea id="comment" class="form-control"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-</div>
-
-<div class="col-md-12 content">
-	<div class="card" >
-		<div class="card-body">
-			<!-- Linha do tempo -->
-			<div class="timeline">
-				<div class="status-arrow"></div>
-				<div class="status-bar">
-					<?php foreach ($statuses as $key => $info): ?>
-						<div class="status-step <?= ($key === $currentStatus) ? 'active' : (($key < $currentStatus) ? 'complete' : '') ?>" data-key="<?= $key ?>">
-							<?php if ($key === $currentStatus): ?>
-								<div class="logo-holder"><img src="<?= $this->Url->image('logo.png') ?>" class="logo-status" alt="logo" /></div>
-							<?php else: ?>
-								<div class="logo-holder"></div>
-							<?php endif; ?>
-							<div class="icon clickable-status" data-status="<?= $key ?>" data-text="<?= h($info['text']) ?>">
-								<?= $info['icon'] ?>
-							</div>
-							<span><?= h($info['text']) ?></span>
-						</div>
-					<?php endforeach; ?>
-				</div>
-			</div>
-
-			<!-- Histórico -->
-			<div class="history">
-				<h4>Histórico:</h4>
-			</div>
-
-			<!-- Adicionar comentário -->
-			<div>
-				<label for="comment">Adicionar comentário:</label>
-				<textarea id="comment" class="form-control"></textarea>
-			</div>
-		</div>
-	</div>
 </div>
 
 <!-- Modal Comentários -->
