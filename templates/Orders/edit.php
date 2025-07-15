@@ -16,6 +16,47 @@ function statusHasComments($status, $comments) {
 }
 ?>
 
+<div class="row">
+    <aside class="column">
+        <div class="side-nav">
+            <h4 class="heading"><?= __('Actions') ?></h4>
+            <?= $this->Form->postLink(
+                '<i class="fas fa-trash"></i> ' . __('Delete'),
+                ['action' => 'delete', $order->id],
+                ['confirm' => __('Are you sure you want to delete # {0}?', $order->id), 'class' => 'btn btn-sm btn-danger mb-1', 'escape' => false]
+            ) ?>
+            <?= $this->Html->link(
+                '<i class="fas fa-list"></i> ' . __('List Orders'),
+                ['action' => 'index'],
+                ['class' => 'btn btn-sm btn-secondary mb-1', 'escape' => false]
+            ) ?>
+             <?= $this->Html->link(
+                '<i class="fas fa-eye"></i> ' . __('View Order'),
+                ['action' => 'view', $order->id],
+                ['class' => 'btn btn-sm btn-info mb-1', 'escape' => false]
+            ) ?>
+        </div>
+    </aside>
+    <div class="column-responsive column-80">
+        <div class="orders form content">
+            <?= $this->Form->create($order) ?>
+            <fieldset>
+                <legend><?= __('Edit Order') ?></legend>
+                <?php
+                    echo $this->Form->control('number');
+                    echo $this->Form->control('id_customer', ['options' => $customersOpt, 'empty' => 'Selecione...']);
+                    echo $this->Form->control('value');
+                    echo $this->Form->control('status', ['options' => C_PedidosStatus, 'empty' => 'Selecione...']);
+                    echo $this->Form->control('type', ['options' => C_TipoPedido, 'empty' => 'Selecione...']);
+                    echo $this->Form->control('role', ['options' => C_FuncaoPedido, 'empty' => 'Selecione...']);
+                ?>
+            </fieldset>
+            <?= $this->Form->button(__('Submit')) ?>
+            <?= $this->Form->end() ?>
+        </div>
+    </div>
+</div>
+
 <div class="col-md-12 content">
 	<div class="card" >
 		<div class="card-body">

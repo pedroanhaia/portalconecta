@@ -29,10 +29,10 @@ function statusHasComments($status, $comments) {
     <aside class="column">
         <div class="side-nav">
             <h4 class="heading"><?= __('Actions') ?></h4>
-            <?= $this->Html->link(__('Edit Order'), ['action' => 'edit', $order->id], ['class' => 'side-nav-item']) ?>
-            <?= $this->Form->postLink(__('Delete Order'), ['action' => 'delete', $order->id], ['confirm' => __('Are you sure you want to delete # {0}?', $order->id), 'class' => 'side-nav-item']) ?>
-            <?= $this->Html->link(__('List Orders'), ['action' => 'index'], ['class' => 'side-nav-item']) ?>
-            <?= $this->Html->link(__('New Order'), ['action' => 'add'], ['class' => 'side-nav-item']) ?>
+            <?= $this->Html->link('<i class="fas fa-edit"></i> ' . __('Edit Order'), ['action' => 'edit', $order->id], ['class' => 'btn btn-sm btn-primary mb-1', 'escape' => false]) ?>
+            <?= $this->Form->postLink('<i class="fas fa-trash"></i> ' . __('Delete Order'), ['action' => 'delete', $order->id], ['confirm' => __('Are you sure you want to delete # {0}?', $order->id), 'class' => 'btn btn-sm btn-danger mb-1', 'escape' => false]) ?>
+            <?= $this->Html->link('<i class="fas fa-list"></i> ' . __('List Orders'), ['action' => 'index'], ['class' => 'btn btn-sm btn-info mb-1', 'escape' => false]) ?>
+            <?= $this->Html->link('<i class="fas fa-plus"></i> ' . __('New Order'), ['action' => 'add'], ['class' => 'btn btn-sm btn-success mb-1', 'escape' => false]) ?>
         </div>
     </aside>
     <div class="column-responsive column-80">
