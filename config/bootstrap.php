@@ -20,6 +20,8 @@ declare(strict_types=1);
  */
 require __DIR__ . DIRECTORY_SEPARATOR . 'paths.php';
 
+require_once __DIR__ . '/../vendor/KanbadaPackages/Constants.php';
+
 /*
  * Bootstrap CakePHP.
  *
