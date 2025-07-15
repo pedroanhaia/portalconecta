@@ -118,7 +118,13 @@
 				// Alternar sidebar
 				toggle.addEventListener("click", () => {
 					sidebar.classList.toggle("close");
+                    body.classList.toggle("sidebar-collapsed");
 				});
+
+                // Verifica o estado inicial da sidebar para aplicar a classe ao body
+                if (sidebar.classList.contains("close")) {
+                    body.classList.add("sidebar-collapsed");
+                }
 
 				// Alternar modo escuro
 				modeSwitch.addEventListener("click", () => {
