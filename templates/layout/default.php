@@ -109,7 +109,7 @@
 	// Sidebar 
 		if (typeof body === 'undefined') {
 			document.addEventListener("DOMContentLoaded", function () {
-				const body = document.querySelector("body");
+				const body = document.querySelector("main");
 				const sidebar = body.querySelector("nav.sidebar");
 				const toggle = body.querySelector(".toggle");
 				const modeSwitch = body.querySelector(".toggle-switch");
