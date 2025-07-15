@@ -47,8 +47,6 @@ function statusHasComments($status, $comments) {
                     echo $this->Form->control('id_customer', ['options' => $customersOpt, 'empty' => 'Selecione...']);
                     echo $this->Form->control('value');
                     echo $this->Form->control('status', ['options' => C_PedidosStatusOpt, 'empty' => 'Selecione...']);
-                    echo $this->Form->control('type', ['options' => C_TipoPedido, 'empty' => 'Selecione...']);
-                    echo $this->Form->control('role', ['options' => C_FuncaoPedido, 'empty' => 'Selecione...']);
                 ?>
             </fieldset>
             <?= $this->Form->button(__('Submit')) ?>
