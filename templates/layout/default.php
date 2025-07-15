@@ -53,8 +53,8 @@
 						<?= $this->Html->link(
 							$this->Html->image('logo.png', ['alt' => 'logo', 'class' => 'mini-sidebar']) .
 							$this->Html->image('logo.png', ['alt' => 'logo', 'class' => 'open-sidebar']),
-							['controller' => 'Orders', 'action' => 'index'],
-							['escape' => false]
+							'https://cglinox.com.br/',
+							['escape' => false, 'target' => '_blank']
 						); ?>
 					</li>
 					<li class="nav-link">
@@ -94,7 +94,7 @@
 			</div>
 		</div>
 	</nav>
-	<main class="main">
+	<main class="main sidebar-collapsed">
 		<div class="main-content">
 			<?= $this->Flash->render() ?>
 			<?= $this->element('preload'); ?>

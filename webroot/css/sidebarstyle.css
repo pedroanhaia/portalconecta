@@ -23,16 +23,6 @@
 	--tran-05: all 0.3s ease;
 }
 
-body.sidebar-collapsed .main {
-    width: calc(100% - 60px);
-    left: 60px;
-}
-
-body:not(.sidebar-collapsed) .main {
-    width: calc(100% - 250px);
-    left: 250px;
-}
-
 body{
 	/*min-height: 100vh;*/
 	background-color: var(--body-color);
