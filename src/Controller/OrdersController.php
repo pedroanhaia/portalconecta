@@ -22,11 +22,38 @@ class OrdersController extends AppController
 
 	public function view($id = null)
 	{
-		$order = $this->Orders->get($id, [
-			'contain' => [],
-		]);
+		$order = $this->Orders->findById($id)
+			->contain(['OrdersLog', 'OrdersLog.Users', 'OrdersLog.Comments', 'OrdersLog.Comments.Users'])
+			->first();
 
-		$this->set(compact('order'));
+		$newLog = [];
+
+		if ($order && $order->orders_log) {
+			foreach ($order->orders_log as $entry) {
+				$mensagens = [];
+
+				if ($entry->comments) {
+					foreach ($entry->comments as $c) {
+						$mensagens[] = [
+							'comentario' => $c->message,
+							'autor' => $c->user->name ?? 'Desconhecido'
+						];
+					}
+				}
+
+				$newLog[] = [
+					'id' => $entry->id,
+					'status' => $entry->new_status,
+					'data' => (new \Cake\I18n\FrozenTime($entry->modified))->i18nFormat('dd/MM/yyyy - HH:mm'),
+					'user' => [
+						'name' => $entry->user->name ?? 'Desconhecido'
+					],
+					'mensagens' => $mensagens
+				];
+			}
+		}
+
+		$this->set(compact('order', 'newLog'));
 	}
 
 	public function add()
