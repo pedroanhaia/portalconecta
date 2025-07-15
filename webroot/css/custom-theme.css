@@ -44,7 +44,7 @@ body {
 .btn-primary {
     background-color: var(--cgl-primary);
     border-color: var(--cgl-primary);
-    color: var(--cgl-white);
+    color: var(--cgl-white) !important;
     position: relative;
     overflow: hidden;
     transition: 0.5s;

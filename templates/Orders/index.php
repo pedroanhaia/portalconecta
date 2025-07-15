@@ -1,7 +1,7 @@
 <div class="content">
 	<div class="row">
 		<div class="col-12">
-			<?= $this->Html->link(__('Novo pedido'), ['action' => 'add'], ['class' => 'btn btn-lg btn-success float-right']) ?>
+			<?= $this->Html->link('<i class="fas fa-plus"></i> ' . __('Novo pedido'), ['action' => 'add'], ['class' => 'btn btn-sm btn-primary mb-1 float-right', 'escape' => false]) ?>
 			<h3> Pedidos </h3>
 		</div>
 	</div>
