@@ -1,0 +1,44 @@
+/* webroot/css/custom-theme.css */
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    color: #333;
+}
+
+/* Botões */
+.btn-primary {
+    background-color: #0a2b5a !important;
+    border-color: #0a2b5a !important;
+    color: #fff !important;
+}
+
+.btn-primary:hover {
+    background-color: #082247 !important;
+    border-color: #082247 !important;
+}
+
+.btn-danger {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+}
+
+.btn-info {
+    background-color: #f37021 !important;
+    border-color: #f37021 !important;
+    color: #fff !important;
+}
+
+.btn-info:hover {
+    background-color: #d6601b !important;
+    border-color: #d6601b !important;
+}
+
+/* Outros estilos */
+.card {
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.heading {
+    color: #0a2b5a;
+}

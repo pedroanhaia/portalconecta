@@ -12,8 +12,9 @@
 	</title>
 	<?= $this->Html->meta('icon', '/webroot/img/logo.png'); ?>
 
+	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
 	<?= $this->Html->css(['https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css', 'https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css', 'https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css']) ?>
-	<?= $this->Html->css(['mainstyle','normalize.min', 'milligram.min', 'fonts', 'cake', 'sidebarstyle', 'buttons']) ?>
+	<?= $this->Html->css(['mainstyle','normalize.min', 'milligram.min', 'fonts', 'cake', 'sidebarstyle', 'buttons', 'custom-theme']) ?>
 
 	<?= $this->Html->script(['https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js']) ?>
 	<?= $this->Html->script(["https://code.jquery.com/jquery-3.7.1.min.js", 'selectfolder']) ?>
