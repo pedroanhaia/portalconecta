@@ -39,57 +39,71 @@ function statusHasComments($status, $comments) {
     </aside>
     <div class="column-responsive column-80">
         
-        <div class="content">
-            <div class="card" >
-                <div class="card-body">
-                    <!-- Linha do tempo -->
-                    <div class="timeline">
-                        <div class="status-arrow"></div>
-                        <div class="status-bar">
-                            <?php foreach ($statuses as $key => $info): ?>
-                                <div class="status-step <?= ($key === $currentStatus) ? 'active' : (($key < $currentStatus) ? 'complete' : '') ?>" data-key="<?= $key ?>">
-                                    <?php if ($key === $currentStatus): ?>
-                                        <div class="logo-holder"><img src="<?= $this->Url->image('logo.png') ?>" class="logo-status" alt="logo" /></div>
-                                    <?php else: ?>
-                                        <div class="logo-holder"></div>
-                                    <?php endif; ?>
-                                    <div class="icon clickable-status" data-status="<?= $key ?>" data-text="<?= h($info['text']) ?>">
-                                        <?= $info['icon'] ?>
-                                    </div>
-                                    <span><?= h($info['text']) ?></span>
+        <ul class="nav nav-tabs" id="orderTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button" role="tab" aria-controls="timeline" aria-selected="true">Linha do Tempo</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="edit-order-tab" data-bs-toggle="tab" data-bs-target="#edit-order" type="button" role="tab" aria-controls="edit-order" aria-selected="false">Editar Pedido</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="orderTabsContent">
+            <div class="tab-pane fade show active" id="timeline" role="tabpanel" aria-labelledby="timeline-tab">
+                <div class="content">
+                    <div class="card" >
+                        <div class="card-body">
+                            <!-- Linha do tempo -->
+                            <div class="timeline">
+                                <div class="status-arrow"></div>
+                                <div class="status-bar">
+                                    <?php foreach ($statuses as $key => $info): ?>
+                                        <div class="status-step <?= ($key === $currentStatus) ? 'active' : (($key < $currentStatus) ? 'complete' : '') ?>" data-key="<?= $key ?>">
+                                            <?php if ($key === $currentStatus): ?>
+                                                <div class="logo-holder"><img src="<?= $this->Url->image('logo.png') ?>" class="logo-status" alt="logo" /></div>
+                                            <?php else: ?>
+                                                <div class="logo-holder"></div>
+                                            <?php endif; ?>
+                                            <div class="icon clickable-status" data-status="<?= $key ?>" data-text="<?= h($info['text']) ?>">
+                                                <?= $info['icon'] ?>
+                                            </div>
+                                            <span><?= h($info['text']) ?></span>
+                                        </div>
+                                    <?php endforeach; ?>
                                 </div>
-                            <?php endforeach; ?>
+                            </div>
+
+                            <!-- Histórico -->
+                            <div class="history">
+                                <h4>Histórico:</h4>
+                            </div>
+
+                            <!-- Adicionar comentário -->
+                            <div>
+                                <label for="comment">Adicionar comentário:</label>
+                                <textarea id="comment" class="form-control"></textarea>
+                            </div>
                         </div>
-                    </div>
-
-                    <!-- Histórico -->
-                    <div class="history">
-                        <h4>Histórico:</h4>
-                    </div>
-
-                    <!-- Adicionar comentário -->
-                    <div>
-                        <label for="comment">Adicionar comentário:</label>
-                        <textarea id="comment" class="form-control"></textarea>
                     </div>
                 </div>
             </div>
-			<div class="orders form content">
-				<?= $this->Form->create($order) ?>
-				<fieldset>
-					<legend><?= __('Edit Order') ?></legend>
-					<?php
-						echo $this->Form->control('number');
-						echo $this->Form->control('id_customer', ['options' => $customersOpt, 'empty' => 'Selecione...']);
-						echo $this->Form->control('value');
-						echo $this->Form->control('status', ['options' => C_PedidosStatusOpt, 'empty' => 'Selecione...']);
-					?>
-				</fieldset>
-				<?= $this->Form->button(__('Submit')) ?>
-				<?= $this->Form->end() ?>
-			</div>
+            <div class="tab-pane fade" id="edit-order" role="tabpanel" aria-labelledby="edit-order-tab">
+                <div class="orders form content">
+                    <?= $this->Form->create($order) ?>
+                    <fieldset>
+                        <legend><?= __('Edit Order') ?></legend>
+                        <?php
+                            echo $this->Form->control('number');
+                            echo $this->Form->control('id_customer', ['options' => $customersOpt, 'empty' => 'Selecione...']);
+                            echo $this->Form->control('value');
+                            echo $this->Form->control('status', ['options' => C_PedidosStatusOpt, 'empty' => 'Selecione...']);
+                        ?>
+                    </fieldset>
+                    <?= $this->Form->button(__('Submit')) ?>
+                    <?= $this->Form->end() ?>
+                </div>
+            </div>
         </div>
-        
     </div>
 </div>
 
