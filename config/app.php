@@ -427,4 +427,69 @@ return [
     'DebugKit' => [
         'ignoreAuthorization' => true,
     ],
+
+    /*
+     * Configurações de Arquivos do Sistema
+     */
+    'Files' => [
+        // Caminho base para armazenamento de arquivos
+        'basePath' => ROOT . DS . 'files',
+        
+        // Categorias permitidas e suas configurações
+        'categories' => [
+            'pedido' => [
+                'label' => 'Pedido',
+                'description' => 'Documentos relacionados ao pedido',
+                'icon' => 'fas fa-file-invoice',
+                'allowedExtensions' => ['pdf', 'doc', 'docx', 'xls', 'xlsx']
+            ],
+            'equipamento' => [
+                'label' => 'Equipamento',
+                'description' => 'Manuais e especificações do equipamento',
+                'icon' => 'fas fa-cogs',
+                'allowedExtensions' => ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png']
+            ],
+            'fotos' => [
+                'label' => 'Fotos',
+                'description' => 'Imagens e fotografias do projeto',
+                'icon' => 'fas fa-images',
+                'allowedExtensions' => ['jpg', 'jpeg', 'png', 'gif', 'bmp']
+            ],
+            'art' => [
+                'label' => 'ART',
+                'description' => 'Anotação de Responsabilidade Técnica',
+                'icon' => 'fas fa-certificate',
+                'allowedExtensions' => ['pdf']
+            ],
+            'testes' => [
+                'label' => 'Testes',
+                'description' => 'Relatórios e resultados de testes',
+                'icon' => 'fas fa-flask',
+                'allowedExtensions' => ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv']
+            ],
+            'databook' => [
+                'label' => 'Databook',
+                'description' => 'Livro de dados e especificações técnicas',
+                'icon' => 'fas fa-book',
+                'allowedExtensions' => ['pdf', 'doc', 'docx']
+            ]
+        ],
+        
+        // Tamanho máximo de arquivo em bytes (50MB)
+        'maxFileSize' => 52428800,
+        
+        // Tipos MIME permitidos
+        'allowedMimeTypes' => [
+            'application/pdf',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/vnd.ms-excel',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'image/jpeg',
+            'image/png',
+            'image/gif',
+            'image/bmp',
+            'text/csv'
+        ]
+    ],
 ];

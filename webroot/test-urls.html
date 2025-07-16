@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste URL OrderFilesManager</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+</head>
+<body>
+    <h1>Teste de URLs do OrderFilesManager</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Simular estrutura do OrderFilesManager
+        var testManager = {
+            config: {
+                orderBaseUrl: '',
+                orderId: 1
+            },
+            
+            init: function(baseUrl, orderId) {
+                this.config.orderBaseUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+                this.config.orderId = orderId;
+                
+                $('#results').append('<p><strong>URL Base configurada:</strong> ' + this.config.orderBaseUrl + '</p>');
+                $('#results').append('<p><strong>Order ID:</strong> ' + this.config.orderId + '</p>');
+                
+                // Testar URLs
+                var checkUrl = this.config.orderBaseUrl + 'Files/checkCategory';
+                var listUrl = this.config.orderBaseUrl + 'Files/listCategory';
+                var downloadUrl = this.config.orderBaseUrl + 'Files/downloadFile';
+                
+                $('#results').append('<p><strong>URL checkCategory:</strong> ' + checkUrl + '</p>');
+                $('#results').append('<p><strong>URL listCategory:</strong> ' + listUrl + '</p>');
+                $('#results').append('<p><strong>URL downloadFile:</strong> ' + downloadUrl + '</p>');
+            }
+        };
+        
+        $(document).ready(function() {
+            // Simular diferentes tipos de URL base que podem vir do CakePHP
+            var testUrls = [
+                '/',
+                '/cglconecta/',
+                'http://localhost/cglconecta/',
+                'http://localhost/'
+            ];
+            
+            testUrls.forEach(function(url, index) {
+                $('#results').append('<h3>Teste ' + (index + 1) + ' - URL: "' + url + '"</h3>');
+                testManager.init(url, 1);
+                $('#results').append('<hr>');
+            });
+        });
+    </script>
+</body>
+</html>

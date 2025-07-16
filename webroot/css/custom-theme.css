@@ -78,6 +78,32 @@ body {
     color: var(--cgl-white) !important;
 }
 
+/* Estilo específico para botões da side-nav */
+.side-nav .btn {
+    background-color: var(--cgl-primary, #1a2f33) !important;
+    border-color: var(--cgl-primary, #1a2f33) !important;
+    color: var(--cgl-white, #FFFFFF) !important;
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    display: inline-block;
+    text-decoration: none;
+}
+
+.side-nav .btn:hover {
+    background-color: var(--cgl-hover, #768285) !important;
+    border-color: var(--cgl-hover, #768285) !important;
+    color: var(--cgl-white, #FFFFFF) !important;
+    transform: none;
+    text-decoration: none;
+}
+
+.side-nav .btn i {
+    color: var(--cgl-white, #FFFFFF) !important;
+    margin-right: 8px;
+}
+
 .btn-info {
     background-color: var(--cgl-primary) !important;
     border-color: var(--cgl-primary) !important;

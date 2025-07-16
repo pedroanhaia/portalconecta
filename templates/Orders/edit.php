@@ -47,8 +47,12 @@ function statusHasComments($status, $comments) {
                                 <div class="status-bar">
                                     <?php foreach ($statuses as $key => $info): ?>
                                         <div class="status-step <?= ($key === $currentStatus) ? 'active' : (($key < $currentStatus) ? 'complete' : '') ?>" data-key="<?= $key ?>">
-                                            <?php if ($key === $currentStatus): ?>
-                                                <div class="logo-holder"><img src="<?= $this->Url->image('tanque.png') ?>" class="logo-status" alt="tanque" /></div>
+                                            <?php
+												$image ='tanque'.$currentStatus.'.png';
+												 
+											?>
+											<?php if ($key === $currentStatus): ?>
+                                                <div class="logo-holder"><img src="<?= $this->Url->image($image) ?>" class="logo-status" alt="tanque" /></div>
                                             <?php else: ?>
                                                 <div class="logo-holder"></div>
                                             <?php endif; ?>
@@ -167,7 +171,12 @@ function statusHasComments($status, $comments) {
                         <?php
                             echo $this->Form->control('number');
                             echo $this->Form->control('id_customer', ['options' => $customersOpt, 'empty' => 'Selecione...']);
-                            echo $this->Form->control('value');
+                            echo $this->Form->control('value', [
+                                'type' => 'text',
+                                'class' => 'form-control money-mask',
+                                'placeholder' => 'R$ 0,00',
+                                'data-mask' => 'currency'
+                            ]);
                         ?>
                     </fieldset>
                     <?= $this->Form->button(__('Submit')) ?>
@@ -196,425 +205,54 @@ function statusHasComments($status, $comments) {
 	</div>
 </div>
 
+<!-- Incluir CSS específico -->
+<?= $this->Html->css('orders-timeline') ?>
+
+<!-- Incluir JavaScript específico -->
+<?= $this->Html->script('orders-comments') ?>
+
 <script>
-	$(document).ready(function () {
-		window.comentarios = <?= json_encode($newLog) ?>;
-
-		let statusSelecionado = null;
-
-		// Envio do formulário de comentários via AJAX
-		$('#commentForm').on('submit', function(e) {
-			e.preventDefault();
-			
-			const formData = new FormData(this);
-			const comment = $('textarea[name="comment"]').val().trim();
-			
-			if (!comment) {
-				alert('Por favor, digite um comentário.');
-				return;
-			}
-			
-			// Desabilita o botão durante o envio
-			const submitBtn = $(this).find('button[type="submit"]');
-			const originalText = submitBtn.html();
-			submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enviando...');
-			
-			$.ajax({
-				url: $(this).attr('action'),
-				method: 'POST',
-				data: formData,
-				processData: false,
-				contentType: false,
-				headers: {
-					'X-Requested-With': 'XMLHttpRequest'
-				},
-				success: function(response) {
-					if (response.success) {
-						// Limpa o formulário
-						$('textarea[name="comment"]').val('');
-						
-						// Adiciona o novo comentário à lista
-						const newComment = `
-							<div class="comment-item">
-								<div class="comment-header">
-									<strong>${response.data.user_name || 'Você'}</strong>
-									<small class="text-muted">Agora</small>
-								</div>
-								<div class="comment-text">
-									${response.data.comment}
-								</div>
-								<div class="comment-status">
-									<small class="badge badge-info">Status: ${response.data.status_text || 'Atual'}</small>
-								</div>
-							</div>
-						`;
-						
-						// Remove a mensagem "Nenhum comentário" se existir
-						$('#commentsList .text-muted').remove();
-						
-						// Adiciona o novo comentário no topo (mais recente primeiro)
-						$('#commentsList').prepend(newComment);
-						
-						// Mostra mensagem de sucesso
-						showMessage('Comentário adicionado com sucesso!', 'success');
-					} else {
-						showMessage('Erro ao adicionar comentário: ' + (response.message || 'Erro desconhecido'), 'error');
-					}
-				},
-				error: function(xhr) {
-					console.error('Erro:', xhr);
-					showMessage('Erro ao enviar comentário. Tente novamente.', 'error');
-				},
-				complete: function() {
-					// Reabilita o botão
-					submitBtn.prop('disabled', false).html(originalText);
-				}
-			});
-		});
-
-		// Função para mostrar mensagens
-		function showMessage(message, type) {
-			const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-			const alertHtml = `
-				<div class="alert ${alertClass} alert-dismissible fade show mt-2" role="alert">
-					${message}
-					<button type="button" class="close" data-dismiss="alert">
-						<span>&times;</span>
-					</button>
-				</div>
-			`;
-			
-			// Remove alertas anteriores
-			$('.add-comment-form .alert').remove();
-			
-			// Adiciona novo alerta
-			$('.add-comment-form').prepend(alertHtml);
-			
-			// Remove automaticamente após 5 segundos
-			setTimeout(function() {
-				$('.add-comment-form .alert').fadeOut();
-			}, 5000);
-		}
-
-		$('.btn-comment').on('click', function () {
-			const logId = $(this).data('status');
-			const filtrados = window.comentarios.filter(c => c.refcomment == logId);
-
-			let html = `<h4>Comentários</h4><ul>`;
-			filtrados.forEach(c => {
-				const autor = c.user?.name ?? 'Desconhecido';
-				html += `<li><strong>${autor}:</strong> ${c.comentario}</li>`;
-			});
-			html += '</ul>';
-			$('#comentariosModal').html(html);
-			$('#modalComent').show();
-		});
-
-		$('.close').click(function () {
-			$('.modal').hide();
-		});
-
-		$(window).on('click', function (event) {
-			if ($(event.target).hasClass('modal')) $('.modal').hide();
-		});
-
-		$('.clickable-status').on('click', function () {
-			statusSelecionado = $(this).data('status');
-			const texto = $(this).data('text');
-			$('#modalStatusText').text(`Confirmar alteração do pedido para o status "${texto}"?`);
-			$('#modalStatusComentario').val('');
-			$('#modalStatus').show();
-		});
-
-		$('#confirmarStatusBtn').on('click', function () {
-			const comentario = $('#modalStatusComentario').val();
-			$.ajax({
-				type: 'POST',
-				url: `<?= $this->Url->build(["controller" => "Orders", "action" => "changeStatus"]) ?>`,
-				data: {
-					pedido_id: <?= $order->id ?>,
-					status: statusSelecionado,
-					comentario: comentario
-				},
-				success: function (res) {
-					if (!res.success) {
-						alert('Erro: ' + res.message);
-						return;
-					}
-
-					// Atualiza o logo e classes de status
-					$('.logo-holder').html('');
-					$(`.status-step[data-key='${statusSelecionado}'] .logo-holder`).html('<img src="<?= $this->Url->image('tanque.png') ?>" class="logo-status" alt="tanque" />');
-					$('.status-step').removeClass('active').removeClass('complete');
-					$('.status-step').each(function () {
-						const stepKey = parseInt($(this).attr('data-key'));
-						if (stepKey < statusSelecionado) $(this).addClass('complete');
-						if (stepKey === statusSelecionado) $(this).addClass('active');
-					});
-
-					renderHistorico(res.new_log);
-
-					$('#modalStatus').hide();
-				},
-				error: function () {
-					alert('Erro ao alterar status.');
-				}
-			});
-		});
-
-		renderHistorico(window.comentarios);
-
-		function renderHistorico(logs) {
-			let historicoHtml = '<h4>Histórico:</h4>';
-
-			logs.forEach(entry => {
-				historicoHtml += `<p>`;
-				historicoHtml += `<span class="text-content"><strong>${PedidosStatus(entry.status)}:</strong> ${entry.data}</span>`;
-
-				if (entry.mensagens && entry.mensagens.length > 0) {
-					historicoHtml += `<button class="btn-comment" data-status="${entry.id}">💬</button>`;
-				}
-
-				historicoHtml += `</p>`;
-			});
-
-			$('.history').html(historicoHtml);
-
-			// Reatribuir eventos dos botões de comentário
-			$('.btn-comment').off('click').on('click', function () {
-				const logId = $(this).data('status');
-				const log = logs.find(l => l.id == logId);
-
-				let html = `<h4>Comentários</h4><ul>`;
-				log?.mensagens.forEach(m => {
-					html += `<li><strong>${m.autor}:</strong> ${m.comentario}</li>`;
-				});
-				html += '</ul>';
-
-				$('#comentariosModal').html(html);
-				$('#modalComent').show();
-			});
-		}
-	});
-
-	function PedidosStatus($status) {
-		if ($status == <?= C_PedidosStatusRecebido ?> )		return 'Recebido';
-		if ($status == <?= C_PedidosStatusEmProjeto ?> )	return 'Em projeto';
-		if ($status == <?= C_PedidosStatusEmFabricação ?> )	return 'Em fabricação';
-		if ($status == <?= C_PedidosStatusEmTransporte ?> )	return 'Em transporte';
-		if ($status == <?= C_PedidosStatusEntregue ?> )		return 'Entregue';
-	}
-</script>
-
-<style>
-.logo-holder {
-	height: 60px;
-	margin-bottom: 5px;
-}
-
-.logo-status {
-	width: 50px;
-	display: block;
-	margin: 0 auto;
-	transition: all 0.5s ease;
-}
-
-.status-arrow {
-	height: 10px;
-	background: linear-gradient(to right, #ccc 0%, #ccc 100%);
-	position: relative;
-	margin: 20px 0 5px;
-	border-radius: 5px;
-}
-.history {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-}
-
-.history h4 {
-	margin-bottom: 0;
-	width: 100%;
-	max-width: 600px;
-	text-align: left;
-}
-
-.history p {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	width: 100%;
-	max-width: 600px;
-	margin: 5px 0;
-}
-
-.history p .text-content {
-	flex: 1;
-	text-align: left;
-}
-
-.history p .btn-comment {
-	margin-left: 10px;
-	white-space: nowrap;
-}
-
-.status-bar {
-	display: flex;
-	justify-content: space-between;
-	align-items: flex-start;
-	position: relative;
-}
-.status-step {
-	text-align: center;
-	flex: 1;
-	position: relative;
-}
-.status-step .icon {
-	font-size: 20px;
-	color: gray;
-	margin-bottom: 5px;
-	cursor: pointer;
-	transition: transform 0.3s, color 0.3s;
-}
-.status-step .icon:hover {
-	transform: scale(1.2);
-	color: #007bff;
-}
-
-.status-step.complete .icon {
-	color: green;
-}
-.status-step.active .icon {
-	color: red;
-	font-size: 24px;
-	font-weight: bold;
-}
-.btn-comment {
-	background: none;
-	border: none;
-	cursor: pointer;
-	font-size: 1.2em;
-}
-.modal {
-	position: fixed;
-	z-index: 9999;
-	left: 0; top: 0; right: 0; bottom: 0;
-	background-color: rgba(0,0,0,0.4);
-	display: flex;
-	justify-content: center;
-	align-items: center;
-}
-.modal-content {
-	background: white;
-	padding: 20px;
-	border-radius: 5px;
-	max-width: 400px;
-	width: 100%;
-}
-.close {
-	float: right;
-	font-size: 1.5em;
-	cursor: pointer;
-}
-
-/* Estilo para a caixa de comentários */
-.comments-box {
-    background: var(--cgl-white, #FFFFFF);
-    border: 1px solid var(--cgl-border-color, #e9ecef);
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.comments-box h5 {
-    color: var(--cgl-primary, #1a2f33);
-    margin-bottom: 15px;
-    border-bottom: 2px solid var(--cgl-primary, #1a2f33);
-    padding-bottom: 8px;
-}
-
-.comments-list {
-    max-height: 300px;
-    overflow-y: auto;
-    margin-bottom: 15px;
-}
-
-.comment-item {
-    border-bottom: 1px solid #f0f0f0;
-    padding: 10px 0;
-    margin-bottom: 10px;
-}
-
-.comment-item:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-}
-
-.comment-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-}
-
-.comment-header strong {
-    color: var(--cgl-primary, #1a2f33);
-    font-size: 0.9em;
-}
-
-.comment-header small {
-    color: #888;
-    font-size: 0.8em;
-}
-
-.comment-text {
-    color: var(--cgl-text-color, #1a2f33);
-    font-size: 0.9em;
-    line-height: 1.4;
-    margin-bottom: 5px;
-}
-
-.comment-status {
-    margin-top: 5px;
-}
-
-.comment-status .badge {
-    background-color: var(--cgl-primary, #1a2f33);
-    color: var(--cgl-white, #FFFFFF);
-    font-size: 0.7em;
-    padding: 2px 6px;
-}
-
-.add-comment-form {
-    border-top: 1px solid #f0f0f0;
-    padding-top: 15px;
-}
-
-.add-comment-form .form-control {
-    border: 1px solid var(--cgl-border-color, #e9ecef);
-    border-radius: 5px;
-    font-size: 0.9em;
-}
-
-.add-comment-form .form-control:focus {
-    border-color: var(--cgl-primary, #1a2f33);
-    box-shadow: 0 0 0 0.2rem rgba(26, 47, 51, 0.25);
-}
-
-.add-comment-form .btn {
-    font-size: 0.9em;
-}
-
-/* Responsividade para comentários */
-@media (max-width: 768px) {
-    .comments-box {
-        margin-bottom: 20px;
-    }
+$(document).ready(function () {
+    // Configurações específicas da edit
+    window.comentarios = <?= json_encode($newLog) ?>;
     
-    .comments-list {
-        max-height: 200px;
+    // Configurações de tradução de status
+    window.statusTranslations = {
+        <?= C_PedidosStatusRecebido ?>: 'Recebido',
+        <?= C_PedidosStatusEmProjeto ?>: 'Em projeto',
+        <?= C_PedidosStatusEmFabricação ?>: 'Em fabricação',
+        <?= C_PedidosStatusEmTransporte ?>: 'Em transporte',
+        <?= C_PedidosStatusEntregue ?>: 'Entregue'
+    };
+    
+    // Configurações para mudança de status
+    window.currentOrderId = <?= $order->id ?>;
+    window.changeStatusUrl = '<?= $this->Url->build(["controller" => "Orders", "action" => "changeStatus"]) ?>';
+    window.statusLogoHtml = '<img src="<?= $this->Url->image('tanque.png') ?>" class="logo-status" alt="tanque" />';
+    
+    // Máscara monetária para o campo value
+    $('.money-mask').on('input', function() {
+        let value = this.value.replace(/\D/g, ''); // Remove tudo que não é dígito
+        value = (value / 100).toFixed(2) + ''; // Divide por 100 e fixa em 2 decimais
+        value = value.replace('.', ','); // Troca ponto por vírgula
+        value = value.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.'); // Adiciona pontos a cada 3 dígitos
+        this.value = 'R$ ' + value;
+    });
+    
+    // Quando o formulário for enviado, converte o valor para formato numérico
+    $('form').on('submit', function() {
+        let valueField = $('.money-mask');
+        let numericValue = valueField.val()
+            .replace('R$ ', '')
+            .replace(/\./g, '')
+            .replace(',', '.');
+        valueField.val(numericValue);
+    });
+    
+    // Formata o valor inicial se existir
+    if ($('.money-mask').val()) {
+        $('.money-mask').trigger('input');
     }
-}
-</style>
+});
+</script>
 

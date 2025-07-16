@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Teste do Sistema de Arquivos</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button { padding: 10px 15px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Teste do Sistema de Arquivos</h1>
+    
+    <div class="test-section">
+        <h2>1. Teste de Conectividade do Controller</h2>
+        <button onclick="testController()">Testar FilesController</button>
+        <div id="controller-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Teste de URLs</h2>
+        <button onclick="testUrls()">Verificar URLs</button>
+        <div id="url-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Teste checkCategory</h2>
+        <button onclick="testCheckCategory()">Testar checkCategory</button>
+        <div id="checkcategory-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Teste listCategory</h2>
+        <button onclick="testListCategory()">Testar listCategory</button>
+        <div id="listcategory-result"></div>
+    </div>
+    
+    <script>
+        function testController() {
+            $('#controller-result').html('<span class="info">Testando...</span>');
+            
+            $.ajax({
+                url: '/files/test',
+                method: 'GET',
+                success: function(response) {
+                    $('#controller-result').html('<span class="success">✓ Controller funcionando: ' + JSON.stringify(response) + '</span>');
+                },
+                error: function(xhr, status, error) {
+                    $('#controller-result').html('<span class="error">✗ Erro: ' + status + ' - ' + error + ' (Status: ' + xhr.status + ')</span>');
+                }
+            });
+        }
+        
+        function testUrls() {
+            const baseUrl = window.location.origin + '/';
+            const urls = [
+                baseUrl + 'files/test',
+                baseUrl + 'files/checkCategory',
+                baseUrl + 'files/listCategory'
+            ];
+            
+            let html = '<h3>URLs sendo testadas:</h3><ul>';
+            urls.forEach(url => {
+                html += '<li>' + url + '</li>';
+            });
+            html += '</ul>';
+            
+            $('#url-result').html(html);
+        }
+        
+        function testCheckCategory() {
+            $('#checkcategory-result').html('<span class="info">Testando checkCategory...</span>');
+            
+            $.ajax({
+                url: '/files/checkCategory',
+                method: 'POST',
+                data: {
+                    order_id: 1,
+                    category: 'pedido',
+                    folder: 'pedido'
+                },
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    $('#checkcategory-result').html('<span class="success">✓ checkCategory funcionando: ' + JSON.stringify(response) + '</span>');
+                },
+                error: function(xhr, status, error) {
+                    let errorMsg = 'Status: ' + xhr.status + ', Error: ' + error;
+                    if (xhr.responseText) {
+                        errorMsg += ', Response: ' + xhr.responseText.substring(0, 200);
+                    }
+                    $('#checkcategory-result').html('<span class="error">✗ Erro checkCategory: ' + errorMsg + '</span>');
+                }
+            });
+        }
+        
+        function testListCategory() {
+            $('#listcategory-result').html('<span class="info">Testando listCategory...</span>');
+            
+            $.ajax({
+                url: '/files/listCategory',
+                method: 'POST',
+                data: {
+                    order_id: 1,
+                    category: 'pedido',
+                    folder: 'pedido'
+                },
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function(response) {
+                    $('#listcategory-result').html('<span class="success">✓ listCategory funcionando: ' + JSON.stringify(response) + '</span>');
+                },
+                error: function(xhr, status, error) {
+                    let errorMsg = 'Status: ' + xhr.status + ', Error: ' + error;
+                    if (xhr.responseText) {
+                        errorMsg += ', Response: ' + xhr.responseText.substring(0, 200);
+                    }
+                    $('#listcategory-result').html('<span class="error">✗ Erro listCategory: ' + errorMsg + '</span>');
+                }
+            });
+        }
+        
+        // Executar teste de URLs automaticamente ao carregar a página
+        $(document).ready(function() {
+            testUrls();
+        });
+    </script>
+</body>
+</html>

@@ -38,17 +38,31 @@ function statusHasComments($status, $comments) {
         <div class="orders view content">
             <h3>Visualização do Pedido: <?= h($order->id) ?></h3>
 
-            <div class="col-md-12 content">
-                <div class="card" >
-                    <div class="card-body">
+            <ul class="nav nav-tabs" id="orderTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="timeline-tab" data-bs-toggle="tab" data-bs-target="#timeline" type="button" role="tab" aria-controls="timeline" aria-selected="true">Linha do Tempo</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="files-tab" data-bs-toggle="tab" data-bs-target="#files" type="button" role="tab" aria-controls="files" aria-selected="false">Arquivos</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="orderTabsContent">
+                <div class="tab-pane fade show active" id="timeline" role="tabpanel" aria-labelledby="timeline-tab">
+                    <div class="col-md-12 content">
+                        <div class="card" >
+                            <div class="card-body">
                         <!-- Linha do tempo -->
                         <div class="timeline">
                             <div class="status-arrow"></div>
                             <div class="status-bar">
                                 <?php foreach ($statuses as $key => $info): ?>
                                     <div class="status-step <?= ($key === $currentStatus) ? 'active' : (($key < $currentStatus) ? 'complete' : '') ?>" data-key="<?= $key ?>">
+                                        <?php
+                                            $image ='tanque'.$currentStatus.'.png';
+                                        ?>
                                         <?php if ($key === $currentStatus): ?>
-                                            <div class="logo-holder"><img src="<?= $this->Url->image('logo.png') ?>" class="logo-status" alt="logo" /></div>
+                                            <div class="logo-holder"><img src="<?= $this->Url->image($image) ?>" class="logo-status" alt="logo" /></div>
                                         <?php else: ?>
                                             <div class="logo-holder"></div>
                                         <?php endif; ?>
@@ -152,419 +166,260 @@ function statusHasComments($status, $comments) {
                     </div>
                 </div>
             </div>
-
-            <!-- Modal Comentários -->
-            <div id="modalComent" class="modal" style="display:none">
-                <div class="modal-content">
-                    <span class="close">&times;</span>
-                    <div id="comentariosModal"></div>
+            
+            <div class="tab-pane fade" id="files" role="tabpanel" aria-labelledby="files-tab">
+                <div class="col-md-12 content">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4>Arquivos do Pedido #<?= h($order->id) ?></h4>
+                            
+                            <!-- Lista de Categorias de Arquivos -->
+                            <div class="files-list">
+                                <?php 
+                                $fileCategories = [
+                                    'pedido' => [
+                                        'label' => 'Pedido',
+                                        'icon' => 'fas fa-file-contract',
+                                        'description' => 'Documentos relacionados ao pedido',
+                                        'folder' => 'pedido-' . $order->id
+                                    ],
+                                    'equipamento' => [
+                                        'label' => 'Equipamento',
+                                        'icon' => 'fas fa-cogs',
+                                        'description' => 'Especificações e manuais do equipamento',
+                                        'folder' => 'equipamento-' . $order->id
+                                    ],
+                                    'fotos' => [
+                                        'label' => 'Fotos',
+                                        'icon' => 'fas fa-images',
+                                        'description' => 'Fotos do processo e equipamento',
+                                        'folder' => 'fotos-' . $order->id
+                                    ],
+                                    'art' => [
+                                        'label' => 'ART',
+                                        'icon' => 'fas fa-certificate',
+                                        'description' => 'Anotação de Responsabilidade Técnica',
+                                        'folder' => 'art-' . $order->id
+                                    ],
+                                    'testes' => [
+                                        'label' => 'Testes',
+                                        'icon' => 'fas fa-vial',
+                                        'description' => 'Relatórios e resultados de testes',
+                                        'folder' => 'testes-' . $order->id
+                                    ],
+                                    'databook' => [
+                                        'label' => 'Databook',
+                                        'icon' => 'fas fa-book',
+                                        'description' => 'Manual técnico e especificações',
+                                        'folder' => 'databook-' . $order->id
+                                    ]
+                                ];
+                                ?>
+                                
+                                <div class="row">
+                                    <?php foreach ($fileCategories as $key => $category): ?>
+                                        <div class="col-md-6 col-lg-4 mb-4">
+                                            <div class="file-category-card" data-category="<?= $key ?>" data-folder="<?= $category['folder'] ?>">
+                                                <div class="card h-100">
+                                                    <div class="card-body text-center">
+                                                        <div class="category-icon mb-3">
+                                                            <i class="<?= $category['icon'] ?> fa-3x"></i>
+                                                        </div>
+                                                        <h5 class="card-title"><?= h($category['label']) ?></h5>
+                                                        <p class="card-text text-muted"><?= h($category['description']) ?></p>
+                                                        
+                                                        <!-- Status de arquivos -->
+                                                        <div class="file-status mb-3">
+                                                            <span class="file-count badge badge-primary" id="count-<?= $key ?>">
+                                                                <i class="fas fa-spinner fa-spin"></i> Verificando...
+                                                            </span>
+                                                        </div>
+                                                        
+                                                        <!-- Botões de ação -->
+                                                        <div class="category-actions">
+                                                            <button class="btn btn-primary btn-sm browse-files" 
+                                                                    data-category="<?= $key ?>" 
+                                                                    data-folder="<?= $category['folder'] ?>">
+                                                                <i class="fas fa-folder-open"></i> Navegar
+                                                            </button>
+                                                            <button class="btn btn-success btn-sm download-all" 
+                                                                    data-category="<?= $key ?>" 
+                                                                    data-folder="<?= $category['folder'] ?>">
+                                                                <i class="fas fa-download"></i> Baixar Tudo
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            
+                            <!-- Área de listagem de arquivos da categoria selecionada -->
+                            <div class="selected-category-files" id="selectedCategoryFiles" style="display: none;">
+                                <hr>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 id="selectedCategoryTitle">Arquivos da Categoria</h5>
+                                    <button class="btn btn-secondary btn-sm" id="backToCategories">
+                                        <i class="fas fa-arrow-left"></i> Voltar às Categorias
+                                    </button>
+                                </div>
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-striped" id="categoryFilesTable">
+                                        <thead>
+                                            <tr>
+                                                <th><i class="fas fa-file"></i> Arquivo</th>
+                                                <th><i class="fas fa-calendar"></i> Data Modificação</th>
+                                                <th><i class="fas fa-weight"></i> Tamanho</th>
+                                                <th><i class="fas fa-download"></i> Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="categoryFilesTableBody">
+                                            <!-- Arquivos serão carregados via AJAX -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Opção para upload de arquivos -->
+                            <div class="upload-files-section mt-4">
+                                <hr>
+                                <div class="row">
+                                    <div class="col-md-12">
+                                        <h6>Gerenciar Arquivos</h6>
+                                        <?= $this->Html->link(
+                                            '<i class="fas fa-upload"></i> Fazer Upload',
+                                            ['controller' => 'Files', 'action' => 'upload', '?' => ['order_id' => $order->id]],
+                                            [
+                                                'class' => 'btn btn-success mr-2',
+                                                'escape' => false
+                                            ]
+                                        ) ?>
+                                        <?= $this->Html->link(
+                                            '<i class="fas fa-cog"></i> Configurar Diretórios',
+                                            ['controller' => 'Orders', 'action' => 'configureDirectories', $order->id],
+                                            [
+                                                'class' => 'btn btn-info',
+                                                'escape' => false
+                                            ]
+                                        ) ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-
         </div>
     </div>
 </div>
 
+<!-- Modal Comentários -->
+<div id="modalComent" class="modal" style="display:none">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <div id="comentariosModal"></div>
+    </div>
+</div>
+
+<!-- Incluir CSS específico -->
+<?= $this->Html->css('orders-timeline') ?>
+
+<!-- Incluir JavaScript específico -->
+<?= $this->Html->script('orders-comments') ?>
+
 <script>
 $(document).ready(function () {
-    // Garante que a variável de comentários exista
+    // Configurações específicas da view
     window.comentarios = <?= isset($newLog) ? json_encode($newLog) : '[]' ?>;
-
-    // Fecha o modal
-    $('.close').click(function () {
-        $('.modal').hide();
-    });
-
-    $(window).on('click', function (event) {
-        if ($(event.target).hasClass('modal')) {
-            $('.modal').hide();
-        }
-    });
-
-    // Envio do formulário de comentários via AJAX
-    $('#commentForm').on('submit', function(e) {
-        e.preventDefault();
-        
-        const formData = new FormData(this);
-        const comment = $('textarea[name="comment"]').val().trim();
-        
-        if (!comment) {
-            alert('Por favor, digite um comentário.');
-            return;
-        }
-        
-        // Desabilita o botão durante o envio
-        const submitBtn = $(this).find('button[type="submit"]');
-        const originalText = submitBtn.html();
-        submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enviando...');
-        
-        $.ajax({
-            url: $(this).attr('action'),
-            method: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            },
-            success: function(response) {
-                if (response.success) {
-                    // Limpa o formulário
-                    $('textarea[name="comment"]').val('');
-                    
-                    // Adiciona o novo comentário à lista
-                    const newComment = `
-                        <div class="comment-item">
-                            <div class="comment-header">
-                                <strong>${response.data.user_name || 'Você'}</strong>
-                                <small class="text-muted">Agora</small>
-                            </div>
-                            <div class="comment-text">
-                                ${response.data.comment}
-                            </div>
-                            <div class="comment-status">
-                                <small class="badge badge-info">Status: ${response.data.status_text || 'Atual'}</small>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Remove a mensagem "Nenhum comentário" se existir
-                    $('#commentsList .text-muted').remove();
-                    
-                    // Adiciona o novo comentário no topo (mais recente primeiro)
-                    $('#commentsList').prepend(newComment);
-                    
-                    // Mostra mensagem de sucesso
-                    showMessage('Comentário adicionado com sucesso!', 'success');
-                } else {
-                    showMessage('Erro ao adicionar comentário: ' + (response.message || 'Erro desconhecido'), 'error');
-                }
-            },
-            error: function(xhr) {
-                console.error('Erro:', xhr);
-                showMessage('Erro ao enviar comentário. Tente novamente.', 'error');
-            },
-            complete: function() {
-                // Reabilita o botão
-                submitBtn.prop('disabled', false).html(originalText);
-            }
-        });
-    });
-
-    // Função para mostrar mensagens
-    function showMessage(message, type) {
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const alertHtml = `
-            <div class="alert ${alertClass} alert-dismissible fade show mt-2" role="alert">
-                ${message}
-                <button type="button" class="close" data-dismiss="alert">
-                    <span>&times;</span>
-                </button>
-            </div>
-        `;
-        
-        // Remove alertas anteriores
-        $('.add-comment-form .alert').remove();
-        
-        // Adiciona novo alerta
-        $('.add-comment-form').prepend(alertHtml);
-        
-        // Remove automaticamente após 5 segundos
-        setTimeout(function() {
-            $('.add-comment-form .alert').fadeOut();
-        }, 5000);
-    }
-
-    // Função para renderizar o histórico
-    function renderHistorico(logs) {
-        let historicoHtml = '<h4>Histórico:</h4>';
-
-        if (logs && logs.length > 0) {
-            logs.forEach(entry => {
-                historicoHtml += `<p>`;
-                historicoHtml += `<span class="text-content"><strong>${PedidosStatus(entry.status)}:</strong> ${entry.data}</span>`;
-
-                // Adiciona botão de comentário se houver mensagens
-                if (entry.mensagens && entry.mensagens.length > 0) {
-                    historicoHtml += `<button class="btn-comment" data-status="${entry.id}">💬</button>`;
-                }
-
-                historicoHtml += `</p>`;
+    
+    // Configurações de tradução de status
+    window.statusTranslations = {
+        <?= C_PedidosStatusRecebido ?>: 'Recebido',
+        <?= C_PedidosStatusEmProjeto ?>: 'Em projeto',
+        <?= C_PedidosStatusEmFabricação ?>: 'Em fabricação',
+        <?= C_PedidosStatusEmTransporte ?>: 'Em transporte',
+        <?= C_PedidosStatusEntregue ?>: 'Entregue'
+    };
+    
+    // Inicializar abas Bootstrap se disponível
+    if (typeof bootstrap !== 'undefined') {
+        var triggerTabList = [].slice.call(document.querySelectorAll('#orderTabs button'));
+        triggerTabList.forEach(function (triggerEl) {
+            var tabTrigger = new bootstrap.Tab(triggerEl);
+            triggerEl.addEventListener('click', function (event) {
+                event.preventDefault();
+                tabTrigger.show();
             });
-        } else {
-            historicoHtml += '<p>Nenhum histórico para exibir.</p>';
-        }
-
-
-        $('.history').html(historicoHtml);
-
-        // Atribui eventos aos botões de comentário
-        $('.btn-comment').off('click').on('click', function () {
-            const logId = $(this).data('status');
-            const log = window.comentarios.find(l => l.id == logId);
-
-            let html = `<h4>Comentários</h4><ul>`;
-            if (log && log.mensagens) {
-                log.mensagens.forEach(m => {
-                    html += `<li><strong>${m.autor}:</strong> ${m.comentario}</li>`;
-                });
-            }
-            html += '</ul>';
-
-            $('#comentariosModal').html(html);
-            $('#modalComent').show();
         });
-    }
-
-    // Renderiza o histórico inicial
-    renderHistorico(window.comentarios);
-
-    // Função para traduzir o status
-    function PedidosStatus(status) {
-        const statusMap = {
-            <?= C_PedidosStatusRecebido ?>: 'Recebido',
-            <?= C_PedidosStatusEmProjeto ?>: 'Em projeto',
-            <?= C_PedidosStatusEmFabricação ?>: 'Em fabricação',
-            <?= C_PedidosStatusEmTransporte ?>: 'Em transporte',
-            <?= C_PedidosStatusEntregue ?>: 'Entregue'
-        };
-        return statusMap[status] || 'Desconhecido';
-    }
-});
-</script>
-
-<style>
-.logo-holder {
-	height: 60px;
-	margin-bottom: 5px;
-}
-
-.logo-status {
-	width: 50px;
-	display: block;
-	margin: 0 auto;
-	transition: all 0.5s ease;
-}
-
-.status-arrow {
-	height: 10px;
-	background: linear-gradient(to right, #ccc 0%, #ccc 100%);
-	position: relative;
-	margin: 20px 0 5px;
-	border-radius: 5px;
-}
-.history {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-    margin-top: 20px;
-}
-
-.history h4 {
-	margin-bottom: 10px;
-	width: 100%;
-	max-width: 600px;
-	text-align: left;
-}
-
-.history p {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	width: 100%;
-	max-width: 600px;
-	margin: 5px 0;
-    padding: 5px;
-    border-bottom: 1px solid #eee;
-}
-
-.history p .text-content {
-	flex: 1;
-	text-align: left;
-}
-
-.history p .btn-comment {
-	margin-left: 10px;
-	white-space: nowrap;
-}
-
-.status-bar {
-	display: flex;
-	justify-content: space-between;
-	align-items: flex-start;
-	position: relative;
-}
-.status-step {
-	text-align: center;
-	flex: 1;
-	position: relative;
-}
-.status-step .icon {
-	font-size: 20px;
-	color: gray;
-	margin-bottom: 5px;
-	transition: transform 0.3s, color 0.3s;
-}
-
-.status-step.complete .icon {
-	color: green;
-}
-.status-step.active .icon {
-	color: red;
-	font-size: 24px;
-	font-weight: bold;
-}
-.btn-comment {
-	background: none;
-	border: none;
-	cursor: pointer;
-	font-size: 1.2em;
-}
-.modal {
-	position: fixed;
-	z-index: 9999;
-	left: 0; top: 0; right: 0; bottom: 0;
-	background-color: rgba(0,0,0,0.4);
-	display: flex;
-	justify-content: center;
-	align-items: center;
-}
-.modal-content {
-	background: white;
-	padding: 20px;
-	border-radius: 5px;
-	max-width: 400px;
-	width: 100%;
-}
-.close {
-	float: right;
-	font-size: 1.5em;
-	cursor: pointer;
-}
-
-/* Estilo específico para botões da side-nav */
-.side-nav .btn {
-    background-color: var(--cgl-primary, #1a2f33) !important;
-    border-color: var(--cgl-primary, #1a2f33) !important;
-    color: var(--cgl-white, #FFFFFF) !important;
-    border-radius: 5px;
-    transition: all 0.3s ease;
-    margin-bottom: 8px;
-    padding: 8px 12px;
-    display: inline-block;
-    text-decoration: none;
-}
-
-.side-nav .btn:hover {
-    background-color: var(--cgl-hover, #768285) !important;
-    border-color: var(--cgl-hover, #768285) !important;
-    color: var(--cgl-white, #FFFFFF) !important;
-    transform: none;
-    text-decoration: none;
-}
-
-.side-nav .btn i {
-    color: var(--cgl-white, #FFFFFF) !important;
-    margin-right: 8px;
-}
-
-/* Estilo para a caixa de comentários */
-.comments-box {
-    background: var(--cgl-white, #FFFFFF);
-    border: 1px solid var(--cgl-border-color, #e9ecef);
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.comments-box h5 {
-    color: var(--cgl-primary, #1a2f33);
-    margin-bottom: 15px;
-    border-bottom: 2px solid var(--cgl-primary, #1a2f33);
-    padding-bottom: 8px;
-}
-
-.comments-list {
-    max-height: 300px;
-    overflow-y: auto;
-    margin-bottom: 15px;
-}
-
-.comment-item {
-    border-bottom: 1px solid #f0f0f0;
-    padding: 10px 0;
-    margin-bottom: 10px;
-}
-
-.comment-item:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-}
-
-.comment-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-}
-
-.comment-header strong {
-    color: var(--cgl-primary, #1a2f33);
-    font-size: 0.9em;
-}
-
-.comment-header small {
-    color: #888;
-    font-size: 0.8em;
-}
-
-.comment-text {
-    color: var(--cgl-text-color, #1a2f33);
-    font-size: 0.9em;
-    line-height: 1.4;
-    margin-bottom: 5px;
-}
-
-.comment-status {
-    margin-top: 5px;
-}
-
-.comment-status .badge {
-    background-color: var(--cgl-primary, #1a2f33);
-    color: var(--cgl-white, #FFFFFF);
-    font-size: 0.7em;
-    padding: 2px 6px;
-}
-
-.add-comment-form {
-    border-top: 1px solid #f0f0f0;
-    padding-top: 15px;
-}
-
-.add-comment-form .form-control {
-    border: 1px solid var(--cgl-border-color, #e9ecef);
-    border-radius: 5px;
-    font-size: 0.9em;
-}
-
-.add-comment-form .form-control:focus {
-    border-color: var(--cgl-primary, #1a2f33);
-    box-shadow: 0 0 0 0.2rem rgba(26, 47, 51, 0.25);
-}
-
-.add-comment-form .btn {
-    font-size: 0.9em;
-}
-
-/* Responsividade para comentários */
-@media (max-width: 768px) {
-    .comments-box {
-        margin-bottom: 20px;
     }
     
-    .comments-list {
-        max-height: 200px;
+    // Fallback para jQuery se Bootstrap JS não estiver disponível
+    $('#orderTabs button').on('click', function(e) {
+        e.preventDefault();
+        
+        // Remove active de todas as abas e conteúdos
+        $('#orderTabs button').removeClass('active');
+        $('.tab-pane').removeClass('show active');
+        
+        // Adiciona active na aba clicada
+        $(this).addClass('active');
+        
+        // Mostra o conteúdo correspondente
+        var target = $(this).data('bs-target');
+        $(target).addClass('show active');
+    });
+    
+    // Inicializar sistema de gerenciamento de arquivos
+    if (typeof OrderFilesManager !== 'undefined') {
+        var baseUrl = '<?= $this->Url->build('/', ['fullBase' => false]) ?>';
+        console.log('URL base do CakePHP:', baseUrl);
+        console.log('Order ID:', <?= $order->id ?>);
+        OrderFilesManager.init(baseUrl, <?= $order->id ?>);
+    }
+});
+
+<?php
+// Função para obter ícone do arquivo baseado na extensão
+function getFileIcon($extension) {
+    $icons = [
+        'pdf' => 'pdf',
+        'doc' => 'word',
+        'docx' => 'word',
+        'xls' => 'excel',
+        'xlsx' => 'excel',
+        'jpg' => 'image',
+        'jpeg' => 'image',
+        'png' => 'image',
+        'gif' => 'image',
+        'zip' => 'archive',
+        'rar' => 'archive',
+        'txt' => 'alt'
+    ];
+    
+    return $icons[strtolower($extension)] ?? 'alt';
+}
+
+// Função para formatar tamanho do arquivo
+function formatFileSize($bytes) {
+    if ($bytes >= 1073741824) {
+        return number_format($bytes / 1073741824, 2) . ' GB';
+    } elseif ($bytes >= 1048576) {
+        return number_format($bytes / 1048576, 2) . ' MB';
+    } elseif ($bytes >= 1024) {
+        return number_format($bytes / 1024, 2) . ' KB';
+    } elseif ($bytes > 1) {
+        return $bytes . ' bytes';
+    } elseif ($bytes == 1) {
+        return $bytes . ' byte';
+    } else {
+        return '0 bytes';
     }
 }
-</style>
+?>
+</script>
+
+<!-- JavaScript adicional para gerenciamento de arquivos -->
+<?= $this->Html->script('orders-files.js') ?>
