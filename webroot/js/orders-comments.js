@@ -244,7 +244,32 @@ window.OrderStatusManager = {
 
                     // Atualiza o logo e classes de status
                     $('.logo-holder').html('');
-                    $(`.status-step[data-key='${OrderStatusManager.statusSelecionado}'] .logo-holder`).html(window.statusLogoHtml);
+                    
+                    // Constrói a URL da imagem de forma mais simples
+                    let baseImageUrl = window.baseImageUrl;
+                    
+                    // Se baseImageUrl não estiver definida ou tiver problemas, usa fallback
+                    if (!baseImageUrl || baseImageUrl === 'img/' || baseImageUrl.includes('error')) {
+                        // Detecta se está em subdiretório
+                        const currentPath = window.location.pathname;
+                        const basePath = currentPath.includes('/cglconecta/') ? '/cglconecta/' : '/';
+                        baseImageUrl = basePath + 'img/';
+                    }
+                    
+                    // Garante que a URL termine com '/'
+                    if (!baseImageUrl.endsWith('/')) {
+                        baseImageUrl += '/';
+                    }
+                    
+                    const logoHtml = `<img src="${baseImageUrl}tanque${OrderStatusManager.statusSelecionado}.png" class="logo-status" alt="tanque" />`;
+                    
+                    console.log('Status selecionado:', OrderStatusManager.statusSelecionado);
+                    console.log('Base image URL original:', window.baseImageUrl);
+                    console.log('Base image URL final:', baseImageUrl);
+                    console.log('URL completa da imagem:', `${baseImageUrl}tanque${OrderStatusManager.statusSelecionado}.png`);
+                    console.log('Logo HTML gerado:', logoHtml);
+                    
+                    $(`.status-step[data-key='${OrderStatusManager.statusSelecionado}'] .logo-holder`).html(logoHtml);
                     $('.status-step').removeClass('active').removeClass('complete');
                     $('.status-step').each(function () {
                         const stepKey = parseInt($(this).attr('data-key'));

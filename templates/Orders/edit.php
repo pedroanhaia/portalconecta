@@ -228,7 +228,20 @@ $(document).ready(function () {
     // Configurações para mudança de status
     window.currentOrderId = <?= $order->id ?>;
     window.changeStatusUrl = '<?= $this->Url->build(["controller" => "Orders", "action" => "changeStatus"]) ?>';
-    window.statusLogoHtml = '<img src="<?= $this->Url->image('tanque.png') ?>" class="logo-status" alt="tanque" />';
+    // URLs base usando Request para garantir compatibilidade
+    window.baseImageUrl = '<?= $this->request->getAttribute('webroot') ?>img/';
+    window.webrootUrl = '<?= $this->request->getAttribute('webroot') ?>';
+    
+    // Fallback caso não funcione
+    if (!window.baseImageUrl || window.baseImageUrl === 'img/') {
+        window.baseImageUrl = '/img/';
+        window.webrootUrl = '/';
+    }
+
+    // Debug das URLs
+    console.log('URLs configuradas:');
+    console.log('baseImageUrl:', window.baseImageUrl);
+    console.log('webrootUrl:', window.webrootUrl);
     
     // Máscara monetária para o campo value
     $('.money-mask').on('input', function() {
