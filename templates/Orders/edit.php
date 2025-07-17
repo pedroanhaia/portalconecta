@@ -19,10 +19,10 @@ function statusHasComments($status, $comments) {
 <div class="row">
     <aside class="column">
         <div class="side-nav">
-            <?= $this->Form->postLink('<i class="fas fa-trash"></i> ' . __('Delete Order'), ['action' => 'delete', $order->id], ['confirm' => __('Are you sure you want to delete # {0}?', $order->id), 'class' => 'btn btn-sm btn-primary mb-1', 'escape' => false]) ?>
-            <?= $this->Html->link('<i class="fas fa-list"></i> ' . __('List Orders'), ['action' => 'index'], ['class' => 'btn btn-sm btn-primary mb-1', 'escape' => false]) ?>
-            <?= $this->Html->link('<i class="fas fa-eye"></i> ' . __('View Order'), ['action' => 'view', $order->id], ['class' => 'btn btn-sm btn-primary mb-1', 'escape' => false]) ?>
-            <?= $this->Html->link('<i class="fas fa-plus"></i> ' . __('New Order'), ['action' => 'add'], ['class' => 'btn btn-sm btn-primary mb-1', 'escape' => false]) ?>
+            <?= $this->Form->postLink('<i class="fas fa-trash"></i> ' . __('Deletar pedido'), ['action' => 'delete', $order->id], ['confirm' => __('Tem certeza de que deseja excluir # {0}?', $order->id), 'class' => 'btn btn-sm btn-primary mb-1', 'escape' => false]) ?>
+            <?= $this->Html->link('<i class="fas fa-list"></i> ' . __('Listar pedidos'), ['action' => 'index'], ['class' => 'btn btn-sm btn-primary mb-1', 'escape' => false]) ?>
+            <?= $this->Html->link('<i class="fas fa-eye"></i> ' . __('Visualizar pedido'), ['action' => 'view', $order->id], ['class' => 'btn btn-sm btn-primary mb-1', 'escape' => false]) ?>
+            <?= $this->Html->link('<i class="fas fa-plus"></i> ' . __('Novo pedido'), ['action' => 'add'], ['class' => 'btn btn-sm btn-primary mb-1', 'escape' => false]) ?>
         </div>
     </aside>
     <div class="column-responsive column-80">
