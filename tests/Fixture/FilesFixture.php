@@ -21,7 +21,7 @@ class FilesFixture extends TestFixture
             [
                 'id' => 1,
                 'name' => 'Lorem ipsum dolor sit amet',
-                'patch' => 'Lorem ipsum dolor sit amet',
+                'path' => 'Lorem ipsum dolor sit amet',
                 'status' => 1,
                 'type' => 1,
                 'role' => 1,

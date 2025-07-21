@@ -16,23 +16,48 @@ class UsersController extends AppController
 		$this->Authentication->addUnauthenticatedActions(['login']);
 		parent::beforeFilter($event);
 
+		$userLogado = $this->Authentication->getIdentity();
+		$currentAction = $this->request->getParam('action');
+
+		if($userLogado) {
+			if(!$userLogado->admin) {
+				if(in_array($currentAction, ['delete'])) { 
+					$this->Flash->error(__('Você não tem permissão para acessar esta página.'));
+					return $this->redirect(['action' => 'index']);
+				}
+			}
+			
+			if($userLogado->type == C_UsersTypeAdmin) {
+				if(!in_array($currentAction, ['edit', 'changepassword', 'darkmode', 'login', 'logout'])) { 
+					$this->Flash->error(__('Você não tem permissão para acessar esta página.'));
+					return $this->redirect(['controller' => 'Orders', 'action' => 'index']);
+				}
+			}
+		}
+
+
 		$this->loadModel('Customers');
 	}
 
 	public function index() {
-		if($this->Authentication->getIdentity()->admin != 1) {
-			$this->Flash->error(__('Você não possui permissão para acessar esta página.'));
-			return $this->redirect(['controller' => 'Orders', 'action' => 'index']);
+		if($this->Authentication->getIdentity()->admin) {
+			$usersAdmin = $this->Users->findByAdmin(1)->toArray();
+			$usersCustomer = $this->Users->findByAdmin(0)
+				->contain(['Customers' => ['fields' => ['name', 'cnpj']]])
+				->order('Customers.name ASC')
+			->toArray();
+	
+			$this->set('usersAdmin', $usersAdmin);
+			$this->set('usersCustomer', $usersCustomer);
+		} else {
+			if($this->Authentication->getIdentity()->type == C_UsersTypeAdmin) {
+				$usersCustomer = $this->Users->findByIdCustomer($this->Authentication->getIdentity()->id_customer)->toArray();
+				$this->set('usersCustomer', $usersCustomer);
+			} else {
+				$this->Flash->error(__('Você não possui permissão para acessar esta página.'));
+			}
 		}
 
-		$usersAdmin = $this->Users->findByAdmin(1)->toArray();
-		$usersCustomer = $this->Users->findByAdmin(0)
-			->contain(['Customers' => ['fields' => ['name', 'cnpj']]])
-			->order('Customers.name ASC')
-		->toArray();
-
-		$this->set('usersAdmin', $usersAdmin);
-		$this->set('usersCustomer', $usersCustomer);
 	}
 
 	public function add() {
@@ -62,37 +87,9 @@ class UsersController extends AppController
 		$this->set('customersOpt', $customersOpt);
 	}
 
-	public function register()
-	{
-		$this->viewBuilder()->setLayout('login');
-
-		$user = $this->Users->newEmptyEntity();
-
-		if ($this->request->is('post')) {
-			/* 1.  Verificação de nickname duplicado ----------------------- */
-			$email = $this->request->getData('email');
-			if ($this->Users->exists(['email' => $email])) {
-				$this->Flash->error(__('Já existe um usuário com este email.'));
-				return $this->redirect(['action' => 'register']);
-			}
-
-			$user = $this->Users->patchEntity($user, $this->request->getData());
-
-			if ($this->Users->save($user)) {
-				$this->Flash->success(__('Usuário cadastrado com sucesso!'));
-				return $this->redirect(['action' => 'download']);
-			}
-
-			$this->Flash->error(__('Não foi possível cadastrar o usuário, tente novamente.'));
-		}
-
-		$this->set(compact('user'));
-	}
-
 	public function edit($id = null) {
-		if($this->Authentication->getIdentity()->admin != 1 && $id != $this->Authentication->getIdentity()->id ) {
-			$this->Flash->error(__('Você não possui permissão para acessar esta página.'));
-			return $this->redirect(['controller' => 'Orders', 'action' => 'index']);
+		if(($this->Authentication->getIdentity()->admin != 1 && $this->Authentication->getIdentity()->type != C_UsersTypeAdmin) && $id != $this->Authentication->getIdentity()->id) {
+			$id = $this->Authentication->getIdentity()->id;
 		}
 		
 		if(empty($id)) $id = $this->Authentication->getIdentity()->id;
@@ -127,9 +124,9 @@ class UsersController extends AppController
 		$this->request->allowMethod(['post', 'delete']);
 		$user = $this->Users->get($id);
 		if ($this->Users->delete($user)) {
-			$this->Flash->success(__('The user has been deleted.'));
+			$this->Flash->success(__('O usuário foi excluído com sucesso.'));
 		} else {
-			$this->Flash->error(__('The user could not be deleted. Please, try again.'));
+			$this->Flash->error(__('O usuário não pôde ser excluído. Por favor, tente novamente.'));
 		}
 
 		return $this->redirect(['action' => 'index']);
@@ -201,7 +198,6 @@ class UsersController extends AppController
 	public function changepassword()
 	{
 		$user = $this->Users->get($this->Authentication->getIdentity()->getIdentifier());
-
 
 		if ($this->request->is(['patch', 'post', 'put'])) {
 

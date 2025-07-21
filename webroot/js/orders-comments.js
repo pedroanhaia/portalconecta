@@ -161,7 +161,7 @@ window.OrderComments = {
      * Renderiza o histórico de pedidos
      */
     renderHistorico: function(logs) {
-        let historicoHtml = '<h4>Histórico:</h4>';
+        let historicoHtml = '';
 
         if (logs && logs.length > 0) {
             logs.forEach(entry => {

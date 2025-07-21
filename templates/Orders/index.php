@@ -1,7 +1,7 @@
 <div class="content">
 	<div class="row">
 		<div class="col-12">
-			<?= $this->Html->link('<i class="fas fa-plus"></i> ' . __('Novo pedido'), ['action' => 'add'], ['class' => 'btn btn-sm btn-primary mb-1 float-right', 'escape' => false]) ?>
+			<?php if($userAdmin) echo $this->Html->link('<i class="fas fa-plus"></i> ' . __('Novo pedido'), ['action' => 'add'], ['class' => 'btn btn-primary mb-1 float-right', 'escape' => false]) ?>
 			<h3> Pedidos </h3>
 		</div>
 	</div>
@@ -10,7 +10,9 @@
 			<thead class="text-primary">
 				<tr>
 					<th> # </th>
-					<th> Empresa </th>
+					<?php if($userAdmin) { ?>
+						<th> Empresa </th>
+					<?php } ?>
 					<th> Status </th>
 					<th> Última alteração  </th>
 					<th class="actions"> Ações </th>
@@ -20,12 +22,14 @@
 				<?php foreach ($orders as $reg): ?>
 					<tr>
 						<td> <?= $reg->number ?> </td>
-						<td> <?= $reg->customer->cnpj . ' - ' . $reg->customer->name ?> </td>
+						<?php if($userAdmin) { ?>
+							<td> <?= $reg->customer->cnpj . ' - ' . $reg->customer->name ?> </td>
+						<?php } ?>
 						<td> <?= PedidosStatus($reg->status) ?> </td>
 						<td> <?= date_format($reg->modified, 'd/m/Y - H:i') ?> </td>
 						<td class="actions">
 							<?= $this->Html->link('<i class="fa fa-eye"></i>', ["action" => "view", $reg->id], ['rel' => 'tooltip', 'title' => 'Visualizar', 'class' => 'btn btn-info text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>
-							<?= $this->Html->link('<i class="fa fa-edit"></i>', ["action" => "edit", $reg->id], ['rel' => 'tooltip', 'title' => 'Editar', 'class' => 'btn btn-warning text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>
+							<?php if($userAdmin) echo $this->Html->link('<i class="fa fa-edit"></i>', ["action" => "edit", $reg->id], ['rel' => 'tooltip', 'title' => 'Editar', 'class' => 'btn btn-warning text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>
 						</td>
 					</tr>
 				<?php endforeach; ?>

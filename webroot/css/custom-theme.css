@@ -73,28 +73,29 @@ body {
 }
 
 .btn-danger {
-    background-color: #dc3545 !important;
-    border-color: #dc3545 !important;
+    background-color: var(--cgl-danger, #dc3545) !important;
+    border-color: var(--cgl-danger) !important;
+    color: var(--cgl-white) !important;
+}
+
+.btn-danger:hover {
+    background-color: var(--cgl-danger-hover, #b11928) !important;
+    border-color: var(--cgl-danger-hover) !important;
     color: var(--cgl-white) !important;
 }
 
 /* Estilo específico para botões da side-nav */
 .side-nav .btn {
-    background-color: var(--cgl-primary, #1a2f33) !important;
-    border-color: var(--cgl-primary, #1a2f33) !important;
-    color: var(--cgl-white, #FFFFFF) !important;
     border-radius: 5px;
     transition: all 0.3s ease;
     margin-bottom: 8px;
     padding: 8px 12px;
     display: inline-block;
     text-decoration: none;
+    font-size: 11px;
 }
 
 .side-nav .btn:hover {
-    background-color: var(--cgl-hover, #768285) !important;
-    border-color: var(--cgl-hover, #768285) !important;
-    color: var(--cgl-white, #FFFFFF) !important;
     transform: none;
     text-decoration: none;
 }
@@ -105,15 +106,15 @@ body {
 }
 
 .btn-info {
-    background-color: var(--cgl-primary) !important;
-    border-color: var(--cgl-primary) !important;
+    background-color: var(--cgl-info, #26c1e0) !important;
+    border-color: var(--cgl-info) !important;
     color: var(--cgl-white) !important;
     transition: 0.5s;
 }
 
 .btn-info:hover {
-    background-color: var(--cgl-hover) !important;
-    border-color: var(--cgl-hover) !important;
+    background-color: var(--cgl-info-hover, #1aa4c0) !important;
+    border-color: var(--cgl-info-hover) !important;
     color: var(--cgl-white) !important;
 }
 

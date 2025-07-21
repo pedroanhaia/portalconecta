@@ -9,13 +9,20 @@
 					</div>
 					<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
 						<label class="control-label"> Valor </label>
-						<?= $this->Form->control('value', ['class' => 'form-control', 'label' => false, 'required' => true, 'placeholder' => 'Insira o valor do pedido']) ?>
+						<?= $this->Form->control('value', [
+								'type' => 'text',
+								'class' => 'form-control money-mask',
+								'placeholder' => 'R$ 0,00',
+								'data-mask' => 'currency',
+								'label' => false,
+							]);
+						?>
 					</div>
 				</div>
 				<div class="row">
 					<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
 						<label class="control-label"> Empresa </label>
-						<?= $this->Form->control('id_customer', ['class' => 'form-control selectpicker', 'data-live-search', 'label' => false, 'required' => true, 'options' => $customersOpt, 'title' => 'Empresa do usuário']) ?>
+						<?= $this->Form->control('id_customer', ['class' => 'form-control selectpicker', 'data-live-search', 'label' => false, 'required' => true, 'options' => $customersOpt, 'title' => 'Empresa do pedido']) ?>
 					</div>
 				</div>
 				<div class="row mt-3">
@@ -28,10 +35,27 @@
 	</div>
 </div>
 <script>
-	$('#number').inputmask({
-		regex: "[0-9]{1,7}", // permite de 1 a 5 dígitos
-		placeholder: '',
-		clearMaskOnLostFocus: true,
-		autoUnmask: false
+	// Máscara monetária para o campo value
+	$('.money-mask').on('input', function() {
+		let value = this.value.replace(/\D/g, ''); // Remove tudo que não é dígito
+		value = (value / 100).toFixed(2) + ''; // Divide por 100 e fixa em 2 decimais
+		value = value.replace('.', ','); // Troca ponto por vírgula
+		value = value.replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.'); // Adiciona pontos a cada 3 dígitos
+		this.value = 'R$ ' + value;
 	});
+	
+	// Quando o formulário for enviado, converte o valor para formato numérico
+	$('form').on('submit', function() {
+		let valueField = $('.money-mask');
+		let numericValue = valueField.val()
+			.replace('R$ ', '')
+			.replace(/\./g, '')
+			.replace(',', '.');
+		valueField.val(numericValue);
+	});
+	
+	// Formata o valor inicial se existir
+	if ($('.money-mask').val()) {
+		$('.money-mask').trigger('input');
+	}
 </script>

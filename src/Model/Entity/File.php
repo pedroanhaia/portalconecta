@@ -31,10 +31,11 @@ class File extends Entity
      */
     protected $_accessible = [
         'name' => true,
-        'patch' => true,
+        'path' => true,
         'status' => true,
         'type' => true,
         'role' => true,
+        'category' => true,
         'created' => true,
         'modified' => true,
         'id_order' => true,

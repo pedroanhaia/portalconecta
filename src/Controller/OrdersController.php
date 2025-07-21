@@ -11,11 +11,34 @@ class OrdersController extends AppController
 		$this->loadModel('Customers');
 		$this->loadModel('OrdersLog');
 		$this->loadModel('Comments');
+		$this->loadModel('Config');
+
+		$userLogado = $this->Authentication->getIdentity();
+		$currentAction = $this->request->getParam('action');
+
+		if(!$userLogado->admin) {
+			if(in_array($currentAction, ['add', 'edit', 'changeStatus', 'delete'])) { 
+				$this->Flash->error(__('Você não tem permissão para acessar esta página.'));
+				return $this->redirect(['action' => 'index']);
+			}
+		}
 	}
 
 	public function index()
 	{
-		$orders = $this->Orders->find()->contain(['Customers'])->order(['number DESC'])->toArray();
+		$userLogado = $this->Authentication->getIdentity();
+
+		if($userLogado->admin) {
+			$orders = $this->Orders->find('all', $this->paginate)
+				->contain(['Customers'])
+				->order(['number' => 'DESC'])
+				->toArray();
+		} else {
+			$orders = $this->Orders->find('all', $this->paginate)
+				->where(['id_customer' => $userLogado->id_customer])
+				->order(['number' => 'DESC'])
+				->toArray();
+		}
 
 		$this->set(compact('orders'));
 	}
@@ -23,85 +46,43 @@ class OrdersController extends AppController
 	public function view($id = null)
 	{
 		$order = $this->Orders->findById($id)
-			->contain(['OrdersLog', 'OrdersLog.Users', 'OrdersLog.Comments', 'OrdersLog.Comments.Users'])
-			->first();
-
-		$newLog = [];
-
-		if ($order && $order->orders_log) {
-			foreach ($order->orders_log as $entry) {
-				$mensagens = [];
-
-				if ($entry->comments) {
-					foreach ($entry->comments as $c) {
-						$mensagens[] = [
-							'comentario' => $c->message,
-							'autor' => $c->user->name ?? 'Desconhecido'
-						];
-					}
-				}
-
-				$newLog[] = [
-					'id' => $entry->id,
-					'status' => $entry->new_status,
-					'data' => (new \Cake\I18n\FrozenTime($entry->modified))->i18nFormat('dd/MM/yyyy - HH:mm'),
-					'user' => [
-						'name' => $entry->user->name ?? 'Desconhecido'
-					],
-					'mensagens' => $mensagens
-				];
-			}
-		}
-
-		$this->set(compact('order', 'newLog'));
-	}
-
-	public function add()
-	{
-		$order = $this->Orders->newEmptyEntity();
-
-		if ($this->request->is('post')) {
-			$order = $this->Orders->patchEntity($order, $this->request->getData());
-
-			if ($this->Orders->save($order)) {
-				$this->Flash->success(__('The order has been saved.'));
-				return $this->redirect(['action' => 'index']);
-			}
-			
-			$this->Flash->error(__('The order could not be saved. Please, try again.'));
-		}
-
-		$customers = $this->Customers->find('all')->all();
-
-		$customersOpt = $customers->combine(
-			'id',
-			function ($row) {
-				return "{$row->cnpj} - {$row->name}";
-			}
-		)->toArray();
-
-		$this->set('order', $order);
-		$this->set('customersOpt', $customersOpt);
-	}
-
-	public function edit($id = null)
-	{
-		$order = $this->Orders->findById($id)
-			->contain(['OrdersLog', 'OrdersLog.Users', 'OrdersLog.Comments', 'OrdersLog.Comments.Users'])
+			->contain([
+				'Customers' => ['fields' => ['name']],
+				'OrdersLog',
+				'OrdersLog.Users',
+				'OrdersLog.Comments',
+				'OrdersLog.Comments.Users'
+			])
 		->first();
 
 		$newLog = [];
+		$allComments = [];
 
+		// Busca comentários sem status
+		$comentariosSemStatus = $this->Comments->find()
+			->where(['id_order' => $id, 'refcomment IS' => null])
+			->contain(['Users'])
+		->toArray();
+
+		// Comentários sem status
+		foreach ($comentariosSemStatus as $comentario) {
+			$allComments[] = [
+				'autor' => $comentario->user->name ?? 'Desconhecido',
+				'comentario' => $comentario->message,
+				'data' => (new \Cake\I18n\FrozenTime($comentario->created))->i18nFormat('dd/MM/yyyy - HH:mm'),
+				'status' => C_PedidosStatusRecebido
+			];
+		}
+
+		// Monta o histórico de logs
 		foreach ($order->orders_log as $entry) {
 			$mensagens = [];
-
 			foreach ($entry->comments as $c) {
 				$mensagens[] = [
 					'comentario' => $c->message,
 					'autor' => $c->user->name ?? 'Desconhecido'
 				];
 			}
-
 			$newLog[] = [
 				'id' => $entry->id,
 				'status' => $entry->new_status,
@@ -113,18 +94,25 @@ class OrdersController extends AppController
 			];
 		}
 
-		if ($this->request->is(['patch', 'post', 'put'])) {
-			$order = $this->Orders->patchEntity($order, $this->request->getData());
-			
-			if ($this->Orders->save($order)) {
-				$this->Flash->success(__('The order has been saved.'));
-				return $this->redirect(['action' => 'index']);
+		// Comentários dos logs (com status)
+		foreach ($newLog as $logEntry) {
+			if (!empty($logEntry['mensagens'])) {
+				foreach ($logEntry['mensagens'] as $mensagem) {
+					$allComments[] = [
+						'autor' => $mensagem['autor'],
+						'comentario' => $mensagem['comentario'],
+						'data' => $logEntry['data'],
+						'status' => $logEntry['status']
+					];
+				}
 			}
-
-			$this->Flash->error(__('The order could not be saved. Please, try again.'));
 		}
 
+		// Inverte para mostrar os mais recentes primeiro
+		$allComments = array_reverse($allComments);
+
 		$customers = $this->Customers->find('all')->all();
+		$config = $this->Config->get(1);
 
 		$customersOpt = $customers->combine(
 			'id',
@@ -135,6 +123,104 @@ class OrdersController extends AppController
 
 		$this->set('order', $order);
 		$this->set('newLog', $newLog);
+		$this->set('config', $config);
+		$this->set('customersOpt', $customersOpt);
+		$this->set('allComments', $allComments);
+	}
+
+	public function edit($id = null)
+	{
+		$order = $this->Orders->findById($id)
+			->contain([
+				'Customers' => ['fields' => ['name']],
+				'OrdersLog',
+				'OrdersLog.Users',
+				'OrdersLog.Comments',
+				'OrdersLog.Comments.Users'
+			])
+		->first();
+
+		$newLog = [];
+		$allComments = [];
+
+		// Busca comentários sem status
+		$comentariosSemStatus = $this->Comments->find()
+			->where(['id_order' => $id, 'refcomment IS' => null])
+			->contain(['Users'])
+		->toArray();
+
+		// Comentários sem status
+		foreach ($comentariosSemStatus as $comentario) {
+			$allComments[] = [
+				'autor' => $comentario->user->name ?? 'Desconhecido',
+				'comentario' => $comentario->message,
+				'data' => (new \Cake\I18n\FrozenTime($comentario->created))->i18nFormat('dd/MM/yyyy - HH:mm'),
+				'status' => C_PedidosStatusRecebido
+			];
+		}
+
+		// Monta o histórico de logs
+		foreach ($order->orders_log as $entry) {
+			$mensagens = [];
+			foreach ($entry->comments as $c) {
+				$mensagens[] = [
+					'comentario' => $c->message,
+					'autor' => $c->user->name ?? 'Desconhecido'
+				];
+			}
+			$newLog[] = [
+				'id' => $entry->id,
+				'status' => $entry->new_status,
+				'data' => (new \Cake\I18n\FrozenTime($entry->modified))->i18nFormat('dd/MM/yyyy - HH:mm'),
+				'user' => [
+					'name' => $entry->user->name ?? 'Desconhecido'
+				],
+				'mensagens' => $mensagens
+			];
+		}
+
+		// Comentários dos logs (com status)
+		foreach ($newLog as $logEntry) {
+			if (!empty($logEntry['mensagens'])) {
+				foreach ($logEntry['mensagens'] as $mensagem) {
+					$allComments[] = [
+						'autor' => $mensagem['autor'],
+						'comentario' => $mensagem['comentario'],
+						'data' => $logEntry['data'],
+						'status' => $logEntry['status']
+					];
+				}
+			}
+		}
+
+		// Inverte para mostrar os mais recentes primeiro
+		$allComments = array_reverse($allComments);
+
+		if ($this->request->is(['patch', 'post', 'put'])) {
+			$order = $this->Orders->patchEntity($order, $this->request->getData());
+			
+			if ($this->Orders->save($order)) {
+				$this->Flash->success(__('Os dados foram salvos com sucesso.'));
+				return $this->redirect(['action' => 'index']);
+			}
+
+			$this->Flash->error(__('Não foi possível cadastrar o pedido, tente novamente.'));
+		}
+
+		$customers = $this->Customers->find('all')->all();
+		$config = $this->Config->get(1);
+
+		$customersOpt = $customers->combine(
+			'id',
+			function ($row) {
+				return "{$row->cnpj} - {$row->name}";
+			}
+		)->toArray();
+
+		$this->set('order', $order);
+		$this->set('newLog', $newLog);
+		$this->set('allComments', $allComments);
+		$this->set('config', $config);
 		$this->set('customersOpt', $customersOpt);
 	}
 
@@ -213,7 +299,6 @@ class OrdersController extends AppController
 			'message' => 'Erro ao salvar o pedido.'
 		]));
 	}
-
 
 	public function delete($id = null)
 	{

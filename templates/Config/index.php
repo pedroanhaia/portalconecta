@@ -9,7 +9,7 @@
 		['escape' => false]
 	) ?>
 
-	<?= $this->Html->link(
+	<?php if($userAdmin) echo $this->Html->link(
 		'<div class="card-config">
 			<i class="fas fa-folder card-icon"></i>
 			<h3 class="card-title">Diretórios</h3>

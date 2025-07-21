@@ -13,15 +13,20 @@ use function PHPUnit\Framework\isEmpty;
 class ConfigController extends AppController
 {
 	public function beforeFilter(\Cake\Event\EventInterface $event) {
-		$this->Authentication->addUnauthenticatedActions(['login']);
 		parent::beforeFilter($event);
+
+		$userLogado = $this->Authentication->getIdentity();
+		$currentAction = $this->request->getParam('action');
+
+		if(!$userLogado->admin) {
+			if(in_array($currentAction, ['path'])) { 
+				$this->Flash->error(__('Você não tem permissão para acessar esta página.'));
+				return $this->redirect(['action' => 'index']);
+			}
+		}
 	}
 
 	public function index() {
-		if($this->Authentication->getIdentity()->admin != 1) {
-			$this->Flash->error(__('Você não possui permissão para acessar esta página.'));
-			return $this->redirect(['controller' => 'Orders', 'action' => 'index']);
-		}
 	}
 
 	public function path()
@@ -35,7 +40,7 @@ class ConfigController extends AppController
 
 			if ($this->Config->save($config)) {
 				$this->Flash->success('Configurações salvas.');
-				return $this->redirect(['action' => 'edit']);
+				return $this->redirect(['action' => 'path']);
 			}
 
 			$this->Flash->error('Erro ao salvar.');

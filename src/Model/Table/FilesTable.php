@@ -29,61 +29,62 @@ use Cake\Validation\Validator;
  */
 class FilesTable extends Table
 {
-    /**
-     * Initialize method
-     *
-     * @param array $config The configuration for the Table.
-     * @return void
-     */
-    public function initialize(array $config): void
-    {
-        parent::initialize($config);
+	/**
+	 * Initialize method
+	 *
+	 * @param array $config The configuration for the Table.
+	 * @return void
+	 */
+	public function initialize(array $config): void
+	{
+		parent::initialize($config);
 
-        $this->setTable('files');
-        $this->setDisplayField('name');
-        $this->setPrimaryKey('id');
+		$this->setTable('files');
+		$this->setDisplayField('name');
+		$this->setPrimaryKey('id');
 
-        $this->addBehavior('Timestamp');
-    }
+		$this->addBehavior('Timestamp');
+	}
 
-    /**
-     * Default validation rules.
-     *
-     * @param \Cake\Validation\Validator $validator Validator instance.
-     * @return \Cake\Validation\Validator
-     */
-    public function validationDefault(Validator $validator): Validator
-    {
-        $validator
-            ->integer('id')
-            ->allowEmptyString('id', null, 'create');
+	/**
+	 * Default validation rules.
+	 *
+	 * @param \Cake\Validation\Validator $validator Validator instance.
+	 * @return \Cake\Validation\Validator
+	 */
+	public function validationDefault(Validator $validator): Validator
+	{
+		$validator
+			->integer('id')
+			->allowEmptyString('id', null, 'create');
 
-        $validator
-            ->scalar('name')
-            ->maxLength('name', 255)
-            ->allowEmptyString('name');
+		$validator
+			->scalar('name')
+			->maxLength('name', 255)
+			->allowEmptyString('name');
 
-        $validator
-            ->scalar('patch')
-            ->maxLength('patch', 255)
-            ->allowEmptyString('patch');
+		$validator
+			->scalar('type')
+			->maxLength('type', 255)
+			->allowEmptyString('type');
 
-        $validator
-            ->integer('status')
-            ->allowEmptyString('status');
+		$validator
+			->scalar('patch')
+			->maxLength('patch', 255)
+			->allowEmptyString('patch');
 
-        $validator
-            ->integer('type')
-            ->allowEmptyString('type');
+		$validator
+			->integer('status')
+			->allowEmptyString('status');
 
-        $validator
-            ->integer('role')
-            ->allowEmptyString('role');
+		$validator
+			->integer('role')
+			->allowEmptyString('role');
 
-        $validator
-            ->integer('id_order')
-            ->allowEmptyString('id_order');
+		$validator
+			->integer('id_order')
+			->allowEmptyString('id_order');
 
-        return $validator;
-    }
+		return $validator;
+	}
 }

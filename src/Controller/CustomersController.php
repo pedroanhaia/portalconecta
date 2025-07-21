@@ -5,12 +5,18 @@ namespace App\Controller;
 
 class CustomersController extends AppController
 {
-	public function index() {
-		if($this->Authentication->getIdentity()->admin != 1) {
-			$this->Flash->error(__('Você não possui permissão para acessar esta página.'));
+	public function beforeFilter(\Cake\Event\EventInterface $event) {
+		parent::beforeFilter($event);
+
+		$userLogado = $this->Authentication->getIdentity();
+
+		if(!$userLogado->admin) {
+			$this->Flash->error(__('Você não tem permissão para acessar esta página.'));
 			return $this->redirect(['controller' => 'Orders', 'action' => 'index']);
 		}
+	}
 
+	public function index() {
 		$customers = $this->Customers->find()->toArray();
 
 		$this->set('customers', $customers);
@@ -49,16 +55,16 @@ class CustomersController extends AppController
 
 		$this->set(compact('customer'));
 	}
-
    
 	public function delete($id = null)
 	{
 		$this->request->allowMethod(['post', 'delete']);
 		$customer = $this->Customers->get($id);
+
 		if ($this->Customers->delete($customer)) {
-			$this->Flash->success(__('The customer has been deleted.'));
+			$this->Flash->success(__('O cliente foi excluído com sucesso.'));
 		} else {
-			$this->Flash->error(__('The customer could not be deleted. Please, try again.'));
+			$this->Flash->error(__('Não foi possível excluir o cliente. Por favor, tente novamente.'));
 		}
 
 		return $this->redirect(['action' => 'index']);

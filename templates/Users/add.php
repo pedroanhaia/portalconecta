@@ -14,24 +14,26 @@
 						<?= $this->Form->control('email', ['class' => 'form-control', 'label' => false, 'required' => true, 'placeholder' => 'Insira o e-mail']) ?>
 					</div>
 				</div>
-				<div class="row">
-					<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
-						<label class="control-label"> Empresa </label>
-						<?= $this->Form->control('id_customer', ['class' => 'form-control selectpicker', 'data-live-search', 'label' => false, 'required' => true, 'options' => $customersOpt, 'title' => 'Empresa do usuário']) ?>
+				<?php if($userAdmin) { ?>
+					<div class="row">
+						<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+							<label class="control-label"> Empresa </label>
+							<?= $this->Form->control('id_customer', ['class' => 'form-control selectpicker', 'data-live-search', 'label' => false, 'required' => true, 'options' => $customersOpt, 'title' => 'Empresa do usuário']) ?>
+						</div>
+						<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+							<label class="control-label"> Função na empresa </label>
+							<?= $this->Form->control('type', ['class' => 'form-control selectpicker', 'label' => false, 'required' => true, 'options' => C_UsersTypeOpt, 'title' => 'Função do usuário na empresa']) ?>
+						</div>
 					</div>
-					<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
-						<label class="control-label"> Função na empresa </label>
-						<?= $this->Form->control('type', ['class' => 'form-control selectpicker', 'label' => false, 'required' => true, 'options' => C_UsersTypeOpt, 'title' => 'Função do usuário na empresa']) ?>
+					<div class="row mt-3">
+						<div class="col-12 d-flex align-items-end">
+							<label class="form-check-label d-flex align-items-center gap-2 mb-0">
+								<?= $this->Form->checkbox('admin', ['hiddenField' => 0, 'class' => 'form-check-input', 'style' => 'margin-bottom: 5px;']) ?>
+								Administrador geral do sistema
+							</label>
+						</div>
 					</div>
-				</div>
-				<div class="row mt-3">
-					<div class="col-12 d-flex align-items-end">
-						<label class="form-check-label d-flex align-items-center gap-2 mb-0">
-							<?= $this->Form->checkbox('admin', ['hiddenField' => 0, 'class' => 'form-check-input', 'style' => 'margin-bottom: 5px;']) ?>
-							Administrador geral do sistema
-						</label>
-					</div>
-				</div>
+				<?php } ?>
                 <div class="row">
 					<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
 						<label class="control-label"> Senha </label>

@@ -3,8 +3,8 @@
 	date_default_timezone_set('America/Sao_Paulo');
 
 	// Roles 
-		define('C_RoleTudo', 		99);
-		define('C_RoleNada', 		0);
+		define('C_RoleTudo',	99);
+		define('C_RoleNada',	0);
 	// Meses e Anos 
 		define('C_MesesOpt', [
 			1 => 'Janeiro',
@@ -55,7 +55,7 @@
 			if ($type == C_UsersTypeCliente) return 'Cliente';
 			if ($type == C_UsersTypeAdmin)	return 'Administrador';
 		}
-	// Pedidos - Status
+	// Pedidos - Status 
 		define('C_PedidosStatusRecebido',		1);
 		define('C_PedidosStatusEmProjeto',		2);
 		define('C_PedidosStatusEmFabricação',	3);

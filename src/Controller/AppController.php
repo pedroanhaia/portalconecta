@@ -45,10 +45,11 @@ class AppController extends Controller
 	public function beforeFilter(\Cake\Event\EventInterface $event) {
 		parent::beforeFilter($event);
 
+		// date_default_timezone_set('America/Sao_Paulo'); COLOQUEI ESSE AQUI SO PRA OLHAR SE FUNCIONA MAS NAO TESTEI
+
 		if ($this->request->getParam('plugin') === 'DebugKit') {
 			$this->Authorization->skipAuthorization();
 		}
-
 
 		$userLogado = $this->Authentication->getIdentity();
 
@@ -60,11 +61,11 @@ class AppController extends Controller
 			$currentAction = $this->request->getParam('action');
 			$this->set('currentAction', $currentAction);
 			$this->set('currentController', $currentController);
-			
-			
+
 			$this->set('userDarkMode', $userAtt->dark_mode);
 			$this->set('userId', $userData->id);
 			$this->set('userRole', $userAtt->role);
+			$this->set('userType', $userAtt->type);
 			$this->set('userAdmin', $userAtt->admin);
 			$this->set('userName', $userAtt->name);
 		}
