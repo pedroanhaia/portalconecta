@@ -69,9 +69,9 @@ class CommentsController extends AppController
 				return $this->response->withType('application/json')->withStringBody(json_encode([
 					'success' => true,
 					'data' => [
-						'comment' => $message,
-						'user_name' => $userName,
-						'status_text' => 'Comentário atual'
+						'comentario' => $message,
+						'autor' => $userName,
+						'status' => $lastLogEntry ? $lastLogEntry->new_status : C_PedidosStatusRecebido,
 					]
 				]));
 			} else {

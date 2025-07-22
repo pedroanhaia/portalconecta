@@ -51,8 +51,8 @@
 				<ul class="menu-links">
 					<li class="nav-link logo-center">
 						<?= $this->Html->link(
-							$this->Html->image('logo.png', ['alt' => 'logo', 'class' => 'mini-sidebar']) .
-							$this->Html->image('logo.png', ['alt' => 'logo', 'class' => 'open-sidebar']),
+							$this->Html->image('Logos/Logo CGL_vertical branco.png', ['alt' => 'logo', 'class' => 'mini-sidebar']) .
+							$this->Html->image('Logos/Logo CGL_horizontal branco.png', ['alt' => 'logo', 'class' => 'open-sidebar']),
 							'https://cglinox.com.br/',
 							['escape' => false, 'target' => '_blank']
 						); ?>

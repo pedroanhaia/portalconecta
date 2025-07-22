@@ -100,4 +100,28 @@
 			if ($status == C_PedidosStatusEmTransporte)	return 'Em transporte';
 			if ($status == C_PedidosStatusEntregue)		return 'Entregue';
 		}
+
+		function getStatusBadgeClass($status) {
+			switch ($status) {
+				case C_PedidosStatusRecebido:
+					return 'primary';
+				case C_PedidosStatusEmProjeto:
+					return 'warning';
+				case C_PedidosStatusEmFabricação:
+					return 'info';
+				case C_PedidosStatusEmTransporte:
+					return 'orange';
+				case C_PedidosStatusEntregue:
+					return 'success';
+				default:
+					return 'secondary';
+			}
+		}
+		
+		function statusHasComments($status, $comments) {
+			foreach ($comments as $c) {
+				if ($c['status'] === $status) return true;
+			}
+			return false;
+		}
 	// 

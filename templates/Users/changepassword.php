@@ -1,25 +1,18 @@
-<style>
-	.main {
-		width: 85vw !important;
-		height: 95vh;
-	}
-</style>
 <div class="col-md-12 content">
 	<div class="card" >
 		<div class="card-body">
 			<?= $this->Form->create($user, ['class' => 'form-material mt-2']) ?>
 				<div class="row">
-					<?php if (!$hasGoogleOnly): ?>
-						<div class="col-lg-3 col-md-6 col-sm-12 col-xs-12">
-							<label class="control-label">Senha anterior</label>
-							<?= $this->Form->control('old_password', [
-								'class' => 'form-control',
-								'label' => false,
-								'required' => true,
-								'placeholder' => 'Insira a senha anterior'
-							]) ?>
-						</div>
-					<?php endif; ?>
+					<div class="col-lg-3 col-md-6 col-sm-12 col-xs-12">
+						<label class="control-label">Senha anterior</label>
+						<?= $this->Form->control('old_password', [
+							'type' => 'password',
+							'class' => 'form-control',
+							'label' => false,
+							'required' => true,
+							'placeholder' => 'Insira a senha anterior'
+						]) ?>
+					</div>
 				</div>
 				<div class="row">
 					<div class="col-lg-3 col-md-6 col-sm-12 col-xs-12">

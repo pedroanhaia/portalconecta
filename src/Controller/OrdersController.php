@@ -3,8 +3,13 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use Cake\Mailer\Mailer;
+use Cake\Mailer\MailerAwareTrait;
+
 class OrdersController extends AppController
 {
+	use MailerAwareTrait;
+
 	public function beforeFilter(\Cake\Event\EventInterface $event) {
 		parent::beforeFilter($event);
 
@@ -24,23 +29,168 @@ class OrdersController extends AppController
 		}
 	}
 
+	private function sendEmail($to, $subject, $message)
+	{
+		try {
+			$mailer = new Mailer('default');
+			$mailer
+				->setFrom(['joaomario3224@gmail.com' => 'CGL Conecta'])
+				->setTo($to)
+				->setSubject($subject)
+				->deliver($message);
+			
+			return true;
+		} catch (\Exception $e) {
+			// Log do erro
+			debug($e->getMessage());
+			$this->log('Erro ao enviar email: ' . $e->getMessage(), 'error');
+			return false;
+		}
+	}
+
+	public function testeemail()
+	{
+		// Variáveis para teste - você pode modificar aqui
+		$emailTeste = 'joaomario3224@gmail.com';
+		$assunto = 'Teste de Email - CGL Conecta';
+		
+		// Dados do pedido fictício para teste
+		$numeroPedido = '12345';
+		$statusTeste = 'Em Projeto';
+		
+		// Mensagem de teste mais elaborada
+		$mensagemCompleta = "
+			<h2>Teste de Email - CGL Conecta</h2>
+			<p>Este é um email de teste do sistema.</p>
+			<hr>
+			<p><strong>Dados do teste:</strong></p>
+			<ul>
+				<li>Pedido: #{$numeroPedido}</li>
+				<li>Status: {$statusTeste}</li>
+				<li>Data/Hora: " . date('d/m/Y H:i:s') . "</li>
+			</ul>
+			<p>Se você recebeu este email, a configuração está funcionando corretamente!</p>
+		";
+
+		// Tentar enviar o email
+		$resultado = $this->sendEmail($emailTeste, $assunto, $mensagemCompleta);
+		
+		if ($resultado) {
+		   	debug('Email de teste enviado com sucesso para: ' . $emailTeste);
+		} else {
+		   	debug('Erro ao enviar email de teste para: ' . $emailTeste);
+		}
+
+		// Retornar resposta JSON se for requisição AJAX
+		if ($this->request->is('ajax')) {
+			return $this->response->withType('application/json')->withStringBody(json_encode([
+				'success' => $resultado,
+				'message' => $resultado ? 'Email enviado com sucesso!' : 'Erro ao enviar email',
+				'email' => $emailTeste
+			]));
+		}
+
+		die;
+	}
+
 	public function index()
 	{
 		$userLogado = $this->Authentication->getIdentity();
 
+		// Iniciar a query base
+		$query = $this->Orders->find('all')
+			->contain(['Customers'])
+			->order(['number' => 'DESC']);
+
+		// Aplicar filtro de cliente se não for admin
+		if(!$userLogado->admin) {
+			$query->where(['Orders.id_customer' => $userLogado->id_customer]);
+		}
+
+		// Filtros de data - definir período padrão de 30 dias se não houver filtros
+		$dataInicio = $this->request->getQuery('data_inicio');
+		$dataFim = $this->request->getQuery('data_fim');
+		
+		// Se não há filtros de data, definir os últimos 30 dias
+		if (empty($dataInicio) && empty($dataFim)) {
+			$dataInicio = date('Y-m-d', strtotime('-30 days'));
+			$dataFim = date('Y-m-d');
+		}
+
+		if (!empty($dataInicio)) {
+			$dataInicioFormatted = date('Y-m-d 00:00:00', strtotime($dataInicio));
+			$query->where(['Orders.created >=' => $dataInicioFormatted]);
+		}
+
+		if (!empty($dataFim)) {
+			$dataFimFormatted = date('Y-m-d 23:59:59', strtotime($dataFim));
+			$query->where(['Orders.created <=' => $dataFimFormatted]);
+		}
+
+		// Filtro por status
+		$status = $this->request->getQuery('status');
+		if (!empty($status) && $status !== 'todos') {
+			$query->where(['Orders.status' => $status]);
+		}
+
+		// Filtro por cliente (apenas para admin)
+		$clienteId = $this->request->getQuery('cliente');
+		if (!empty($clienteId) && $clienteId !== 'todos' && $userLogado->admin) {
+			$query->where(['Orders.id_customer' => $clienteId]);
+		}
+
+		$orders = $query->toArray();
+
+		// Preparar dados para os filtros
+		$customers = [];
 		if($userLogado->admin) {
-			$orders = $this->Orders->find('all', $this->paginate)
-				->contain(['Customers'])
-				->order(['number' => 'DESC'])
-				->toArray();
-		} else {
-			$orders = $this->Orders->find('all', $this->paginate)
-				->where(['id_customer' => $userLogado->id_customer])
-				->order(['number' => 'DESC'])
+			$customers = $this->Customers->find('all')
+				->select(['id', 'name', 'cnpj'])
+				->order(['name' => 'ASC'])
 				->toArray();
 		}
 
-		$this->set(compact('orders'));
+		// Status disponíveis
+		$statusOptions = [
+			'todos' => 'Todos os Status',
+			C_PedidosStatusRecebido => 'Recebido',
+			C_PedidosStatusEmProjeto => 'Em Projeto',
+			C_PedidosStatusEmFabricação => 'Em Fabricação',
+			C_PedidosStatusEmTransporte => 'Em Transporte',
+			C_PedidosStatusEntregue => 'Entregue'
+		];
+
+		// Definir se é admin para a view
+		$userAdmin = $userLogado->admin == 1;
+
+		$this->set(compact('orders', 'customers', 'statusOptions', 'dataInicio', 'dataFim', 'status', 'clienteId', 'userAdmin'));
+	}
+
+	public function add()
+	{
+		$order = $this->Orders->newEmptyEntity();
+
+		if ($this->request->is('post')) {
+			$order = $this->Orders->patchEntity($order, $this->request->getData());
+
+			if ($this->Orders->save($order)) {
+				$this->Flash->success(__('Pedido cadastrado com sucesso.'));
+				return $this->redirect(['action' => 'edit', $order->id]);
+			}
+
+			$this->Flash->error(__('Não foi possível cadastrar o pedido. Por favor, tente novamente.'));
+		}
+
+		$customers = $this->Customers->find('all')->all();
+
+		$customersOpt = $customers->combine(
+			'id',
+			function ($row) {
+				return "{$row->cnpj} - {$row->name}";
+			}
+		)->toArray();
+		
+		$this->set(compact('order', 'customersOpt'));
 	}
 
 	public function view($id = null)
@@ -228,11 +378,11 @@ class OrdersController extends AppController
 	{
 		$this->request->allowMethod(['post']);
 
-		$orderId = $this->request->getData('pedido_id');
-		$newStatus = (int)$this->request->getData('status');
-		$comentario = trim($this->request->getData('comentario'));
+		$orderId = $this->request->getData('order_id');
+		$newStatus = (int)$this->request->getData('new_status');
+		$comentario = trim($this->request->getData('comment'));
 
-		$order = $this->Orders->get($orderId);
+		$order = $this->Orders->get($orderId, ['contain' => ['Customers']]);
 		$oldStatus = $order->status;
 		$order->status = $newStatus;
 
@@ -280,12 +430,32 @@ class OrdersController extends AppController
 						'id' => $entry->id,
 						'status' => $entry->new_status,
 						'data' => (new \Cake\I18n\FrozenTime($entry->modified))->i18nFormat('dd/MM/yyyy - HH:mm'),
+						'data_formatada' => (new \Cake\I18n\FrozenTime($entry->modified))->i18nFormat('dd/MM/yyyy - HH:mm'),
 						'user' => [
 							'name' => $entry->user->name ?? 'Desconhecido'
 						],
 						'mensagens' => $mensagens
 					];
 				}
+
+				// // Envio de e-mail para o cliente
+				// $customerEmail = $order->customer->email ?? null;
+				// if ($customerEmail) {
+				// 	$statusText = PedidosStatus($newStatus);
+				// 	$emailSubject = "Status do pedido #{$order->number} alterado";
+				// 	$emailMessage = "
+				// 		<h2>Atualização do Pedido</h2>
+				// 		<p>O status do seu pedido foi alterado:</p>
+				// 		<ul>
+				// 			<li><strong>Pedido:</strong> #{$order->number}</li>
+				// 			<li><strong>Novo Status:</strong> {$statusText}</li>
+				// 			<li><strong>Data:</strong> " . date('d/m/Y H:i') . "</li>
+				// 		</ul>
+				// 		" . (!empty($comentario) ? "<p><strong>Observações:</strong> {$comentario}</p>" : "") . "
+				// 	";
+					
+				// 	$this->sendEmail($customerEmail, $emailSubject, $emailMessage);
+				// }
 
 				return $this->response->withType('application/json')->withStringBody(json_encode([
 					'success' => true,

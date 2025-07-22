@@ -47,11 +47,11 @@ body.dark .home .text{
 	color: var(--toggle-color);
 }
 
-.coluna-name, .input-tarefa, .checklist-nome-edit, .checkbox input[type="text"], select, .tarefa-prazo, #linkCompartilhamento, h3, h4, .form-control{
+.checkbox input[type="text"], select, h3, h4, .form-control{
 	color: var(--toggle-color) !important;
 }
 
-.form-control:focus, .coluna-name:focus, .input-tarefa:focus, .checklist-nome-edit:focus, .checkbox input[type="text"]:focus, #linkCompartilhamento:focus{
+.form-control:focus, .checkbox input[type="text"]:focus {
 	background: var(--sidebar-color) !important;
 }
 
@@ -68,16 +68,6 @@ option {
 	color: var(--text-color) !important;
 }
 
-.checklist {
-	background: var(--primary-color) !important;
-	color: var(--text-color) !important;
-}
-
-.tarefa-card.finalizada {
-    text-decoration: line-through;
-    background: #4d9b44;
-	color: var(--toggle-color) !important;
-}
 
 .content{
 	background: var(--primary-color);
@@ -97,6 +87,58 @@ option {
 	background: var(--body-color) !important;
 }
 
-/* .checkbox:hover, .form-control:hover, .coluna-name:hover, .input-tarefa:hover, .checklist-nome-edit:hover, .checkbox input[type="text"]:hover, #linkCompartilhamento:hover{
-	background: var(--sidebar-color) !important;
-} */
+.sidebar .menu-bar .mode{
+    background-color: var(--sidebar-color);
+}
+
+/* Config */
+
+.card-config {
+    background-color: var(--primary-color-light) !important;
+    color: var(--text-color) !important;
+}
+
+.card-config:hover {
+    background-color: var(--primary-color) !important;
+}
+
+.card-description {
+    color: var(--text-color) !important;
+}
+
+/* DataTable */
+
+table.dataTable td, table.dataTable th {
+	color: var(--text-color) !important;
+}
+
+table.dataTable thead>tr>th {
+	background-color: var(--body-color) !important;
+	color: var(--toggle-color) !important;
+	border-color: var(--primary-color) !important;
+}
+
+div.dataTables_wrapper div.dataTables_length select {
+    color: var(--body-color) !important;
+}
+
+
+/* Pedidos */
+
+.file-category-card {
+    background: var(--body-color) !important;
+}
+
+.nav-tabs .nav-link {
+    color: var(--toggle-color) !important;
+    background-color: var(--primary-color) !important;
+}
+
+.nav-tabs .nav-link.active {
+    background-color: var(--toggle-color) !important;
+	color: var(--primary-color) !important;
+}
+
+.card-title {
+    color: var(--toggle-color);
+}

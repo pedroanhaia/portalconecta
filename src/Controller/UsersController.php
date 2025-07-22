@@ -121,7 +121,6 @@ class UsersController extends AppController
 	}
 
 	public function delete($id = null) {
-		$this->request->allowMethod(['post', 'delete']);
 		$user = $this->Users->get($id);
 		if ($this->Users->delete($user)) {
 			$this->Flash->success(__('O usuário foi excluído com sucesso.'));
@@ -202,6 +201,14 @@ class UsersController extends AppController
 		if ($this->request->is(['patch', 'post', 'put'])) {
 
 			$data = $this->request->getData();
+
+			// Verifica se a senha atual está correta
+			$hasher = new DefaultPasswordHasher();
+
+			if (!$hasher->check($data['old_password'], $user->password)) {
+				$this->Flash->error(__('Senha anterior incorreta.'));
+				return $this->redirect($this->referer());
+			}
 
 			// Validação da nova senha e confirmação
 			if (empty($data['password1']) || $data['password1'] !== $data['password2']) {

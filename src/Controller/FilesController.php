@@ -5,11 +5,25 @@ namespace App\Controller;
 
 class FilesController extends AppController
 {
+	private $categories = [
+		'dadosgerais' => '0 - DADOS GERAIS',
+		'desenhos' => '1 - DESENHOS',
+		'art' => '2 - ART',
+		'eps' => '3 - EPS',
+		'rqs' => '4 - RQS',
+		'certmat' => '5 - CERTIFICADOS DOS MATERIAIS',
+		'certcons' => '6 - CERTIFICADOS DOS CONSUMÍVEIS',
+		'certcalib' => '7 - CERTIFICADOS DE CALIBRAÇÃO',
+		'relinsp' => '8 - RELATORIOS DE INSPEÇÃO',
+		// 'montdatabook' => 'MONTAGEM DO DATABOOK',
+		'testes' => 'TESTES',
+		'outros' => 'OUTROS'
+	];
+
 	public function initialize(): void
 	{
 		parent::initialize();
 		
-		// Configurar respostas JSON para métodos AJAX
 		if ($this->request->is('ajax')) {
 			$this->viewBuilder()->setClassName('Json');
 		}
@@ -19,7 +33,6 @@ class FilesController extends AppController
 	{
 		parent::beforeFilter($event);
 		
-		// Verificar autenticação para métodos de arquivo
 		$ajaxMethods = ['checkCategory', 'listCategory'];
 		$currentAction = $this->request->getParam('action');
 		
@@ -34,7 +47,6 @@ class FilesController extends AppController
 						'_serialize' => ['success', 'message']
 					]);
 					
-					// Retornar resposta JSON em vez de redirecionar
 					return $this->response
 						->withType('application/json')
 						->withStatus(401)
@@ -75,16 +87,15 @@ class FilesController extends AppController
 		// Caminho base dos arquivos no servidor
 		$baseDir = $this->Config->get(1)->path . DS;
 
-		// Montar o caminho com base no nome do cliente e número do pedido
-		$clienteNome = preg_replace('/[^a-zA-Z0-9_]/', '_', $order->customer->name);
+		// Nova estrutura: Nome do cliente - número do pedido
+		$clienteNome = preg_replace('/[^a-zA-Z0-9_\s]/', '_', $order->customer->name);
 		$pedidoNumero = str_pad($order->number, 3, '0', STR_PAD_LEFT);
-		$pastaPedido = "Pedido_{$pedidoNumero}";
-		$caminhoPedido = $baseDir . $clienteNome . DS . $pastaPedido . DS;
-
+		$pastaPedido = "{$clienteNome} - {$pedidoNumero}";
+		$caminhoPedido = $baseDir . $pastaPedido . DS;
 
 		if (!is_dir($caminhoPedido)) {
 			return $this->response->withType('application/json')
-				->withStringBody(json_encode(['success' => false, 'message' => 'Pasta do pedido não encontrada.']));
+				->withStringBody(json_encode(['success' => false, 'message' => 'Pasta do pedido não encontrada: ' . $pastaPedido]));
 		}
 
 		// Função recursiva para vasculhar arquivos
@@ -97,20 +108,16 @@ class FilesController extends AppController
 
 		// Salvar os arquivos no banco de dados
 		foreach ($arquivos as $arquivo) {
-			$relativePath = str_replace(WWW_ROOT, '', $arquivo);
+			$relativePath = str_replace($baseDir, '', $arquivo);
 			$name = basename($arquivo);
 			$type = pathinfo($arquivo, PATHINFO_EXTENSION);
 			
-			if (strpos($relativePath, '\pedido\\')) $category = 'pedido';
-			else if (strpos($relativePath, '\fotos\\')) $category = 'fotos';
-			else if (strpos($relativePath, '\testes\\')) $category = 'testes';
-			else if ($name === 'databook.pdf') $category = 'databook';
-			else if ($name === 'equipamento.pdf') $category = 'equipamento';
-			else if ($name === 'art.pdf') $category = 'art';
+			// Determinar categoria baseada no caminho da pasta
+			$category = $this->determineCategoryFromPath($arquivo, $caminhoPedido);
 
 			$fileEntity = $this->Files->newEntity([
 				'name' => $name,
-				'path' => $relativePath,
+				'path' => $arquivo, // Caminho completo
 				'status' => 1,
 				'id_order' => $id,
 				'type' => $type,
@@ -124,9 +131,45 @@ class FilesController extends AppController
 			->withStringBody(json_encode(['success' => true, 'message' => 'Arquivos mapeados com sucesso.']));
 	}
 
+	private function determineCategoryFromPath($filePath, $basePath)
+	{
+		// Remove o caminho base para analisar apenas a estrutura interna
+		$relativePath = str_replace($basePath, '', $filePath);
+		$relativePath = str_replace('\\', '/', $relativePath); // Normalizar separadores
+		
+		// Mapear pastas para categorias
+		$folderMapping = [
+			'0 - DADOS GERAIS' => 'dadosgerais',
+			'1 - DESENHOS' => 'desenhos',
+			'2 - ART' => 'art',
+			'3 - EPS' => 'eps',
+			'4 - RQS' => 'rqs',
+			'5 - CERTIFICADOS DOS MATERIAIS' => 'certmat',
+			'6 - CERTIFICADOS DOS CONSUMÍVEIS' => 'certcons',
+			'7 - CERTIFICADOS DE CALIBRAÇÃO' => 'certcalib',
+			'8 - RELATORIOS DE INSPEÇÃO' => 'relinsp',
+			// 'MONTAGEM DO DATABOOK' => 'montdatabook',
+			'TESTES' => 'testes'
+		];
+
+		// Verificar se o arquivo está dentro de alguma pasta conhecida
+		foreach ($folderMapping as $folderName => $categoryKey) {
+			if (stripos($relativePath, $folderName) !== false) {
+				return $categoryKey;
+			}
+		}
+
+		// Se não encontrou em nenhuma pasta conhecida, categorizar como "outros"
+		return 'outros';
+	}
+
 	private function listarArquivos($dir)
 	{
 		$resultados = [];
+
+		if (!is_dir($dir)) {
+			return $resultados;
+		}
 
 		$it = new \RecursiveIteratorIterator(
 			new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS)
@@ -139,18 +182,6 @@ class FilesController extends AppController
 		}
 
 		return $resultados;
-	}
-
-	public function test()
-	{
-		$this->viewBuilder()->setClassName('Json');
-		
-		$this->set([
-			'success' => true,
-			'message' => 'FilesController funcionando',
-			'timestamp' => date('Y-m-d H:i:s'),
-			'_serialize' => ['success', 'message', 'timestamp']
-		]);
 	}
 
 	public function checkCategory()
@@ -287,7 +318,7 @@ class FilesController extends AppController
 			])->withType(mime_content_type($file->path));
 
 		} catch (\Exception $e) {
-			throw new \Cake\Http\Exception\InternalErrorException('Erro ao visualizar arquivo: ' . $e->getMessage());
+			throw new \Cake\Http\Exception\InternalErrorException('Erro ao baixar arquivo: ' . $e->getMessage());
 		}
 	}
 
@@ -327,7 +358,8 @@ class FilesController extends AppController
 			mkdir($tempPath, 0755, true);
 		}
 
-		$zipFilename = 'Arquivos -' . $category . '.zip';
+		$categoryName = $this->categories[$category] ?? $category;
+		$zipFilename = 'Arquivos_' . $categoryName . '.zip';
 		$zipPath = $tempPath . $zipFilename;
 
 		$zip = new \ZipArchive();
@@ -381,5 +413,4 @@ class FilesController extends AppController
 			throw new \Cake\Http\Exception\InternalErrorException('Erro ao visualizar arquivo: ' . $e->getMessage());
 		}
 	}
-
 }

@@ -20,7 +20,6 @@
 						<td> <?= $reg->name ?> </td>
 						<td> <?= $reg->cnpj ?> </td>
 						<td class="actions">
-							<?= $this->Html->link('<i class="fa fa-eye"></i>', ["action" => "view", $reg->id], ['rel' => 'tooltip', 'title' => 'Visualizar', 'class' => 'btn btn-info text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>
 							<?= $this->Html->link('<i class="fa fa-edit"></i>', ["action" => "edit", $reg->id], ['rel' => 'tooltip', 'title' => 'Editar', 'class' => 'btn btn-warning text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>
 						</td>
 					</tr>

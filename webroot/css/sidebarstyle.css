@@ -1,348 +1,414 @@
 /* Google Font Import - Poppins */
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 *{
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box;
-	font-family: 'Poppins', sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins', sans-serif;
 }
 
 :root{
-	/* ===== Colors ===== */
-	--body-color: #E4E9F7;
-	--sidebar-color: #FFF;
-	--primary-color: #695CFE;
-	--primary-color-light: #F6F5FF;
-	--toggle-color: #DDD;
-	--text-color: #707070;
+    /* ===== Colors from custom-theme ===== */
+    --cgl-primary: #1a2f33;
+    --cgl-secondary: #f8f8fa;
+    --cgl-white: #FFFFFF;
+    --cgl-hover: #768285;
+    --cgl-text-color: #1a2f33;
+    --cgl-border-color: #e9ecef;
+    --cgl-danger: #dc3545;
+    --cgl-danger-hover: #b11928;
+    --cgl-info: #26c1e0;
+    --cgl-info-hover: #1aa4c0;
+    
+    /* ===== Sidebar specific colors ===== */
+    --body-color: var(--cgl-secondary);
+    --sidebar-color: var(--cgl-primary);
+    --primary-color: var(--cgl-primary);
+    --primary-color-light: var(--cgl-secondary);
+    --toggle-color: var(--cgl-hover);
+    --text-color: var(--cgl-white);
 
-	/* ====== Transition ====== */
-	--tran-03: all 0.2s ease;
-	--tran-03: all 0.3s ease;
-	--tran-04: all 0.3s ease;
-	--tran-05: all 0.3s ease;
+    /* ====== Transition ====== */
+    --tran-03: all 0.2s ease;
+    --tran-04: all 0.3s ease;
+    --tran-05: all 0.3s ease;
 }
 
 body{
-	/*min-height: 100vh;*/
-	background-color: var(--body-color);
-	transition: var(--tran-05);
+    background-color: var(--body-color);
+    transition: var(--tran-05);
 }
 
 ::selection{
-	background-color: var(--primary-color);
-	color: #fff;
+    background-color: var(--primary-color);
+    color: #fff;
 }
 
 /* ===== Sidebar ===== */
- .sidebar{
-	position: fixed;
-	top: 0;
-	left: 0;
-	height: 100%;
-	width: 250px;
-	padding: 10px 0px;
-	background: var(--sidebar-color);
-	transition: var(--tran-05);
-	z-index: 100;
+.sidebar{
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 250px;
+    padding: 10px 0px;
+    background: var(--sidebar-color);
+    transition: var(--tran-05);
+    z-index: 100;
 }
+
 .sidebar.close{
-	width: 60px;
+    width: 60px;
 }
 
 /* ===== Reusable code - Here ===== */
 .sidebar li{
-	height: 50px;
-	list-style: none;
-	display: flex;
-	align-items: center;
-	margin-top: 10px;
+    height: 50px;
+    list-style: none;
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
 }
 
 .sidebar li.logo-center {
-	height: auto;
-	margin: 0;
+    height: auto;
+    margin: 0;
 }
 
 .sidebar header .image,
 .sidebar .icon{
-	min-width: 60px;
-	border-radius: 6px;
+    min-width: 60px;
+    border-radius: 6px;
 }
 
 .sidebar .icon{
-	width: 60px;           /* largura fixa do “bloco” */
-	min-width: 60px;
-	height: 50px;
-	display: flex;
-	align-items: center;   /* alinha verticalmente */
-	justify-content: center;/* centraliza horizontalmente */
-	font-size: 20px;
+    width: 60px;
+    min-width: 60px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
 }
 
-/* avatar (com foto) – ocupa 40 px dentro do bloco de 60 px */
 .sidebar .icon.avatar img{
-	width: 40px;
-	height: 40px;
-	border-radius: 50%;
-	object-fit: cover;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
 }
 
-/* avatar (sem foto) – círculo com inicial */
 .sidebar .icon.avatar{
-	display:flex;
-	align-items:center;
-	justify-content:center;
+    display:flex;
+    align-items:center;
+    justify-content:center;
 }
 
-/* avatar (sem foto) – círculo com inicial */
 .initials{
-	width: 40px;
-	height: 40px;
-	background:#4a90e2;
-	color:#fff;
-	border-radius:50%;
-	font-size:18px;
-	font-weight:600;
-	display:flex;
-	align-items:center;
-	justify-content:center;
+    width: 40px;
+    height: 40px;
+    background: var(--cgl-info);
+    color: var(--cgl-white);
+    border-radius: 50%;
+    font-size: 18px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .sidebar .text,
 .sidebar .icon{
-	color: var(--text-color);
-	transition: var(--tran-03);
+    color: var(--text-color);
+    transition: var(--tran-03);
 }
 
 .nav-user {
-	display: flex;
-	align-items: center;
-	gap: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .sidebar .text{
-	font-size: 17px;
-	font-weight: 500;
-	white-space: nowrap;
-	opacity: 1;
+    font-size: 17px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 1;
 }
-.sidebar.close .text{
-	opacity: 0;
-}
-/* =========================== */
 
+.sidebar.close .text{
+    opacity: 0;
+}
+
+/* ===== Sidebar Header ===== */
 .sidebar header{
-	position: relative;
+    position: relative;
 }
 
 .sidebar header .image-text{
-	display: flex;
-	align-items: center;
+    display: flex;
+    align-items: center;
 }
+
 .sidebar header .logo-text{
-	display: flex;
-	flex-direction: column;
+    display: flex;
+    flex-direction: column;
 }
+
 header .image-text .name {
-	margin-top: 2px;
-	font-size: 18px;
-	font-weight: 600;
+    margin-top: 2px;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--cgl-white);
 }
 
 header .image-text .profession{
-	font-size: 16px;
-	margin-top: -2px;
-	display: block;
+    font-size: 16px;
+    margin-top: -2px;
+    display: block;
+    color: var(--cgl-white);
 }
 
 .sidebar header .image{
-	display: flex;
-	align-items: center;
-	justify-content: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .sidebar header .image img{
-	width: 40px;
-	border-radius: 6px;
+    width: 40px;
+    border-radius: 6px;
 }
 
 .sidebar header .toggle{
-	position: absolute;
-	top: 50%;
-	right: -25px;
-	transform: translateY(-50%) rotate(180deg);
-	height: 25px;
-	width: 25px;
-	background-color: var(--primary-color);
-	color: var(--sidebar-color);
-	border-radius: 50%;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: 22px;
-	cursor: pointer;
-	transition: var(--tran-05);
+    position: absolute;
+    top: 50%;
+    right: -25px;
+    transform: translateY(-50%) rotate(180deg);
+    height: 25px;
+    width: 25px;
+    background-color: var(--cgl-primary);
+    color: var(--cgl-white);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    cursor: pointer;
+    transition: var(--tran-05);
 }
 
 .sidebar.close .toggle{
-	transform: translateY(-50%) rotate(0deg);
+    transform: translateY(-50%) rotate(0deg);
 }
 
+/* ===== Sidebar Menu ===== */
 .sidebar .menu{
-	margin-top: 0px;
+    margin-top: 0px;
 }
 
-/* link – ícone + texto lado a lado */
 .sidebar li a{
-	display: flex;
-	align-items: center;
-	height: 100%;
-	width: 100%;
-	border-radius: 6px;
-	text-decoration: none;
-	transition: var(--tran-03);
+    display: flex;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: var(--tran-03);
+    color: var(--cgl-white);
 }
 
-.sidebar li a:hover{
-	background-color: var(--primary-color);
+.sidebar li a:hover, 
+.sidebar li.active a {
+    background-color: var(--cgl-hover);
+    color: var(--cgl-white);
+    border-radius: 5px;
+    transition: 0.5s;
 }
-.sidebar li a:hover .icon,
-.sidebar li a:hover .text{
-	color: var(--sidebar-color);
+
+.sidebar li a:hover .icon, 
+.sidebar li a:hover .text,
+.sidebar li.active a .icon, 
+.sidebar li.active a .text {
+    color: var(--cgl-white);
 }
 
 .menu-links{
-	padding-left: 0rem;
+    padding-left: 0rem;
 }
+
 .sidebar .menu-bar{
-	height: calc(100% - 55px);
-	display: flex;
-	flex-direction: column;
-	justify-content: space-between;
-	overflow-y: scroll;
+    height: calc(100% - 55px);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    overflow-y: scroll;
 }
+
 .menu-bar::-webkit-scrollbar{
-	display: none;
+    display: none;
 }
+
 .sidebar .menu-bar .mode{
-	border-radius: 6px;
-	background-color: var(--primary-color-light);
-	position: relative;
-	transition: var(--tran-05);
+    border-radius: 6px;
+    background-color: var(--cgl-primary);
+    position: relative;
+    transition: var(--tran-05);
 }
 
-.sidebar.close ~ .home{
-	left: 78px;
-	/*height: 100vh;*/
-	width: calc(100% - 78px);
-}
-
-.menu-links img {
-	max-height: 100%;
-}
-
-.sidebar li:first-child {
-	justify-content: center;
-}
-
+/* ===== Logo Center ===== */
 .logo-center {
-	display: flex;
-	justify-content: center;
-	align-items: center;
-	height: 70px; /* ajuste conforme necessário */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 70px;
 }
 
 .logo-center a {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	gap: 0.5rem;
-	width: 100%;
-	height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    height: 100%;
 }
 
 .logo-center img {
-	max-height: 50px;
-	height: auto;
-	width: auto;
+    max-height: 50px;
+    height: auto;
+    width: auto;
 }
 
-.menu-bar .mode .sun-moon{
-	height: 50px;
-	width: 60px;
+.sidebar li:first-child {
+    justify-content: center;
 }
 
-.mode .sun-moon i{
-	position: absolute;
-}
-.mode .sun-moon i.sun{
-	opacity: 0;
-}
-
-.menu-bar .bottom-content .toggle-switch{
-	position: absolute;
-	right: 0;
-	height: 100%;
-	min-width: 60px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	border-radius: 6px;
-	cursor: pointer;
-}
-.toggle-switch .switch{
-	position: relative;
-	height: 22px;
-	width: 40px;
-	border-radius: 25px;
-	background-color: var(--toggle-color);
-	transition: var(--tran-05);
-}
-
-.switch::before{
-	content: '';
-	position: absolute;
-	height: 15px;
-	width: 15px;
-	border-radius: 50%;
-	top: 50%;
-	left: 5px;
-	transform: translateY(-50%);
-	background-color: var(--sidebar-color);
-	transition: var(--tran-04);
-}
-
-.home{
-	position: absolute;
-	top: 0;
-	top: 0;
-	left: 250px;
-	/*height: 100vh;*/
-	width: calc(100% - 250px);
-	background-color: var(--body-color);
-	transition: var(--tran-05);
-}
-.home .text{
-	font-size: 30px;
-	font-weight: 500;
-	color: var(--text-color);
-	padding: 12px 60px;
-}
-
-/* Exibe apenas o logo adequado baseado na sidebar */
+/* ===== Logo Display Control ===== */
 .sidebar .mini-sidebar {
-	display: none;
+    display: none;
 }
 
 .sidebar .open-sidebar {
-	display: inline;
+    display: inline;
 }
 
 .sidebar.close .mini-sidebar {
-	display: inline;
+    display: inline;
 }
 
 .sidebar.close .open-sidebar {
-	display: none;
+    display: none;
+}
+
+/* ===== Main Content Area ===== */
+.sidebar.close ~ .home{
+    left: 78px;
+    width: calc(100% - 78px);
+}
+
+.home{
+    position: absolute;
+    top: 0;
+    left: 250px;
+    width: calc(100% - 250px);
+    background-color: var(--body-color);
+    transition: var(--tran-05);
+}
+
+.home .text{
+    font-size: 30px;
+    font-weight: 500;
+    color: var(--text-color);
+    padding: 12px 60px;
+}
+
+/* ===== Main Content Adjustments ===== */
+.main {
+    margin-left: 250px;
+    width: calc(100% - 250px);
+    min-height: 95vh;
+    max-height: 95vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: margin-left 0.3s ease, width 0.3s ease;
+}
+
+.sidebar-collapsed {
+    margin-left: 60px;
+    width: calc(100% - 60px);
+}
+
+.main-content {
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+/* ===== Side Navigation Buttons ===== */
+.side-nav .btn {
+    border-radius: 5px;
+    transition: all 0.3s ease;
+    margin-bottom: 8px;
+    padding: 8px 12px;
+    display: inline-block;
+    text-decoration: none;
+    font-size: 11px;
+}
+
+.side-nav .btn:hover {
+    transform: none;
+    text-decoration: none;
+}
+
+.side-nav .btn i {
+    color: var(--cgl-white) !important;
+    margin-right: 8px;
+}
+
+/* ===== Mode Toggle ===== */
+.menu-bar .mode .sun-moon{
+    height: 50px;
+    width: 60px;
+}
+
+.mode .sun-moon i{
+    position: absolute;
+}
+
+.mode .sun-moon i.sun{
+    opacity: 0;
+}
+
+.menu-bar .bottom-content .toggle-switch{
+    position: absolute;
+    right: 0;
+    height: 100%;
+    min-width: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.toggle-switch .switch{
+    position: relative;
+    height: 22px;
+    width: 40px;
+    border-radius: 25px;
+    background-color: var(--toggle-color);
+    transition: var(--tran-05);
+}
+
+.switch::before{
+    content: '';
+    position: absolute;
+    height: 15px;
+    width: 15px;
+    border-radius: 50%;
+    top: 50%;
+    left: 5px;
+    transform: translateY(-50%);
+    background-color: var(--sidebar-color);
+    transition: var(--tran-04);
 }

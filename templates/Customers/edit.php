@@ -20,7 +20,7 @@
 				</div>
 				<div class="row mt-3">
 					<div class="col-12 d-flex justify-content-end gap-2">
-						<?= $this->Html->link('Excluir', ['controller' => 'Customers', 'action' => 'delete', $user->id], ['class' => 'btn btn-danger btn-lg']) ?>
+						<?= $this->Html->link('Excluir', ['controller' => 'Customers', 'action' => 'delete', $customer->id], ['class' => 'btn btn-danger btn-lg']) ?>
 						<?= $this->Form->button('Salvar', ['class' => 'btn btn-success btn-lg']) ?>
 					</div>
 				</div>

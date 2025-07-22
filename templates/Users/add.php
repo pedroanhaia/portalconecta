@@ -15,6 +15,14 @@
 					</div>
 				</div>
 				<?php if($userAdmin) { ?>
+					<div class="row mt-3">
+						<div class="col-12 d-flex align-items-end">
+							<label class="form-check-label d-flex align-items-center gap-2 mb-0">
+								<?= $this->Form->checkbox('admin', ['hiddenField' => 0, 'class' => 'form-check-input', 'style' => 'margin-bottom: 5px;', 'id' => 'admin-checkbox']) ?>
+								Administrador geral do sistema
+							</label>
+						</div>
+					</div>
 					<div class="row">
 						<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
 							<label class="control-label"> Empresa </label>
@@ -23,14 +31,6 @@
 						<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
 							<label class="control-label"> Função na empresa </label>
 							<?= $this->Form->control('type', ['class' => 'form-control selectpicker', 'label' => false, 'required' => true, 'options' => C_UsersTypeOpt, 'title' => 'Função do usuário na empresa']) ?>
-						</div>
-					</div>
-					<div class="row mt-3">
-						<div class="col-12 d-flex align-items-end">
-							<label class="form-check-label d-flex align-items-center gap-2 mb-0">
-								<?= $this->Form->checkbox('admin', ['hiddenField' => 0, 'class' => 'form-check-input', 'style' => 'margin-bottom: 5px;']) ?>
-								Administrador geral do sistema
-							</label>
 						</div>
 					</div>
 				<?php } ?>
@@ -53,3 +53,14 @@
 		</div>
 	</div>
 </div>
+<script>
+	$('#admin-checkbox').change(function() {
+		if ($(this).is(':checked')) {
+			$('select[name="id_customer"]').prop('disabled', true).selectpicker('refresh');
+			$('select[name="type"]').prop('disabled', true).selectpicker('refresh');
+		} else {
+			$('select[name="id_customer"]').prop('disabled', false).selectpicker('refresh');
+			$('select[name="type"]').prop('disabled', false).selectpicker('refresh');
+		}
+	});
+</script>
