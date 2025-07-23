@@ -38,5 +38,6 @@ class Order extends Entity
         'role' => true,
         'created' => true,
         'modified' => true,
+        'estimatetoready' => true,
     ];
 }

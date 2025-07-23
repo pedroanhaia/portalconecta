@@ -81,7 +81,7 @@
                         <div class="col-7">
                             <div class="comments-box">
                                 <h5>Comentários do Pedido</h5>
-                                <div class="comments-list" id="commentsList">
+                                                                <div class="comments-list" id="commentsList">
                                     <?php 
                                     $hasComments = false;
                                 
@@ -92,7 +92,7 @@
                                             <div class="comment-item">
                                                 <div class="comment-header">
                                                     <strong><?= h($comment['autor']) ?></strong>
-                                                    <small class="text-muted"><?= h($comment['data']) ?></small>
+                                                    <small class="text-muted"><?= h($comment['data'] ?? 'Data não disponível') ?></small>
                                                 </div>
                                                 <div class="comment-text">
                                                     <?= h($comment['comentario']) ?>
@@ -140,12 +140,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Adicionar comentário (antigo sistema - manter para compatibilidade) -->
-                    <div style="display: none;">
-                        <label for="comment">Adicionar comentário:</label>
-                        <textarea id="comment" class="form-control"></textarea>
                     </div>
                 </div>
             </div>
@@ -418,6 +412,16 @@
                                     ]);
                                 ?>
                             </div>
+                            <div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+                                <label class="control-label"> Previsão de Entrega </label>
+                                <?= $this->Form->control('estimatetoready', [
+                                        'type' => 'date',
+                                        'class' => 'form-control',
+                                        'label' => false,
+                                        'placeholder' => 'Selecione a data prevista'
+                                    ]);
+                                ?>
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-lg-5 col-md-7 col-sm-12 col-xs-12">
@@ -458,10 +462,21 @@
 <!-- Modal Confirmação de Status -->
 <div id="modalStatus" class="modal" style="display:none">
 	<div class="modal-content">
-		<h4 id="modalStatusText"></h4>
-		<textarea id="modalStatusComentario" class="form-control" placeholder="Comentário..."></textarea>
-		<br>
-		<button id="confirmarStatusBtn" class="btn btn-primary">Confirmar Mudança</button>
+		<div class="modal-header">
+			<h4 id="modalStatusText" class="modal-title"></h4>
+		</div>
+		<div class="modal-body">
+			<div class="form-group">
+				<label for="modalStatusComentario">Comentário (opcional):</label>
+				<textarea id="modalStatusComentario" class="form-control" placeholder="Adicione um comentário sobre esta mudança de status..." rows="3"></textarea>
+			</div>
+		</div>
+		<div class="modal-footer">
+			<button type="button" class="btn btn-secondary" onclick="$('#modalStatus').hide()">Cancelar</button>
+			<button id="confirmarStatusBtn" class="btn btn-primary">
+				<i class="fas fa-check"></i> Confirmar Mudança
+			</button>
+		</div>
 	</div>
 </div>
 
@@ -541,7 +556,7 @@ $(document).ready(function () {
         $customerName = $order->customer->name;
     ?>
 
-	OrderFilesManager.init('/cglconecta/', {
+	OrderFilesManager.init('<?= $this->request->getAttribute('webroot') ?>', {
 		order_id: <?= $order->id ?>,
 		order_folder: '<?= addslashes($orderFolder) ?>',
 		customer_name: '<?= addslashes($customerName) ?>'

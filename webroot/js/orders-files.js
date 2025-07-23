@@ -10,7 +10,7 @@ var OrderFilesManager = {
     
     // Configurações
     config: {
-        orderBaseUrl: '',
+        orderBaseUrl: 'http://localhost/',
         orderId: null,
         categoryLabels: {
             'dadosgerais': 'Dados Gerais',
@@ -129,21 +129,33 @@ var OrderFilesManager = {
         countElement.removeClass().addClass('badge badge-primary');
         countElement.html('<i class="fas fa-spinner fa-spin"></i> Verificando...');
 
-        const url = this.config.orderBaseUrl + 'files/checkCategory';
+        const url = this.config.orderBaseUrl + 'Files/checkCategory';
 
         $.ajax({
             url: url,
             method: 'POST',
+            timeout: 300000, // 5 minutos de timeout para AJAX
             data: {
                 order_id: this.config.orderId,
                 customer_name: this.config.customerName,
                 order_folder: this.config.orderFolder,
                 category: category,
-                folder: folder
+                folder: folder,
+                _csrfToken: $('meta[name="csrfToken"]').attr('content') || $('input[name="_csrfToken"]').val()
             },
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            beforeSend: function() {
+                // Se for a primeira verificação, mostrar aviso sobre possível demora
+                if (countElement.text().includes('Verificando...')) {
+                    setTimeout(function() {
+                        if (countElement.text().includes('Verificando...')) {
+                            countElement.html('<i class="fas fa-spinner fa-spin"></i> Buscando arquivos... Isso pode demorar alguns minutos.');
+                        }
+                    }, 5000); // Após 5 segundos, mostrar mensagem de demora
+                }
             },
             success: function(response) {
                 if (response.success) {
@@ -152,7 +164,14 @@ var OrderFilesManager = {
 
                     if (count > 0) {
                         countElement.removeClass().addClass('badge badge-success');
-                        countElement.html(`<i class="fas fa-file"></i> ${count} arquivo(s) - ${self.formatBytes(size)}`);
+                        let message = `<i class="fas fa-file"></i> ${count} arquivo(s) - ${self.formatBytes(size)}`;
+                        
+                        // Se foi realizada uma busca ativa, mostrar mensagem adicional
+                        if (response.data.scanPerformed) {
+                            message += `<br><small class="text-info"><i class="fas fa-search"></i> ${response.data.message}</small>`;
+                        }
+                        
+                        countElement.html(message);
                         card.find('.browse-files, .download-all').prop('disabled', false);
                     } else {
                         countElement.removeClass().addClass('badge badge-secondary');
@@ -167,8 +186,15 @@ var OrderFilesManager = {
             },
             error: function(xhr, status, error) {
                 console.error('Erro ao verificar categoria:', category, error);
-                countElement.removeClass().addClass('badge badge-danger');
-                countElement.html('<i class="fas fa-times"></i> Indisponível');
+                
+                if (status === 'timeout') {
+                    countElement.removeClass().addClass('badge badge-warning');
+                    countElement.html('<i class="fas fa-clock"></i> Timeout - Tente novamente');
+                } else {
+                    countElement.removeClass().addClass('badge badge-danger');
+                    countElement.html('<i class="fas fa-times"></i> Indisponível');
+                }
+                
                 card.find('.browse-files, .download-all').prop('disabled', true);
             }
         });
@@ -195,7 +221,8 @@ var OrderFilesManager = {
                 customer_name: this.config.customerName,
                 order_folder: this.config.orderFolder,
                 category: category,
-                folder: folder
+                folder: folder,
+                _csrfToken: $('meta[name="csrfToken"]').attr('content') || $('input[name="_csrfToken"]').val()
             },
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',

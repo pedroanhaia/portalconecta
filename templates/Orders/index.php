@@ -152,6 +152,7 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
                     <?php endif; ?>
                     <th>Status</th>
                     <th>Data Criação</th>
+                    <th>Previsão Entrega</th>
                     <th>Última alteração</th>
                     <th class="actions">Ações</th>
                 </tr>
@@ -159,7 +160,7 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
             <tbody>
                 <?php if(empty($orders)): ?>
                     <tr>
-                        <td colspan="<?= $userAdmin ? '6' : '5' ?>" class="text-center text-muted py-4">
+                        <td colspan="<?= $userAdmin ? '7' : '6' ?>" class="text-center text-muted py-4">
                             <i class="fas fa-search"></i> Nenhum pedido encontrado para os filtros aplicados.
                         </td>
                     </tr>
@@ -179,6 +180,29 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
                                 <small class="text-muted">
                                     <?= date_format($reg->created, 'd/m/Y - H:i') ?>
                                 </small>
+                            </td>
+                            <td>
+                                <?php if ($reg->estimatetoready): ?>
+                                    <?php
+                                        $estimateDate = $reg->estimatetoready;
+                                        $today = new \DateTime();
+                                        $isPast = $estimateDate < $today;
+                                        $daysDiff = $today->diff($estimateDate)->days;
+                                        $isNear = !$isPast && $daysDiff <= 7;
+                                    ?>
+                                    <small class="<?= $isPast ? 'text-danger' : ($isNear ? 'text-warning' : 'text-muted') ?>">
+                                        <?= $estimateDate->format('d/m/Y') ?>
+                                        <?php if ($isPast): ?>
+                                            <i class="fas fa-exclamation-triangle" title="Atrasado"></i>
+                                        <?php elseif ($isNear): ?>
+                                            <i class="fas fa-clock" title="Próximo"></i>
+                                        <?php endif; ?>
+                                    </small>
+                                <?php else: ?>
+                                    <small class="text-muted">
+                                        <em>N/A</em>
+                                    </small>
+                                <?php endif; ?>
                             </td>
                             <td>
                                 <small class="text-muted">

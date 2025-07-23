@@ -58,12 +58,14 @@ class CommentsController extends AppController
 				->order(['modified' => 'DESC', 'id' => 'DESC'])
 				->first();
 
-			// Cria o comentário referenciando o último log (se existir)
+			// Criar comentário vinculado ao status atual do pedido
+			// Se há logs, vincula ao último (status atual)
+			// Se não há logs, é um comentário geral (pedido ainda no status inicial)
 			$comment = $this->Comments->newEntity([
 				'id_order' => $orderId,
 				'id_user' => $userId,
 				'message' => $message,
-				'refcomment' => $lastLogEntry ? $lastLogEntry->id : C_PedidosStatusRecebido,
+				'refcomment' => $lastLogEntry ? $lastLogEntry->id : null,
 			]);
 			if ($this->Comments->save($comment)) {
 				return $this->response->withType('application/json')->withStringBody(json_encode([
@@ -71,7 +73,9 @@ class CommentsController extends AppController
 					'data' => [
 						'comentario' => $message,
 						'autor' => $userName,
-						'status' => $lastLogEntry ? $lastLogEntry->new_status : C_PedidosStatusRecebido,
+						'user_name' => $userName, // Para compatibilidade com JS
+						'status' => $lastLogEntry ? $lastLogEntry->new_status : null,
+						'data' => (new \Cake\I18n\FrozenTime())->i18nFormat('dd/MM/yyyy - HH:mm')
 					]
 				]));
 			} else {

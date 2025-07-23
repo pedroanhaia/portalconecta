@@ -103,6 +103,40 @@ $(document).ready(function() {
         return div.innerHTML;
     }
     
+    // Função para comparar datas no formato dd/MM/yyyy - HH:mm
+    function compareDates(date1, date2) {
+        function parseDate(dateStr) {
+            // Remover textos como "Data não disponível" e usar data atual
+            if (!dateStr || dateStr === 'Data não disponível' || dateStr === 'Agora mesmo') {
+                return new Date();
+            }
+            
+            // Formato esperado: dd/MM/yyyy - HH:mm
+            const parts = dateStr.split(' - ');
+            if (parts.length !== 2) return new Date();
+            
+            const datePart = parts[0].split('/');
+            const timePart = parts[1].split(':');
+            
+            if (datePart.length === 3 && timePart.length === 2) {
+                const day = parseInt(datePart[0]);
+                const month = parseInt(datePart[1]) - 1; // mês é 0-indexed
+                const year = parseInt(datePart[2]);
+                const hour = parseInt(timePart[0]);
+                const minute = parseInt(timePart[1]);
+                
+                return new Date(year, month, day, hour, minute);
+            }
+            
+            return new Date();
+        }
+        
+        const d1 = parseDate(date1);
+        const d2 = parseDate(date2);
+        
+        return d1.getTime() - d2.getTime();
+    }
+    
     // Visualizar comentários do histórico
     $(document).on('click', '.view-comment', function() {
         const messagesData = $(this).data('messages');
@@ -209,6 +243,11 @@ $(document).ready(function() {
         const newStatus = $('#modalStatus').data('new-status');
         const comentario = $('#modalStatusComentario').val();
         
+        // Desabilitar botão e mostrar loading
+        const $btn = $(this);
+        const originalText = $btn.text();
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Processando...');
+        
         $.ajax({
             url: window.changeStatusUrl,
             method: 'POST',
@@ -219,17 +258,22 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.success) {
-                    location.reload(); // Recarregar para mostrar as mudanças
+                    $btn.html('<i class="fas fa-check"></i> Concluído!');
+                    setTimeout(function() {
+                        location.reload(); // Recarregar para mostrar as mudanças
+                    }, 500);
                 } else {
+                    $btn.prop('disabled', false).text(originalText);
                     alert('Erro: ' + (response.message || 'Erro desconhecido'));
                 }
             },
             error: function() {
+                $btn.prop('disabled', false).text(originalText);
                 alert('Erro ao conectar com o servidor.');
             }
         });
         
-        $('#modalStatus').hide();
+        // Não fechar o modal imediatamente - só depois do sucesso
     });
     
     // Fechar modal ao clicar fora
@@ -246,42 +290,61 @@ $(document).ready(function() {
         const formData = $(this).serialize();
         const currentStatusId = $('input[name="status"]').val();
         
+        // Desabilitar botão de envio e mostrar loading
+        const $submitBtn = $('#commentForm button[type="submit"]');
+        const originalBtnText = $submitBtn.html();
+        $submitBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Enviando...');
+        
         $.ajax({
             url: $(this).attr('action'),
             method: 'POST',
             data: formData,
             success: function(response) {
-                console.log(response);
+                console.log('Resposta do comentário:', response);
+                console.log('Data do comentário:', response.data?.data);
 
                 if (response.success) {
                     // Limpar formulário
                     $('#commentForm textarea').val('');
                     
+                    // Reabilitar botão
+                    $submitBtn.prop('disabled', false).html(originalBtnText);
+                    
                     // Adicionar comentário à lista da direita
-                    const statusText = getStatusText(response.data.status);
-                    const badgeClass = getStatusBadgeClass(response.data.status);
+                    const statusValue = response.data.status;
+                    let statusHtml = '';
+                    
+                    if (statusValue !== null && statusValue !== undefined) {
+                        // Comentário com status específico
+                        const statusText = getStatusText(statusValue);
+                        const badgeClass = getStatusBadgeClass(statusValue);
+                        statusHtml = `<small class="badge badge-${badgeClass}">Status: ${statusText}</small>`;
+                    } else {
+                        // Comentário geral
+                        statusHtml = '<small class="badge badge-secondary">Comentário geral</small>';
+                    }
                     
                     const newComment = `
                         <div class="comment-item">
                             <div class="comment-header">
-                                <strong>${response.data.user_name}</strong>
-                                <small class="text-muted">${response.data.data}</small>
+                                <strong>${response.data.autor || response.data.user_name || 'Usuário'}</strong>
+                                <small class="text-muted">${response.data.data || 'Agora mesmo'}</small>
                             </div>
                             <div class="comment-text">
                                 ${response.data.comentario}
                             </div>
                             <div class="comment-status">
-                                <small class="badge badge-${badgeClass}">
-                                    Status: ${statusText}
-                                </small>
+                                ${statusHtml}
                             </div>
                         </div>
                     `;
                     
-                    $('#commentsList').prepend(newComment);
+                    // SEMPRE inserir novos comentários NO TOPO (mais recentes primeiro)
+                    // Remover mensagem de "nenhum comentário" se existir
+                    $('#commentsList p.text-muted').remove();
                     
-                    // Remover mensagem de "nenhum comentário"
-                    $('#commentsList .text-muted').remove();
+                    // Inserir no início da lista (posição 0 - mais recente)
+                    $('#commentsList').prepend(newComment);
                     
                     // Atualizar o histórico com o novo comentário
                     updateHistoryWithNewComment(currentStatusId, {
@@ -291,10 +354,14 @@ $(document).ready(function() {
                     });
                     
                 } else {
+                    // Reabilitar botão em caso de erro
+                    $submitBtn.prop('disabled', false).html(originalBtnText);
                     alert('Erro ao adicionar comentário: ' + (response.message || 'Erro desconhecido'));
                 }
             },
             error: function() {
+                // Reabilitar botão em caso de erro de conexão
+                $submitBtn.prop('disabled', false).html(originalBtnText);
                 alert('Erro ao conectar com o servidor.');
             }
         });

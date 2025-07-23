@@ -25,6 +25,11 @@ class CommentsTable extends Table
 			'dependent' => true,
 			'cascadeCallbacks' => true,
 		]);
+
+		$this->belongsTo('OrdersLog', [
+			'foreignKey' => 'refcomment',
+			'joinType' => 'LEFT'
+		]);
 	}
 
 	public function validationDefault(Validator $validator): Validator

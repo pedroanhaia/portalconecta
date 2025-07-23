@@ -195,6 +195,9 @@ class OrdersController extends AppController
 
 	public function view($id = null)
 	{
+		$userLogado = $this->Authentication->getIdentity();
+		$isAdmin = $userLogado->admin == 1;
+		
 		$order = $this->Orders->findById($id)
 			->contain([
 				'Customers' => ['fields' => ['name']],
@@ -208,10 +211,11 @@ class OrdersController extends AppController
 		$newLog = [];
 		$allComments = [];
 
-		// Busca comentários sem status
+		// Busca comentários sem status (comentários gerais)
 		$comentariosSemStatus = $this->Comments->find()
-			->where(['id_order' => $id, 'refcomment IS' => null])
+			->where(['Comments.id_order' => $id, 'Comments.refcomment IS' => null])
 			->contain(['Users'])
+			->order(['Comments.created' => 'DESC'])
 		->toArray();
 
 		// Comentários sem status
@@ -220,11 +224,28 @@ class OrdersController extends AppController
 				'autor' => $comentario->user->name ?? 'Desconhecido',
 				'comentario' => $comentario->message,
 				'data' => (new \Cake\I18n\FrozenTime($comentario->created))->i18nFormat('dd/MM/yyyy - HH:mm'),
-				'status' => C_PedidosStatusRecebido
+				'status' => null
 			];
 		}
 
-		// Monta o histórico de logs
+		// Busca comentários com status (referenciando OrdersLog) e usa a data original do comentário
+		$comentariosComStatus = $this->Comments->find()
+			->where(['Comments.id_order' => $id, 'Comments.refcomment IS NOT' => null])
+			->contain(['Users', 'OrdersLog'])
+			->order(['Comments.created' => 'DESC'])
+		->toArray();
+
+		// Comentários com status - usando a data real do comentário
+		foreach ($comentariosComStatus as $comentario) {
+			$allComments[] = [
+				'autor' => $comentario->user->name ?? 'Desconhecido',
+				'comentario' => $comentario->message,
+				'data' => (new \Cake\I18n\FrozenTime($comentario->created))->i18nFormat('dd/MM/yyyy - HH:mm'),
+				'status' => $comentario->orders_log->new_status ?? null
+			];
+		}
+
+		// Monta o histórico de logs (sem duplicar comentários)
 		foreach ($order->orders_log as $entry) {
 			$mensagens = [];
 			foreach ($entry->comments as $c) {
@@ -244,22 +265,19 @@ class OrdersController extends AppController
 			];
 		}
 
-		// Comentários dos logs (com status)
-		foreach ($newLog as $logEntry) {
-			if (!empty($logEntry['mensagens'])) {
-				foreach ($logEntry['mensagens'] as $mensagem) {
-					$allComments[] = [
-						'autor' => $mensagem['autor'],
-						'comentario' => $mensagem['comentario'],
-						'data' => $logEntry['data'],
-						'status' => $logEntry['status']
-					];
-				}
-			}
-		}
-
-		// Inverte para mostrar os mais recentes primeiro
-		$allComments = array_reverse($allComments);
+		// Ordenar todos os comentários por data (mais recentes primeiro)
+		usort($allComments, function($a, $b) {
+			// Converter datas para timestamp para comparação precisa
+			$timeA = strtotime(str_replace('/', '-', $a['data']));
+			$timeB = strtotime(str_replace('/', '-', $b['data']));
+			
+			// Se uma das datas for inválida, colocar no final
+			if ($timeA === false) $timeA = 0;
+			if ($timeB === false) $timeB = 0;
+			
+			// Ordem decrescente (mais recentes primeiro)
+			return $timeB - $timeA;
+		});
 
 		$customers = $this->Customers->find('all')->all();
 		$config = $this->Config->get(1);
@@ -276,10 +294,14 @@ class OrdersController extends AppController
 		$this->set('config', $config);
 		$this->set('customersOpt', $customersOpt);
 		$this->set('allComments', $allComments);
+		$this->set('isAdmin', $isAdmin);
 	}
 
 	public function edit($id = null)
 	{
+		$userLogado = $this->Authentication->getIdentity();
+		$isAdmin = $userLogado->admin == 1;
+		
 		$order = $this->Orders->findById($id)
 			->contain([
 				'Customers' => ['fields' => ['name']],
@@ -293,19 +315,35 @@ class OrdersController extends AppController
 		$newLog = [];
 		$allComments = [];
 
-		// Busca comentários sem status
+		// Busca comentários sem status (comentários gerais)
 		$comentariosSemStatus = $this->Comments->find()
-			->where(['id_order' => $id, 'refcomment IS' => null])
+			->where(['Comments.id_order' => $id, 'Comments.refcomment IS' => null])
 			->contain(['Users'])
+			->order(['Comments.created' => 'DESC'])
 		->toArray();
 
 		// Comentários sem status
-		foreach ($comentariosSemStatus as $comentario) {
+		// foreach ($comentariosSemStatus as $comentario) {
+		// 	$allComments[] = [
+		// 		'autor' => $comentario->user->name ?? 'Desconhecido',
+		// 		'comentario' => $comentario->message,
+		// 		'data' => (new \Cake\I18n\FrozenTime($comentario->created))->i18nFormat('dd/MM/yyyy - HH:mm'),
+		// 		'status' => null
+		// 	];
+		// }
+		$comentariosComStatus = $this->Comments->find()
+			->where(['Comments.id_order' => $id, 'Comments.refcomment IS NOT' => null])
+			->contain(['Users', 'OrdersLog'])
+			->order(['Comments.created' => 'DESC'])
+		->toArray();
+
+		// Comentários com status - usando a data real do comentário
+		foreach ($comentariosComStatus as $comentario) {
 			$allComments[] = [
 				'autor' => $comentario->user->name ?? 'Desconhecido',
 				'comentario' => $comentario->message,
 				'data' => (new \Cake\I18n\FrozenTime($comentario->created))->i18nFormat('dd/MM/yyyy - HH:mm'),
-				'status' => C_PedidosStatusRecebido
+				'status' => $comentario->orders_log->new_status ?? null
 			];
 		}
 
@@ -329,22 +367,19 @@ class OrdersController extends AppController
 			];
 		}
 
-		// Comentários dos logs (com status)
-		foreach ($newLog as $logEntry) {
-			if (!empty($logEntry['mensagens'])) {
-				foreach ($logEntry['mensagens'] as $mensagem) {
-					$allComments[] = [
-						'autor' => $mensagem['autor'],
-						'comentario' => $mensagem['comentario'],
-						'data' => $logEntry['data'],
-						'status' => $logEntry['status']
-					];
-				}
-			}
-		}
-
-		// Inverte para mostrar os mais recentes primeiro
-		$allComments = array_reverse($allComments);
+		// Ordenar todos os comentários por data (mais recentes primeiro)
+		usort($allComments, function($a, $b) {
+			// Converter datas para timestamp para comparação precisa
+			$timeA = strtotime(str_replace('/', '-', $a['data']));
+			$timeB = strtotime(str_replace('/', '-', $b['data']));
+			
+			// Se uma das datas for inválida, colocar no final
+			if ($timeA === false) $timeA = 0;
+			if ($timeB === false) $timeB = 0;
+			
+			// Ordem decrescente (mais recentes primeiro)
+			return $timeB - $timeA;
+		});
 
 		if ($this->request->is(['patch', 'post', 'put'])) {
 			$order = $this->Orders->patchEntity($order, $this->request->getData());
@@ -372,6 +407,7 @@ class OrdersController extends AppController
 		$this->set('allComments', $allComments);
 		$this->set('config', $config);
 		$this->set('customersOpt', $customersOpt);
+		$this->set('isAdmin', $isAdmin);
 	}
 
 	public function changeStatus()

@@ -56,6 +56,10 @@ class OrdersTable extends Table
 			->allowEmptyString('status');
 
 		$validator
+			->date('estimatetoready')
+			->allowEmptyDate('estimatetoready');
+
+		$validator
 			->integer('type')
 			->allowEmptyString('type');
 

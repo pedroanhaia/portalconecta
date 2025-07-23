@@ -18,6 +18,16 @@
 							]);
 						?>
 					</div>
+					<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+						<label class="control-label"> Previsão de Entrega </label>
+						<?= $this->Form->control('estimatetoready', [
+								'type' => 'date',
+								'class' => 'form-control',
+								'label' => false,
+								'placeholder' => 'Selecione a data prevista'
+							]);
+						?>
+					</div>
 				</div>
 				<div class="row">
 					<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">

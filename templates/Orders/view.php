@@ -28,7 +28,79 @@
                 <div class="content">
                     <div class="card">
                         <div class="card-body">
-                            <p class="card-title">Pedido #<?= h($order->number) ?></p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <p class="card-title">Pedido #<?= h($order->number) ?></p>
+                                <?php if (isset($isAdmin) && $isAdmin): ?>
+                                    <div class="admin-actions">
+                                        <?= $this->Html->link(
+                                            '<i class="fas fa-edit"></i> Editar Pedido',
+                                            ['action' => 'edit', $order->id],
+                                            [
+                                                'class' => 'btn btn-warning btn-sm',
+                                                'escape' => false,
+                                                'title' => 'Editar este pedido'
+                                            ]
+                                        ) ?>
+                                    </div>
+                                <?php endif; ?>
+                            </div>
+
+                            <!-- Informações do Pedido -->
+                            <div class="order-info">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="info-item">
+                                            <strong>Cliente:</strong><br>
+                                            <span class="text-muted"><?= h($order->customer->name) ?></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="info-item">
+                                            <strong>Valor:</strong><br>
+                                            <span class="text-muted">R$ <?= number_format($order->value ?? 0, 2, ',', '.') ?></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="info-item">
+                                            <strong>Data do Pedido:</strong><br>
+                                            <span class="text-muted"><?= $order->created ? $order->created->format('d/m/Y') : 'N/A' ?></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="info-item">
+                                            <strong>Previsão de Entrega:</strong><br>
+                                            <?php if ($order->estimatetoready): ?>
+                                                <?php
+                                                    $estimateDate = $order->estimatetoready;
+                                                    $today = new \DateTime();
+                                                    $daysDiff = $today->diff($estimateDate)->days;
+                                                    $isPast = $estimateDate < $today;
+                                                    $isNear = !$isPast && $daysDiff <= 7;
+                                                    
+                                                    $cssClass = 'estimate-highlight';
+                                                    if ($isPast) {
+                                                        $cssClass = 'estimate-overdue';
+                                                    } elseif ($isNear) {
+                                                        $cssClass = 'estimate-soon';
+                                                    }
+                                                ?>
+                                                <span class="<?= $cssClass ?>">
+                                                    <?= $estimateDate->format('d/m/Y') ?>
+                                                    <?php if ($isPast): ?>
+                                                        <i class="fas fa-exclamation-triangle" title="Entrega atrasada"></i>
+                                                    <?php elseif ($isNear): ?>
+                                                        <i class="fas fa-clock" title="Entrega próxima"></i>
+                                                    <?php endif; ?>
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="text-muted">
+                                                    <em>Não informada</em>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <!-- Linha do tempo -->
                             <div class="timeline">
@@ -82,7 +154,7 @@
                                                     <div class="comment-item">
                                                         <div class="comment-header">
                                                             <strong><?= h($comment['autor']) ?></strong>
-                                                            <small class="text-muted"><?= h($comment['data']) ?></small>
+                                                            <small class="text-muted"><?= h($comment['data'] ?? 'Data não disponível') ?></small>
                                                         </div>
                                                         <div class="comment-text">
                                                             <?= h($comment['comentario']) ?>
@@ -437,7 +509,7 @@ $(document).ready(function () {
         $customerName = $order->customer->name;
     ?>
 
-    OrderFilesManager.init('/cglconecta/', {
+    OrderFilesManager.init('<?= $this->request->getAttribute('webroot') ?>', {
         order_id: <?= $order->id ?>,
         order_folder: '<?= addslashes($orderFolder) ?>',
         customer_name: '<?= addslashes($customerName) ?>'
