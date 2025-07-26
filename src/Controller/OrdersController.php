@@ -324,6 +324,16 @@ class OrdersController extends AppController
 		->toArray();
 
 		// Comentários sem status
+		foreach ($comentariosSemStatus as $comentario) {
+			$allComments[] = [
+				'autor' => $comentario->user->name ?? 'Desconhecido',
+				'comentario' => $comentario->message,
+				'data' => (new \Cake\I18n\FrozenTime($comentario->created))->i18nFormat('dd/MM/yyyy - HH:mm'),
+				'status' => null
+			];
+		}
+
+		// Comentários sem status
 		$comentariosComStatus = $this->Comments->find()
 			->where(['Comments.id_order' => $id, 'Comments.refcomment IS NOT' => null])
 			->contain(['Users', 'OrdersLog'])

@@ -362,13 +362,23 @@ class FilesController extends AppController
 		$this->viewBuilder()->setClassName('Json');
 		$this->response = $this->response->withType('application/json');
 		
-		if (!$this->request->is('ajax')) {
-			return $this->response->withType('application/json')
-				->withStringBody(json_encode(['success' => false, 'message' => 'Requisição não suportada.']));
-		}
+		// if (!$this->request->is('ajax')) {
+		// 	return $this->response->withType('application/json')
+		// 		->withStringBody(json_encode(['success' => false, 'message' => 'Requisição não suportada.']));
+		// }
 
 		$orderId = $this->request->getData('order_id');
 		$category = $this->request->getData('category');
+
+		$orderId = 139;
+		$category = 'ART';
+
+		$files = $this->Files->find()
+				->where(['id_order' => $orderId, 'category' => $category])
+				->all();
+
+		debug($files);
+		die;
 
 		if (!$orderId || !$category) {
 			$this->set([
