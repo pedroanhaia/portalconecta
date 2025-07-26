@@ -362,16 +362,13 @@ class FilesController extends AppController
 		$this->viewBuilder()->setClassName('Json');
 		$this->response = $this->response->withType('application/json');
 		
-		// if (!$this->request->is('ajax')) {
-		// 	return $this->response->withType('application/json')
-		// 		->withStringBody(json_encode(['success' => false, 'message' => 'Requisição não suportada.']));
-		// }
+		if (!$this->request->is('ajax')) {
+			return $this->response->withType('application/json')
+				->withStringBody(json_encode(['success' => false, 'message' => 'Requisição não suportada.']));
+		}
 
 		$orderId = $this->request->getData('order_id');
 		$category = $this->request->getData('category');
-
-		$orderId = 139;
-		$category = 'art';
 
 		if (!$orderId || !$category) {
 			$this->set([
@@ -392,14 +389,11 @@ class FilesController extends AppController
 
 			foreach ($files as $file) {
 				$realPath = $file->path;
-				debug($realPath);
-				debug(is_file($realPath));
 				if (is_file($realPath)) {
 					$fileCount++;
 					$totalSize += filesize($realPath);
 				}
 			}
-			die;
 
 			// Se não encontrou arquivos no banco, tentar busca ativa no diretório
 			if ($fileCount == 0) {
