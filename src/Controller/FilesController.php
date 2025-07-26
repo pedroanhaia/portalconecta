@@ -371,7 +371,7 @@ class FilesController extends AppController
 		$category = $this->request->getData('category');
 
 		$orderId = 139;
-		$category = 'ART';
+		$category = 'art';
 
 		$files = $this->Files->find()
 				->where(['id_order' => $orderId, 'category' => $category])
