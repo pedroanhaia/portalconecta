@@ -392,11 +392,14 @@ class FilesController extends AppController
 
 			foreach ($files as $file) {
 				$realPath = $file->path;
+				debug($realPath);
+				debug(is_file($realPath));
 				if (is_file($realPath)) {
 					$fileCount++;
 					$totalSize += filesize($realPath);
 				}
 			}
+			die;
 
 			// Se não encontrou arquivos no banco, tentar busca ativa no diretório
 			if ($fileCount == 0) {
