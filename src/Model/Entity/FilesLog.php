@@ -29,6 +29,7 @@ class FilesLog extends Entity
      */
     protected $_accessible = [
         'id_file' => true,
+        'id_order' => true,
         'message' => true,
         'type' => true,
         'role' => true,

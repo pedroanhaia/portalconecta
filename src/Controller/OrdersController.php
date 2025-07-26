@@ -17,6 +17,7 @@ class OrdersController extends AppController
 		$this->loadModel('OrdersLog');
 		$this->loadModel('Comments');
 		$this->loadModel('Config');
+		$this->loadModel('FilesLog');
 
 		$userLogado = $this->Authentication->getIdentity();
 		$currentAction = $this->request->getParam('action');
@@ -323,14 +324,6 @@ class OrdersController extends AppController
 		->toArray();
 
 		// Comentários sem status
-		// foreach ($comentariosSemStatus as $comentario) {
-		// 	$allComments[] = [
-		// 		'autor' => $comentario->user->name ?? 'Desconhecido',
-		// 		'comentario' => $comentario->message,
-		// 		'data' => (new \Cake\I18n\FrozenTime($comentario->created))->i18nFormat('dd/MM/yyyy - HH:mm'),
-		// 		'status' => null
-		// 	];
-		// }
 		$comentariosComStatus = $this->Comments->find()
 			->where(['Comments.id_order' => $id, 'Comments.refcomment IS NOT' => null])
 			->contain(['Users', 'OrdersLog'])
@@ -402,12 +395,18 @@ class OrdersController extends AppController
 			}
 		)->toArray();
 
+		$filesLog = $this->FilesLog->find()
+			->where(['id_order' => $id])
+			->order(['FilesLog.created' => 'DESC'])
+		->all();
+
 		$this->set('order', $order);
 		$this->set('newLog', $newLog);
 		$this->set('allComments', $allComments);
 		$this->set('config', $config);
 		$this->set('customersOpt', $customersOpt);
 		$this->set('isAdmin', $isAdmin);
+		$this->set('filesLog', $filesLog);
 	}
 
 	public function changeStatus()

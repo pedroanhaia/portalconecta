@@ -826,9 +826,8 @@
     font-weight: 600;
 }
 
-.order-info .text-muted {
-    color: #6c757d !important;
-    font-size: 0.95rem;
+.order-info {
+    font-size: 1.95rem;
 }
 
 /* Data de previsão com destaque especial */

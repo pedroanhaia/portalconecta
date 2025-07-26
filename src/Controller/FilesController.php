@@ -57,9 +57,10 @@ class FilesController extends AppController
 				}
 			}
 		}
-		
+
 		$this->loadModel('Config');
 		$this->loadModel('Orders');
+		$this->loadModel('FilesLog');
 
 		return null;
 	}
@@ -234,7 +235,7 @@ class FilesController extends AppController
 				->first();
 
 			if (!$order) {
-				set_time_limit($originalTimeLimit);
+				set_time_limit(intval($originalTimeLimit));
 				return ['found' => false, 'message' => 'Pedido não encontrado'];
 			}
 
@@ -242,7 +243,7 @@ class FilesController extends AppController
 			$baseDir = $this->Config->get(1)->path . DS;
 
 			if (!is_dir($baseDir)) {
-				set_time_limit($originalTimeLimit);
+				set_time_limit(intval($originalTimeLimit));
 				return ['found' => false, 'message' => 'Diretório base não encontrado'];
 			}
 
@@ -272,7 +273,7 @@ class FilesController extends AppController
 			}
 
 			if (!$pastEncontrada) {
-				set_time_limit($originalTimeLimit);
+				set_time_limit(intval($originalTimeLimit));
 				return ['found' => false, 'message' => 'Pasta do pedido não encontrada no diretório'];
 			}
 
@@ -284,13 +285,13 @@ class FilesController extends AppController
 			$arquivos = $this->listarArquivosComTimeout($caminhoPedido, $startTime, $maxScanTime);
 
 			if (empty($arquivos)) {
-				set_time_limit($originalTimeLimit);
+				set_time_limit(intval($originalTimeLimit));
 				return ['found' => false, 'message' => 'Nenhum arquivo encontrado na pasta do pedido'];
 			}
 
 			// Verificar se ainda temos tempo
 			if ((time() - $startTime) > $maxScanTime) {
-				set_time_limit($originalTimeLimit);
+				set_time_limit(intval($originalTimeLimit));
 				return ['found' => false, 'message' => 'Timeout: Muitos arquivos para processar. Tente novamente.'];
 			}
 
@@ -339,7 +340,7 @@ class FilesController extends AppController
 			}
 
 			// Restaurar limite de tempo original
-			set_time_limit($originalTimeLimit);
+			set_time_limit(intval($originalTimeLimit));
 
 			return [
 				'found' => true, 
@@ -349,7 +350,7 @@ class FilesController extends AppController
 		} catch (\Exception $e) {
 			// Restaurar limite de tempo em caso de erro
 			if (isset($originalTimeLimit)) {
-				set_time_limit($originalTimeLimit);
+				set_time_limit(intval($originalTimeLimit));
 			}
 			
 			return ['found' => false, 'message' => 'Erro na busca ativa: ' . $e->getMessage()];
@@ -511,6 +512,19 @@ class FilesController extends AppController
 				->where(['id_order' => $orderId, 'name' => $filename])
 				->first();
 
+			if(!$this->Authentication->getIdentity()->admin) {
+				$userName = $this->Authentication->getIdentity()->name ?? 'Usuário Desconhecido';
+
+				$fileLog = $this->FilesLog->newEntity([
+					'id_file' => $file->id,
+					'id_order' => $orderId,
+					'message' => "Usuário {$userName} fez download do arquivo: {$filename}",
+				]);
+
+				$this->FilesLog->save($fileLog);
+			}
+
+
 			if (!$file || !file_exists($file->path) || !is_file($file->path)) {
 				throw new \Cake\Http\Exception\NotFoundException('Arquivo não encontrado');
 			}
@@ -539,6 +553,7 @@ class FilesController extends AppController
 			->all();
 
 		$filesZip = [];
+		$userName = $this->Authentication->getIdentity()->name ?? 'Usuário Desconhecido';
 
 		foreach ($files as $file) {
 			$filename = $file->name;
@@ -549,6 +564,15 @@ class FilesController extends AppController
 			}
 			
 			$filesZip[] = ['real' => $path, 'name' => $filename];
+
+			if(!$this->Authentication->getIdentity()->admin) {
+				$fileLog = $this->FilesLog->newEntity([
+					'id_file' => $file->id,
+					'id_order' => $orderId,
+					'message' => "Usuário {$userName} fez download do arquivo: {$file->name}, fazendo download de todos os arquivos da pasta.",
+				]);
+				$this->FilesLog->save($fileLog);
+			}
 		}
 
 		if (empty($filesZip)) {
@@ -602,6 +626,19 @@ class FilesController extends AppController
 			$file = $this->Files->find()
 				->where(['id_order' => $orderId, 'name' => $filename])
 				->first();
+
+			if(!$this->Authentication->getIdentity()->admin) {
+				$userName = $this->Authentication->getIdentity()->name ?? 'Usuário Desconhecido';
+
+				$fileLog = $this->FilesLog->newEntity([
+					'id_file' => $file->id,
+					'id_order' => $orderId,
+					'message' => "Usuário {$userName} visualizou o arquivo: {$filename}",
+				]);
+
+				$this->FilesLog->save($fileLog);
+			}
+
 
 			if (!$file || !file_exists($file->path) || !is_file($file->path)) {
 				throw new \Cake\Http\Exception\NotFoundException('Arquivo não encontrado');

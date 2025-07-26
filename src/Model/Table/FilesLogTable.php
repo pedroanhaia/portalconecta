@@ -29,51 +29,55 @@ use Cake\Validation\Validator;
  */
 class FilesLogTable extends Table
 {
-    /**
-     * Initialize method
-     *
-     * @param array $config The configuration for the Table.
-     * @return void
-     */
-    public function initialize(array $config): void
-    {
-        parent::initialize($config);
+	/**
+	 * Initialize method
+	 *
+	 * @param array $config The configuration for the Table.
+	 * @return void
+	 */
+	public function initialize(array $config): void
+	{
+		parent::initialize($config);
 
-        $this->setTable('files_log');
-        $this->setDisplayField('id');
-        $this->setPrimaryKey('id');
+		$this->setTable('files_log');
+		$this->setDisplayField('id');
+		$this->setPrimaryKey('id');
 
-        $this->addBehavior('Timestamp');
-    }
+		$this->addBehavior('Timestamp');
+	}
 
-    /**
-     * Default validation rules.
-     *
-     * @param \Cake\Validation\Validator $validator Validator instance.
-     * @return \Cake\Validation\Validator
-     */
-    public function validationDefault(Validator $validator): Validator
-    {
-        $validator
-            ->integer('id')
-            ->allowEmptyString('id', null, 'create');
+	/**
+	 * Default validation rules.
+	 *
+	 * @param \Cake\Validation\Validator $validator Validator instance.
+	 * @return \Cake\Validation\Validator
+	 */
+	public function validationDefault(Validator $validator): Validator
+	{
+		$validator
+			->integer('id')
+			->allowEmptyString('id', null, 'create');
 
-        $validator
-            ->integer('id_file')
-            ->allowEmptyFile('id_file');
+		$validator
+			->integer('id_file')
+			->allowEmptyFile('id_file');
 
-        $validator
-            ->scalar('message')
-            ->allowEmptyString('message');
+		$validator
+			->integer('id_order')
+			->allowEmptyFile('id_order');
 
-        $validator
-            ->integer('type')
-            ->allowEmptyString('type');
+		$validator
+			->scalar('message')
+			->allowEmptyString('message');
 
-        $validator
-            ->integer('role')
-            ->allowEmptyString('role');
+		$validator
+			->integer('type')
+			->allowEmptyString('type');
 
-        return $validator;
-    }
+		$validator
+			->integer('role')
+			->allowEmptyString('role');
+
+		return $validator;
+	}
 }
