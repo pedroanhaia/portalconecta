@@ -373,13 +373,6 @@ class FilesController extends AppController
 		$orderId = 139;
 		$category = 'art';
 
-		$files = $this->Files->find()
-				->where(['id_order' => $orderId, 'category' => $category])
-				->all();
-
-		debug($files);
-		die;
-
 		if (!$orderId || !$category) {
 			$this->set([
 				'success' => false,
