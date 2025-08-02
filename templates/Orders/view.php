@@ -464,6 +464,7 @@
 
 <!-- Incluir CSS específico -->
 <?= $this->Html->css('orders-timeline') ?>
+<?= $this->Html->css('file-thumbnails') ?>
 
 <!-- Incluir JavaScript específico -->
 <?= $this->Html->script('orders-comments') ?>

@@ -33,7 +33,7 @@ class FilesController extends AppController
 	{
 		parent::beforeFilter($event);
 		
-		$ajaxMethods = ['checkCategory', 'listCategory'];
+		$ajaxMethods = ['checkCategory', 'listCategory', 'thumbnail'];
 		$currentAction = $this->request->getParam('action');
 		
 		if (in_array($currentAction, $ajaxMethods)) {
@@ -651,6 +651,144 @@ class FilesController extends AppController
 
 		} catch (\Exception $e) {
 			throw new \Cake\Http\Exception\InternalErrorException('Erro ao visualizar arquivo: ' . $e->getMessage());
+		}
+	}
+
+	public function thumbnail()
+	{
+		$orderId = $this->request->getQuery('order_id');
+		$filename = $this->request->getQuery('filename');
+
+		if (!$orderId || !$filename) {
+			throw new \Cake\Http\Exception\BadRequestException('Parâmetros inválidos');
+		}
+
+		try {
+			$file = $this->Files->find()
+				->where(['id_order' => $orderId, 'name' => $filename])
+				->first();
+
+			if (!$file || !file_exists($file->path) || !is_file($file->path)) {
+				throw new \Cake\Http\Exception\NotFoundException('Arquivo não encontrado');
+			}
+
+			// Verificar se é uma imagem
+			$imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'];
+			$extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+			
+			if (!in_array($extension, $imageExtensions)) {
+				throw new \Cake\Http\Exception\BadRequestException('Arquivo não é uma imagem');
+			}
+
+			// Gerar miniatura
+			$thumbnailPath = $this->generateThumbnail($file->path, $extension);
+
+			if (!$thumbnailPath || !file_exists($thumbnailPath)) {
+				throw new \Cake\Http\Exception\InternalErrorException('Erro ao gerar miniatura');
+			}
+
+			return $this->response->withFile($thumbnailPath, [
+				'download' => false,
+				'name' => 'thumb_' . $filename
+			])->withType(mime_content_type($thumbnailPath));
+
+		} catch (\Exception $e) {
+			throw new \Cake\Http\Exception\InternalErrorException('Erro ao gerar miniatura: ' . $e->getMessage());
+		}
+	}
+
+	private function generateThumbnail($imagePath, $extension)
+	{
+		$thumbnailDir = TMP . 'thumbnails' . DS;
+		if (!is_dir($thumbnailDir)) {
+			mkdir($thumbnailDir, 0755, true);
+		}
+
+		$thumbnailFilename = md5($imagePath . filemtime($imagePath)) . '.jpg';
+		$thumbnailPath = $thumbnailDir . $thumbnailFilename;
+
+		// Se a miniatura já existe e é mais recente que o arquivo original, retornar
+		if (file_exists($thumbnailPath) && filemtime($thumbnailPath) >= filemtime($imagePath)) {
+			return $thumbnailPath;
+		}
+
+		// Verificar se GD está disponível
+		if (!extension_loaded('gd')) {
+			// Se GD não estiver disponível, retornar o arquivo original para imagens pequenas
+			if (filesize($imagePath) < 1024 * 1024) { // 1MB
+				return $imagePath;
+			}
+			throw new \Exception('GD extension não está disponível');
+		}
+
+		try {
+			// Carregar imagem baseada na extensão
+			switch ($extension) {
+				case 'jpg':
+				case 'jpeg':
+					$image = imagecreatefromjpeg($imagePath);
+					break;
+				case 'png':
+					$image = imagecreatefrompng($imagePath);
+					break;
+				case 'gif':
+					$image = imagecreatefromgif($imagePath);
+					break;
+				case 'bmp':
+					$image = imagecreatefrombmp($imagePath);
+					break;
+				case 'webp':
+					$image = imagecreatefromwebp($imagePath);
+					break;
+				default:
+					throw new \Exception('Formato de imagem não suportado');
+			}
+
+			if (!$image) {
+				throw new \Exception('Erro ao carregar imagem');
+			}
+
+			// Obter dimensões originais
+			$originalWidth = imagesx($image);
+			$originalHeight = imagesy($image);
+
+			// Calcular novas dimensões (máximo 200x150)
+			$maxWidth = 200;
+			$maxHeight = 150;
+			
+			$ratio = min($maxWidth / $originalWidth, $maxHeight / $originalHeight);
+			$newWidth = intval($originalWidth * $ratio);
+			$newHeight = intval($originalHeight * $ratio);
+
+			// Criar nova imagem
+			$thumbnail = imagecreatetruecolor($newWidth, $newHeight);
+			
+			// Preservar transparência para PNG e GIF
+			if ($extension === 'png' || $extension === 'gif') {
+				imagealphablending($thumbnail, false);
+				imagesavealpha($thumbnail, true);
+				$transparent = imagecolorallocatealpha($thumbnail, 255, 255, 255, 127);
+				imagefilledrectangle($thumbnail, 0, 0, $newWidth, $newHeight, $transparent);
+			}
+
+			// Redimensionar
+			imagecopyresampled($thumbnail, $image, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight);
+
+			// Salvar miniatura como JPEG
+			imagejpeg($thumbnail, $thumbnailPath, 85);
+
+			// Limpar memória
+			imagedestroy($image);
+			imagedestroy($thumbnail);
+
+			return $thumbnailPath;
+
+		} catch (\Exception $e) {
+			// Em caso de erro, retornar o arquivo original se for pequeno
+			if (filesize($imagePath) < 512 * 1024) { // 512KB
+				return $imagePath;
+			}
+			throw $e;
 		}
 	}
 }

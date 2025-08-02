@@ -34,6 +34,7 @@ class Order extends Entity
         'id_customer' => true,
         'value' => true,
         'status' => true,
+        'not_mode' => true,
         'type' => true,
         'role' => true,
         'created' => true,

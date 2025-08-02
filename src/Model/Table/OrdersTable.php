@@ -31,6 +31,14 @@ class OrdersTable extends Table
 			'dependent' => true,
 			'cascadeCallbacks' => true,
 		]);
+
+		$this->belongsToMany('Users', [
+			'through' => 'OrdersUsers',
+			'foreignKey' => 'id_order',
+			'targetForeignKey' => 'id_user',
+			'dependent' => true,
+			'cascadeCallbacks' => true,
+		]);
 	}
 
 	public function validationDefault(Validator $validator): Validator
@@ -66,6 +74,10 @@ class OrdersTable extends Table
 		$validator
 			->integer('role')
 			->allowEmptyString('role');
+
+		$validator
+			->integer('not_type')
+			->allowEmptyString('not_type');
 
 		return $validator;
 	}

@@ -418,7 +418,31 @@
 						<div class="row">
 							<div class="col-lg-5 col-md-7 col-sm-12 col-xs-12">
 								<label class="control-label"> Empresa </label>
-								<?= $this->Form->control('id_customer', ['class' => 'form-control selectpicker', 'data-live-search', 'label' => false, 'required' => true, 'options' => $customersOpt, 'title' => 'Empresa do usuário']) ?>
+								<?= $this->Form->control('id_customer', ['class' => 'form-control selectpicker', 'data-live-search', 'label' => false, 'required' => true, 'options' => $customersOpt, 'title' => 'Empresa do usuário', 'id' => 'customer-select-edit']) ?>
+							</div>
+							<div class="col-lg-4 col-md-5 col-sm-12 col-xs-12">
+								<label class="control-label"> Notificações por e-mail </label>
+								<?= $this->Form->control('not_mode', [
+									'type' => 'select',
+									'class' => 'form-control selectpicker',
+									'label' => false,
+									'options' => C_PedidosNotificacaoTipoOpt,
+									'empty' => 'Selecione o tipo de notificação',
+									'title' => 'Tipo de notificação por e-mail'
+								]) ?>
+							</div>
+						</div>
+						<div class="row">
+							<div class="col-lg-12 col-md-12 col-sm-12 col-xs-12">
+								<label class="control-label"> Usuários </label>
+								<select name="user_ids[]" id="users-select-edit" class="form-control selectpicker" multiple data-live-search="true" title="Selecione os usuários">
+									<?php if (!empty($order->users)): ?>
+										<?php foreach ($order->users as $user): ?>
+											<option value="<?= $user->id ?>" selected><?= h($user->name) ?> (<?= h($user->email) ?>)</option>
+										<?php endforeach; ?>
+									<?php endif; ?>
+								</select>
+								<small class="form-text text-muted">Usuários que possuem acesso e receberão notificações deste pedido</small>
 							</div>
 						</div>
 						<div class="row mt-3">
@@ -502,6 +526,7 @@
 
 <!-- Incluir CSS específico -->
 <?= $this->Html->css('orders-timeline') ?>
+<?= $this->Html->css('file-thumbnails') ?>
 
 <!-- Incluir JavaScript específico -->
 <?= $this->Html->script('orders-comments') ?>
@@ -578,6 +603,40 @@ $(document).ready(function () {
 			$('#loadingModal').modal('hide');
 			alert('Erro ao conectar com o servidor.');
 		});
+	});
+
+	// Evento para carregar usuários quando uma empresa for alterada no edit
+	$('#customer-select-edit').on('change', function() {
+		const customerId = $(this).val();
+		const usersSelect = $('#users-select-edit');
+		
+		if (customerId) {
+			// Fazer requisição AJAX para buscar usuários
+			$.ajax({
+				url: '<?= $this->Url->build(['controller' => 'Orders', 'action' => 'getUsersByCustomer']) ?>',
+				type: 'GET',
+				data: { customer_id: customerId },
+				success: function(response) {
+					// Limpar opções atuais
+					usersSelect.empty();
+					
+					if (response.success && response.users.length > 0) {
+						// Adicionar opções de usuários
+						response.users.forEach(function(user) {
+							usersSelect.append(`<option value="${user.id}">${user.name} (${user.email})</option>`);
+						});
+					} else {
+						usersSelect.append('<option disabled>Nenhum usuário encontrado</option>');
+					}
+					
+					$('.selectpicker').selectpicker('refresh');
+				},
+				error: function() {
+					usersSelect.empty().append('<option disabled>Erro ao carregar usuários</option>');
+					$('.selectpicker').selectpicker('refresh');
+				}
+			});
+		}
 	});
 });
 </script>

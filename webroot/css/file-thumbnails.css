@@ -1,0 +1,123 @@
+/**
+ * Estilos para miniaturas de arquivos
+ * Sistema de Pedidos CGL Conecta
+ */
+
+.file-thumbnail-tooltip {
+    position: absolute;
+    z-index: 10000;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 10px;
+    max-width: 200px;
+    max-height: 150px;
+    pointer-events: none;
+    transition: opacity 0.2s ease-in-out;
+}
+
+.file-thumbnail-tooltip img {
+    max-width: 180px;
+    max-height: 130px;
+    width: auto;
+    height: auto;
+    border-radius: 4px;
+    display: block;
+    margin: 0 auto;
+}
+
+.file-thumbnail-tooltip .thumbnail-loading {
+    text-align: center;
+    color: #6c757d;
+    padding: 20px;
+    font-size: 14px;
+}
+
+.file-icon-tooltip {
+    text-align: center;
+    padding: 20px;
+    background: #f8f9fa;
+    border-color: #e9ecef;
+}
+
+.file-icon-tooltip i {
+    opacity: 0.7;
+}
+
+/* Hover effect nas linhas da tabela */
+.file-row {
+    transition: background-color 0.2s ease;
+}
+
+.file-row:hover {
+    background-color: #f8f9fa !important;
+    cursor: pointer;
+}
+
+/* Melhorar aparência da tabela */
+#categoryFilesTableBody .file-row td {
+    vertical-align: middle;
+    padding: 12px 8px;
+}
+
+#categoryFilesTableBody .file-row td:first-child {
+    font-weight: 500;
+}
+
+/* Responsividade para dispositivos menores */
+@media (max-width: 768px) {
+    .file-thumbnail-tooltip {
+        max-width: 150px;
+        max-height: 120px;
+    }
+    
+    .file-thumbnail-tooltip img {
+        max-width: 130px;
+        max-height: 100px;
+    }
+    
+    .file-icon-tooltip {
+        padding: 15px;
+    }
+    
+    .file-icon-tooltip i {
+        font-size: 2rem !important;
+    }
+}
+
+/* Animação suave */
+.file-thumbnail-tooltip {
+    opacity: 0;
+    animation: fadeInTooltip 0.2s ease-in-out forwards;
+}
+
+@keyframes fadeInTooltip {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Melhorar ícones de arquivo */
+.file-row .fas {
+    margin-right: 8px;
+    width: 16px;
+    text-align: center;
+}
+
+/* Estilo para loading spinner */
+.thumbnail-loading .fa-spinner {
+    color: #007bff;
+}
+
+/* Estilo para erro de carregamento */
+.file-thumbnail-tooltip .fa-exclamation-triangle {
+    color: #dc3545;
+    font-size: 24px;
+    padding: 20px;
+}

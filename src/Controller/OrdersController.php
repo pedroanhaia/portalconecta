@@ -10,6 +10,12 @@ class OrdersController extends AppController
 {
 	use MailerAwareTrait;
 
+	public function initialize(): void
+	{
+		parent::initialize();
+		$this->loadComponent('Notification');
+	}
+
 	public function beforeFilter(\Cake\Event\EventInterface $event) {
 		parent::beforeFilter($event);
 
@@ -18,6 +24,8 @@ class OrdersController extends AppController
 		$this->loadModel('Comments');
 		$this->loadModel('Config');
 		$this->loadModel('FilesLog');
+		$this->loadModel('Users');
+		$this->loadModel('OrdersUsers');
 
 		$userLogado = $this->Authentication->getIdentity();
 		$currentAction = $this->request->getParam('action');
@@ -172,9 +180,23 @@ class OrdersController extends AppController
 		$order = $this->Orders->newEmptyEntity();
 
 		if ($this->request->is('post')) {
-			$order = $this->Orders->patchEntity($order, $this->request->getData());
+			$requestData = $this->request->getData();
+			
+			// Extrair user_ids para processamento separado
+			$userIds = [];
+			if (!empty($requestData['user_ids'])) {
+				$userIds = $requestData['user_ids'];
+				unset($requestData['user_ids']); // Remove do array principal
+			}
+			
+			$order = $this->Orders->patchEntity($order, $requestData);
 
 			if ($this->Orders->save($order)) {
+				// Salvar relacionamentos com usuários
+				if (!empty($userIds)) {
+					$this->saveOrderUsers($order->id, $userIds);
+				}
+				
 				$this->Flash->success(__('Pedido cadastrado com sucesso.'));
 				return $this->redirect(['action' => 'edit', $order->id]);
 			}
@@ -309,7 +331,8 @@ class OrdersController extends AppController
 				'OrdersLog',
 				'OrdersLog.Users',
 				'OrdersLog.Comments',
-				'OrdersLog.Comments.Users'
+				'OrdersLog.Comments.Users',
+				'Users' // Incluir usuários associados
 			])
 		->first();
 
@@ -385,11 +408,25 @@ class OrdersController extends AppController
 		});
 
 		if ($this->request->is(['patch', 'post', 'put'])) {
-			$order = $this->Orders->patchEntity($order, $this->request->getData());
+			$requestData = $this->request->getData();
+			
+			// Extrair user_ids para processamento separado
+			$userIds = [];
+			if (!empty($requestData['user_ids'])) {
+				$userIds = $requestData['user_ids'];
+				unset($requestData['user_ids']); // Remove do array principal
+			}
+			
+			$order = $this->Orders->patchEntity($order, $requestData);
 			
 			if ($this->Orders->save($order)) {
+				// Atualizar relacionamentos com usuários
+				if (isset($userIds)) {
+					$this->updateOrderUsers($order->id, $userIds);
+				}
+				
 				$this->Flash->success(__('Os dados foram salvos com sucesso.'));
-				return $this->redirect(['action' => 'index']);
+				return $this->redirect(['action' => 'edit', $order->id]);
 			}
 
 			$this->Flash->error(__('Não foi possível cadastrar o pedido, tente novamente.'));
@@ -453,6 +490,14 @@ class OrdersController extends AppController
 					]);
 					$this->Comments->save($commentEntity);
 				}
+
+				// Enviar notificações para usuários associados
+				$this->Notification->sendNotificationToOrderUsers($orderId, 'status', [
+					'old_status' => $oldStatus,
+					'new_status' => $newStatus,
+					'comment' => $comentario,
+					'user_name' => $this->Authentication->getIdentity()->name ?? 'Usuário'
+				]);
 
 				// Recarregar todos os logs com seus comentários
 				$logs = $this->OrdersLog->find()
@@ -527,5 +572,64 @@ class OrdersController extends AppController
 		}
 
 		return $this->redirect(['action' => 'index']);
+	}
+
+	/**
+	 * Salvar relacionamentos entre pedido e usuários
+	 */
+	private function saveOrderUsers($orderId, $userIds)
+	{
+		if (empty($userIds)) {
+			return;
+		}
+
+		foreach ($userIds as $userId) {
+			if (!empty($userId)) {
+				$orderUser = $this->OrdersUsers->newEmptyEntity();
+				$orderUser->id_order = $orderId;
+				$orderUser->id_user = $userId;
+				$this->OrdersUsers->save($orderUser);
+			}
+		}
+	}
+
+	/**
+	 * Atualizar relacionamentos entre pedido e usuários
+	 */
+	private function updateOrderUsers($orderId, $userIds)
+	{
+		// Remover relacionamentos existentes
+		$this->OrdersUsers->deleteAll(['id_order' => $orderId]);
+
+		// Adicionar novos relacionamentos
+		$this->saveOrderUsers($orderId, $userIds);
+	}
+
+	/**
+	 * AJAX: Buscar usuários de um cliente específico
+	 */
+	public function getUsersByCustomer()
+	{
+		$this->request->allowMethod(['get']);
+		
+		$customerId = $this->request->getQuery('customer_id');
+		
+		if (empty($customerId)) {
+			return $this->response->withType('application/json')->withStringBody(json_encode([
+				'success' => false,
+				'message' => 'ID do cliente não fornecido',
+				'users' => []
+			]));
+		}
+
+		$users = $this->Users->find()
+			->where(['id_customer' => $customerId])
+			->select(['id', 'name', 'email'])
+			->toArray();
+
+		return $this->response->withType('application/json')->withStringBody(json_encode([
+			'success' => true,
+			'users' => $users
+		]));
 	}
 }

@@ -5,11 +5,19 @@ namespace App\Controller;
 
 class CommentsController extends AppController
 {
+	public function initialize(): void
+	{
+		parent::initialize();
+		$this->loadComponent('Notification');
+	}
+
 	public function beforeFilter(\Cake\Event\EventInterface $event) {
 		parent::beforeFilter($event);
 		
 		$this->loadModel('Orders');
 		$this->loadModel('OrdersLog');
+		$this->loadModel('Users');
+		$this->loadModel('OrdersUsers');
 	}
 
 	public function add()
@@ -68,6 +76,13 @@ class CommentsController extends AppController
 				'refcomment' => $lastLogEntry ? $lastLogEntry->id : null,
 			]);
 			if ($this->Comments->save($comment)) {
+				// Enviar notificações para usuários associados
+				$this->Notification->sendNotificationToOrderUsers($orderId, 'comment', [
+					'message' => $message,
+					'user_name' => $userName,
+					'status' => $lastLogEntry ? $lastLogEntry->new_status : null
+				]);
+
 				return $this->response->withType('application/json')->withStringBody(json_encode([
 					'success' => true,
 					'data' => [

@@ -48,7 +48,9 @@ var OrderFilesManager = {
             'dxf': 'alt'
         },
         // Extensões que podem ser visualizadas no navegador
-        viewableExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'txt', 'html', 'htm', 'xml']
+        viewableExtensions: ['pdf', 'jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'txt', 'html', 'htm', 'xml', 'webp'],
+        // Extensões de imagem para miniaturas
+        imageExtensions: ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp']
     },
 
     // Inicializar o sistema
@@ -253,6 +255,21 @@ var OrderFilesManager = {
         return this.config.viewableExtensions.includes(extension);
     },
 
+    // Verificar se arquivo é uma imagem
+    isImageFile: function(filename) {
+        const extension = filename.split('.').pop().toLowerCase();
+        return this.config.imageExtensions.includes(extension);
+    },
+
+    // Obter URL da miniatura
+    getThumbnailUrl: function(filename) {
+        return this.config.orderBaseUrl + 'Files/thumbnail?' + 
+            this.buildQueryString({
+                order_id: this.config.orderId,
+                filename: filename
+            });
+    },
+
     // Renderizar lista de arquivos
     renderFilesList: function(files, category, folder) {
         var self = this;
@@ -264,6 +281,16 @@ var OrderFilesManager = {
                 const fileSize = self.formatBytes(file.size || 0);
                 const fileDate = file.modified || '-';
                 const isViewable = self.isViewableFile(file.name);
+                const isImage = self.isImageFile(file.name);
+                
+                // Preparar dados para miniatura
+                let thumbnailData = '';
+                if (isImage) {
+                    const thumbnailUrl = self.getThumbnailUrl(file.name);
+                    thumbnailData = `data-thumbnail="${thumbnailUrl}" data-is-image="true"`;
+                } else {
+                    thumbnailData = `data-is-image="false" data-icon="fa-file-${iconClass}"`;
+                }
                 
                 // Determinar quais botões mostrar
                 let actionButtons = '';
@@ -302,7 +329,7 @@ var OrderFilesManager = {
                 }
                 
                 tableHtml += `
-                    <tr>
+                    <tr class="file-row" ${thumbnailData}>
                         <td>
                             <i class="fas fa-file-${iconClass} text-primary"></i>
                             <span class="ml-2">${file.name}</span>
@@ -320,12 +347,105 @@ var OrderFilesManager = {
         }
         
         $('#categoryFilesTableBody').html(tableHtml);
+        
+        // Adicionar eventos de hover para miniaturas
+        this.addThumbnailEvents();
     },
 
     // Mostrar lista de categorias
     showCategoriesList: function() {
         $('.files-list').show();
         $('#selectedCategoryFiles').hide();
+        this.removeThumbnailTooltip();
+    },
+
+    // Adicionar eventos de hover para miniaturas
+    addThumbnailEvents: function() {
+        var self = this;
+        
+        // Remover eventos existentes
+        $('.file-row').off('mouseenter mouseleave');
+        
+        // Adicionar novos eventos
+        $('.file-row').on('mouseenter', function(e) {
+            const $row = $(this);
+            const isImage = $row.data('is-image') === true;
+            const thumbnailUrl = $row.data('thumbnail');
+            const iconClass = $row.data('icon');
+            
+            if (isImage && thumbnailUrl) {
+                self.showImageThumbnail(e, thumbnailUrl);
+            } else {
+                self.showIconThumbnail(e, iconClass);
+            }
+        }).on('mouseleave', function() {
+            self.removeThumbnailTooltip();
+        });
+    },
+
+    // Mostrar miniatura de imagem
+    showImageThumbnail: function(event, thumbnailUrl) {
+        this.removeThumbnailTooltip();
+        
+        const tooltip = $(`
+            <div id="fileThumbnailTooltip" class="file-thumbnail-tooltip">
+                <div class="thumbnail-loading">
+                    <i class="fas fa-spinner fa-spin"></i> Carregando...
+                </div>
+                <img src="${thumbnailUrl}" alt="Miniatura" style="display: none;"
+                     onload="this.style.display='block'; this.parentNode.querySelector('.thumbnail-loading').style.display='none';"
+                     onerror="this.parentNode.innerHTML='<i class=\\'fas fa-exclamation-triangle\\'></i> Erro ao carregar';">
+            </div>
+        `);
+        
+        $('body').append(tooltip);
+        this.positionTooltip(event, tooltip);
+    },
+
+    // Mostrar ícone para arquivos não-imagem
+    showIconThumbnail: function(event, iconClass) {
+        this.removeThumbnailTooltip();
+        
+        const tooltip = $(`
+            <div id="fileThumbnailTooltip" class="file-thumbnail-tooltip file-icon-tooltip">
+                <i class="fas ${iconClass} fa-3x text-primary"></i>
+            </div>
+        `);
+        
+        $('body').append(tooltip);
+        this.positionTooltip(event, tooltip);
+    },
+
+    // Posicionar tooltip
+    positionTooltip: function(event, tooltip) {
+        const mouseX = event.pageX;
+        const mouseY = event.pageY;
+        const windowWidth = $(window).width();
+        const windowHeight = $(window).height();
+        const tooltipWidth = 200;
+        const tooltipHeight = 150;
+        
+        let left = mouseX + 15;
+        let top = mouseY - 10;
+        
+        // Ajustar se sair da tela
+        if (left + tooltipWidth > windowWidth) {
+            left = mouseX - tooltipWidth - 15;
+        }
+        
+        if (top + tooltipHeight > windowHeight) {
+            top = mouseY - tooltipHeight - 10;
+        }
+        
+        tooltip.css({
+            left: left + 'px',
+            top: top + 'px'
+        });
+    },
+
+    // Remover tooltip
+    removeThumbnailTooltip: function() {
+        $('#fileThumbnailTooltip').remove();
     },
 
     downloadCategoryFiles: function(category, folder) {

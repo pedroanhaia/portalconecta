@@ -124,4 +124,22 @@
 			}
 			return false;
 		}
-	// 
+	// Pedidos - Notificações
+		define('C_PedidosNotificacaoTodas',			1);
+		define('C_PedidosNotificacaoArquivos',		2);
+		define('C_PedidosNotificacaoComentarios',	3);
+		define('C_PedidosNotificacaoNenhuma',		4);
+
+		define('C_PedidosNotificacaoTipoOpt', [
+			C_PedidosNotificacaoTodas => 'Todas',
+			C_PedidosNotificacaoArquivos => 'Arquivos',
+			C_PedidosNotificacaoComentarios => 'Comentários',
+			C_PedidosNotificacaoNenhuma => 'Nenhuma',
+		]);
+
+		function PedidosNotificacaoTipo($status) {
+			if ($status == C_PedidosNotificacaoTodas) 		return 'Todas';
+			if ($status == C_PedidosNotificacaoArquivos)	return 'Arquivos';
+			if ($status == C_PedidosNotificacaoComentarios)	return 'Comentários';
+			if ($status == C_PedidosNotificacaoNenhuma)		return 'Nenhuma';
+		}
