@@ -5,6 +5,7 @@ namespace App\Controller\Component;
 
 use Cake\Controller\Component;
 use Cake\Mailer\Mailer;
+use Cake\Routing\Router;
 
 class NotificationComponent extends Component
 {
@@ -185,8 +186,8 @@ class NotificationComponent extends Component
 	private function buildOrderUrl($orderId)
 	{
 		// Você pode ajustar a URL base conforme sua configuração
-		$baseUrl = $this->getController()->request->scheme() . '://' . $this->getController()->request->host();
-		return $baseUrl . "/orders/view/{$orderId}";
+		$url = Router::url(['controller' => 'Orders', 'action' => 'view', $orderId], true);
+		return $url;
 	}
 
 	/**
@@ -196,6 +197,7 @@ class NotificationComponent extends Component
 	{
 		try {
 			$mailer = new Mailer('default');
+
 			$mailer
 				->setFrom(['joaomario3224@gmail.com' => 'CGL Conecta'])
 				->setTo($to)
