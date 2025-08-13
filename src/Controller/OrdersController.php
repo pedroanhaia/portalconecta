@@ -46,13 +46,13 @@ class OrdersController extends AppController
 				->setFrom(['joaomario3224@gmail.com' => 'CGL Conecta'])
 				->setTo($to)
 				->setSubject($subject)
+				->setEmailFormat('html')
 				->deliver($message);
 			
 			return true;
 		} catch (\Exception $e) {
-			// Log do erro
-			debug($e->getMessage());
-			$this->log('Erro ao enviar email: ' . $e->getMessage(), 'error');
+			debug('Erro ao enviar email: ' . $e->getMessage());
+			$this->log('Erro ao enviar email para ' . $to . ': ' . $e->getMessage(), 'error');
 			return false;
 		}
 	}

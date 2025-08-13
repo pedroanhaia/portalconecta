@@ -234,7 +234,7 @@ return [
             'username' => 'joaomario3224@gmail.com',
             'password' => 'xbgnolburulofhdi',
             'tls' => true,
-            'timeout' => 30,
+            'timeout' => 60,
             'log' => true
         ]
     ],

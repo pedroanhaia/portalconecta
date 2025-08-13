@@ -202,6 +202,7 @@ class NotificationComponent extends Component
 				->setFrom(['joaomario3224@gmail.com' => 'CGL Conecta'])
 				->setTo($to)
 				->setSubject($subject)
+				->setEmailFormat('html')
 				->deliver($message);
 			
 			return true;
