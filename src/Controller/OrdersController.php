@@ -41,10 +41,7 @@ class OrdersController extends AppController
 	private function sendEmail($to, $subject, $message)
 	{
 		try {
-			// Usar configuração SSL para produção (porta 465) se disponível
-			$config = 'ssl'; // Para resolver o problema de SSL em produção
-			
-			$mailer = new Mailer($config);
+			$mailer = new Mailer('default');
 			$mailer
 				->setFrom(['joaomario3224@gmail.com' => 'CGL Conecta'])
 				->setTo($to)
@@ -54,26 +51,9 @@ class OrdersController extends AppController
 			
 			return true;
 		} catch (\Exception $e) {
-			// Se a configuração SSL falhar, tenta com a configuração padrão TLS
-			try {
-				$mailer = new Mailer('default');
-				$mailer
-					->setFrom(['joaomario3224@gmail.com' => 'CGL Conecta'])
-					->setTo($to)
-					->setSubject($subject)
-					->setEmailFormat('html')
-					->deliver($message);
-				
-				debug('Email enviado com configuração TLS fallback para: ' . $to);
-				$this->log('Email enviado com configuração TLS fallback para ' . $to, 'info');
-				return true;
-			} catch (\Exception $e2) {
-				debug('Erro SSL: ' . $e->getMessage());
-				debug('Erro TLS: ' . $e2->getMessage());
-				$this->log('Erro ao enviar email para ' . $to . ' (SSL): ' . $e->getMessage(), 'error');
-				$this->log('Erro ao enviar email para ' . $to . ' (TLS): ' . $e2->getMessage(), 'error');
-				return false;
-			}
+			debug('Erro ao enviar email: ' . $e->getMessage());
+			$this->log('Erro ao enviar email para ' . $to . ': ' . $e->getMessage(), 'error');
+			return false;
 		}
 	}
 

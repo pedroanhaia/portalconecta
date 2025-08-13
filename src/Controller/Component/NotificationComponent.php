@@ -196,11 +196,7 @@ class NotificationComponent extends Component
 	private function sendEmail($to, $subject, $message)
 	{
 		try {
-			// Usar configuração SSL para produção (porta 465) se disponível,
-			// senão usar TLS (porta 587)
-			$config = 'ssl'; // Para resolver o problema de SSL em produção
-			
-			$mailer = new Mailer($config);
+			$mailer = new Mailer('default');
 
 			$mailer
 				->setFrom(['joaomario3224@gmail.com' => 'CGL Conecta'])
@@ -211,23 +207,8 @@ class NotificationComponent extends Component
 			
 			return true;
 		} catch (\Exception $e) {
-			// Se a configuração SSL falhar, tenta com a configuração padrão TLS
-			try {
-				$mailer = new Mailer('default');
-				$mailer
-					->setFrom(['joaomario3224@gmail.com' => 'CGL Conecta'])
-					->setTo($to)
-					->setSubject($subject)
-					->setEmailFormat('html')
-					->deliver($message);
-				
-				$this->log('Email enviado com configuração TLS fallback para ' . $to, 'info');
-				return true;
-			} catch (\Exception $e2) {
-				$this->log('Erro ao enviar email para ' . $to . ' (SSL): ' . $e->getMessage(), 'error');
-				$this->log('Erro ao enviar email para ' . $to . ' (TLS): ' . $e2->getMessage(), 'error');
-				return false;
-			}
+			$this->log('Erro ao enviar email para ' . $to . ': ' . $e->getMessage(), 'error');
+			return false;
 		}
 	}
 }
