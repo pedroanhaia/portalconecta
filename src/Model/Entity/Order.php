@@ -32,8 +32,8 @@ class Order extends Entity
     protected $_accessible = [
         'number' => true,
         'id_customer' => true,
-        'value' => true,
         'status' => true,
+        'ordem_compra' => true,
         'not_mode' => true,
         'type' => true,
         'role' => true,

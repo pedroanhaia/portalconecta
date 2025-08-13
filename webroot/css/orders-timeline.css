@@ -119,10 +119,10 @@
 /* Estados dos ícones */
 
 /* Status não atual - cor primary */
-.status-step:not(.active) .icon {
-    background-color: var(--cgl-white);
-    border-color: var(--cgl-primary);
-    color: var(--cgl-primary);
+.status-step.active .icon {
+    background-color: var(--cgl-red);
+    border-color: var(--cgl-red);
+    color: var(--cgl-white);
 }
 
 .status-step:not(.active) .icon:hover {
@@ -134,39 +134,39 @@
 /* Status atual - cores específicas por status */
 
 /* Recebido - Primary */
-.status-step.active[data-key="1"] .icon {
+/* .status-step.active[data-key="1"] .icon {
     background-color: var(--cgl-primary);
     border-color: var(--cgl-primary);
     color: var(--cgl-white);
-}
+} */
 
 /* Em Projeto - Warning */
-.status-step.active[data-key="2"] .icon {
+/* .status-step.active[data-key="2"] .icon {
     background-color: var(--cgl-warning);
     border-color: var(--cgl-warning);
     color: var(--cgl-text-color);
-}
+} */
 
 /* Em Fabricação - Info */
-.status-step.active[data-key="3"] .icon {
+/* .status-step.active[data-key="3"] .icon {
     background-color: var(--cgl-info);
     border-color: var(--cgl-info);
     color: var(--cgl-white);
-}
+} */
 
 /* Em Transporte - Orange */
-.status-step.active[data-key="4"] .icon {
+/* .status-step.active[data-key="4"] .icon {
     background-color: var(--cgl-orange);
     border-color: var(--cgl-orange);
     color: var(--cgl-white);
-}
+} */
 
 /* Entregue - Success */
-.status-step.active[data-key="5"] .icon {
+/* .status-step.active[data-key="5"] .icon {
     background-color: var(--cgl-success);
     border-color: var(--cgl-success);
     color: var(--cgl-white);
-}
+} */
 
 /* Status completos (anteriores ao atual) - mantém primary */
 .status-step.complete .icon {

@@ -21,9 +21,9 @@
 		<div class="container mt-5">
 			<div class="row justify-content-center">
 				<div class="col-md-6">
-					<div class="card" style="background-color:#040819; color:white;">
+					<div class="card" style="background-color:#1a2f33; color:white; padding: 50px">
 						<div class="logo-center">
-							<?= $this->Html->image('logo.png', ['alt' => 'CGL Conecta']) ?>    
+							<?= $this->Html->image('logos/Logo CGL_vertical branco.png', ['alt' => 'CGL Conecta']) ?>    
 						</div>
 						<main class="main card-body">
 							<div class="container">

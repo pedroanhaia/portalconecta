@@ -36,7 +36,7 @@
                                             '<i class="fas fa-edit"></i> Editar Pedido',
                                             ['action' => 'edit', $order->id],
                                             [
-                                                'class' => 'btn btn-warning btn-sm',
+                                                'class' => 'btn btn-warning btn-sm btn-tamanho',
                                                 'escape' => false,
                                                 'title' => 'Editar este pedido'
                                             ]
@@ -56,8 +56,12 @@
                                     </div>
                                     <div class="col-md-3">
                                         <div class="info-item">
-                                            <strong>Valor:</strong><br>
-                                            <span class="text-muted">R$ <?= number_format($order->value ?? 0, 2, ',', '.') ?></span>
+                                            <strong>Ordem de Compra:</strong><br>
+                                            <?php if (!empty($order->ordem_compra)): ?>
+                                                <span class="text-muted"><?= h($order->ordem_compra) ?></span>
+                                            <?php else: ?>
+                                                <span class="text-muted">Não informado</span>
+                                            <?php endif; ?>
                                         </div>
                                     </div>
                                     <div class="col-md-3">

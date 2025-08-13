@@ -24,7 +24,6 @@
 body {
     background-color: var(--cgl-secondary);
     color: var(--cgl-text-color);
-    font-family: 'Montserrat', sans-serif;
 }
 
 /* Botões */
@@ -499,8 +498,11 @@ body.sidebar-collapsed .main {
 }
 
 .card-title {
-    font-size: 1.6rem;
     font-weight: 600;
     color: var(--cgl-primary);
     text-align: center;
+}
+
+.btn-tamanho {
+    font-size: 0.9em !important;
 }
