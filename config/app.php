@@ -234,8 +234,41 @@ return [
             'username' => 'joaomario3224@gmail.com',
             'password' => 'xbgnolburulofhdi',
             'tls' => true,
-            'timeout' => 30,
-            'log' => true
+            'timeout' => 60,
+            'log' => true,
+            'context' => [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                    'cafile' => null,
+                    'local_cert' => null,
+                    'ciphers' => 'HIGH:!SSLv2:!SSLv3',
+                    'crypto_method' => STREAM_CRYPTO_METHOD_TLS_CLIENT,
+                ],
+                'http' => [
+                    'method' => 'POST',
+                    'header' => 'Content-type: application/x-www-form-urlencoded',
+                ]
+            ]
+        ],
+        'ssl' => [
+            'className' => 'Smtp',
+            'host' => 'smtp.gmail.com',
+            'port' => 465,
+            'username' => 'joaomario3224@gmail.com',
+            'password' => 'xbgnolburulofhdi',
+            'tls' => false, // Usar SSL direto na porta 465
+            'timeout' => 60,
+            'log' => true,
+            'context' => [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                    'crypto_method' => STREAM_CRYPTO_METHOD_SSLv23_CLIENT,
+                ]
+            ]
         ]
     ],
 
