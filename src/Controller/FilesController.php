@@ -86,18 +86,31 @@ class FilesController extends AppController
 		}
 
 		// Caminho base dos arquivos no servidor
-		$baseDir = $this->Config->get(1)->path . DS;
+		$baseDir = rtrim($this->Config->get(1)->path, '\\/') . DS;
 
 		// Buscar pasta que contenha o número do pedido após o caractere '-'
 		$pedidoNumero = str_pad($order->number, 3, '0', STR_PAD_LEFT);
 		$caminhoPedido = null;
+		$pastasEncontradas = [];
 
-		// Listar todas as pastas no diretório base
-		if (is_dir($baseDir)) {
-			$pastas = glob($baseDir . '*', GLOB_ONLYDIR);
+		// Verificar se o diretório base existe
+		if (!is_dir($baseDir)) {
+			return $this->response->withType('application/json')
+				->withStringBody(json_encode(['success' => false, 'message' => 'Diretório base não encontrado: ' . $baseDir]));
+		}
+
+		// Listar todas as pastas no diretório base com tratamento melhorado
+		try {
+			$iterator = new \DirectoryIterator($baseDir);
 			
-			foreach ($pastas as $pasta) {
-				$nomePasta = basename($pasta);
+			foreach ($iterator as $item) {
+				if ($item->isDot() || !$item->isDir()) {
+					continue;
+				}
+				
+				$nomePasta = $item->getFilename();
+				$caminhoCompleto = $item->getPathname();
+				$pastasEncontradas[] = $nomePasta; // Para debug
 				
 				// Verificar se a pasta contém '-' seguido do número do pedido
 				if (strpos($nomePasta, '-') !== false) {
@@ -111,16 +124,31 @@ class FilesController extends AppController
 					$numeroPedidoBusca = ltrim($pedidoNumero, '0');
 					
 					if ($numeroEncontrado == $numeroPedidoBusca) {
-						$caminhoPedido = $pasta . DS;
+						$caminhoPedido = $caminhoCompleto . DS;
 						break;
 					}
 				}
 			}
+		} catch (\Exception $e) {
+			return $this->response->withType('application/json')
+				->withStringBody(json_encode(['success' => false, 'message' => 'Erro ao acessar diretório: ' . $e->getMessage()]));
 		}
 
 		if (!$caminhoPedido || !is_dir($caminhoPedido)) {
+			// Incluir informações de debug na resposta
+			$debugInfo = [
+				'baseDir' => $baseDir,
+				'pedidoNumero' => $pedidoNumero,
+				'pastasEncontradas' => array_slice($pastasEncontradas, 0, 10), // Primeiras 10 pastas para não sobrecarregar
+				'totalPastas' => count($pastasEncontradas)
+			];
+			
 			return $this->response->withType('application/json')
-				->withStringBody(json_encode(['success' => false, 'message' => 'Pasta do pedido não encontrada para o pedido #' . $order->number]));
+				->withStringBody(json_encode([
+					'success' => false, 
+					'message' => 'Pasta do pedido não encontrada para o pedido #' . $order->number,
+					'debug' => $debugInfo
+				]));
 		}
 
 		// Função recursiva para vasculhar arquivos
