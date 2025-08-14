@@ -229,19 +229,17 @@ return [
 'EmailTransport' => [
         'default' => [
             'className' => 'Smtp',
-            'host' => 'mail-ssl.m9.network',
-            'port' => 465,
+            'host' => 'smtp.cglinox.com.br',
+            'port' => 587,
             'username' => 'portal@cglinox.com.br',
             'password' => 'AkfnGkFy',
-            'scheme' => 'ssl',
-            'timeout' => 30,
+            'timeout' => 120,
             'log' => true,
             'context' => [
                 'ssl' => [
                     'verify_peer' => false,
                     'verify_peer_name' => false,
-                    'allow_self_signed' => true,
-                    'disable_compression' => true
+                    'allow_self_signed' => true
                 ]
             ]
         ]

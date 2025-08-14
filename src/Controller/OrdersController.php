@@ -13,6 +13,9 @@ class OrdersController extends AppController
 
 	public function initialize(): void
 	{
+		if (php_sapi_name() === 'cli') {
+            $this->Authorization->skipAuthorization();
+        }
 		parent::initialize();
 		$this->loadComponent('Notification');
 	}
@@ -28,6 +31,8 @@ class OrdersController extends AppController
 		$this->loadModel('Users');
 		$this->loadModel('OrdersUsers');
 
+		$this->Authentication->addUnauthenticatedActions(['testSendEmailNat']);
+		
 		$userLogado = $this->Authentication->getIdentity();
 		$currentAction = $this->request->getParam('action');
 
@@ -37,6 +42,8 @@ class OrdersController extends AppController
 				return $this->redirect(['action' => 'index']);
 			}
 		}
+
+
 	}
 
 	public function testSendEmailNat()

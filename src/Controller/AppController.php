@@ -50,7 +50,7 @@ class AppController extends Controller
 		if ($this->request->getParam('plugin') === 'DebugKit') {
 			$this->Authorization->skipAuthorization();
 		}
-
+		
 		$userLogado = $this->Authentication->getIdentity();
 
 		if(!empty($userLogado)) {

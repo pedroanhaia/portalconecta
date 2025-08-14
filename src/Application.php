@@ -68,6 +68,8 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             'httponly' => true,
             //'disabled' => true,
         ]);
+		
+
         
         // Token check will be skipped when callback returns `true`.
         $csrf->skipCheckCallback(function ($request) {
