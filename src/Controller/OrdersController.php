@@ -39,74 +39,65 @@ class OrdersController extends AppController
 		}
 	}
 
-	private function sendEmail($to, $subject, $message)
+	public function testSendEmailNat()
 	{
-		try {
-			// Usar o sistema de email PHP puro funcional
-			$sucesso = EmailHelper::sendQuick(
-				$to,
-				$subject,
-				$message,
-				true // HTML
-			);
-			
-			if ($sucesso) {
-				$this->log("Email enviado com sucesso para: $to", 'info');
-				return true;
-			} else {
-				$this->log("Falha ao enviar email para: $to", 'error');
-				return false;
-			}
-			
-		} catch (\Exception $e) {
-			$this->log('Erro ao enviar email para ' . $to . ': ' . $e->getMessage(), 'error');
-			return false;
-		}
-	}
+		$this->render = false; 
+		$customerEmail = 'pedroanhaia@gmail.com';
+		$orderNumber = '67890';
+		$newStatus = 'Em Fabricação';
+		$comentario = 'Pedido aprovado e iniciada a fabricação dos equipamentos.';
 
-	public function testeemail()
-	{
-		// Variáveis para teste - você pode modificar aqui
-		$emailTeste = 'joaomario3224@gmail.com';
-		$assunto = 'Teste de Email - CGL Conecta';
-		
-		// Dados do pedido fictício para teste
-		$numeroPedido = '12345';
-		$statusTeste = 'Em Projeto';
-		
-		// Mensagem de teste mais elaborada
-		$mensagemCompleta = "
-			<h2>Teste de Email - CGL Conecta</h2>
-			<p>Este é um email de teste do sistema.</p>
-			<hr>
-			<p><strong>Dados do teste:</strong></p>
-			<ul>
-				<li>Pedido: #{$numeroPedido}</li>
-				<li>Status: {$statusTeste}</li>
-				<li>Data/Hora: " . date('d/m/Y H:i:s') . "</li>
-			</ul>
-			<p>Se você recebeu este email, a configuração está funcionando corretamente!</p>
+		$statusText = $newStatus;
+		$emailSubject = "Status do pedido #{$orderNumber} alterado - CGL Inox";
+		$emailMessage = "
+			<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
+				<div style='background: #007bff; color: white; padding: 20px; text-align: center;'>
+					<h2>Atualização do Pedido #{$orderNumber}</h2>
+				</div>
+				<div style='padding: 20px; background: #f8f9fa;'>
+					<p>Olá,</p>
+					<p>O status do seu pedido foi alterado:</p>
+					<div style='background: white; padding: 15px; border-left: 4px solid #007bff; margin: 15px 0;'>
+						<ul style='margin: 0; padding-left: 20px;'>
+							<li><strong>Pedido:</strong> #{$orderNumber}</li>
+							<li><strong>Novo Status:</strong> {$statusText}</li>
+							<li><strong>Data:</strong> " . date('d/m/Y H:i') . "</li>
+						</ul>
+						<p style='margin-top: 15px;'><strong>Observações:</strong><br>{$comentario}</p>
+					</div>
+					<p>Para acompanhar seu pedido, acesse o portal do cliente.</p>
+				</div>
+				<div style='text-align: center; padding: 15px; font-size: 12px; color: #666;'>
+					<p>CGL Inox - Sistema de Acompanhamento de Pedidos</p>
+					<p>Email enviado automaticamente - " . date('d/m/Y H:i:s') . "</p>
+				</div>
+			</div>
 		";
 
-		// Tentar enviar o email
-		$resultado = $this->sendEmail($emailTeste, $assunto, $mensagemCompleta);
-		
-		if ($resultado) {
-		   	debug('Email de teste enviado com sucesso para: ' . $emailTeste);
-		} else {
-		   	debug('Erro ao enviar email de teste para: ' . $emailTeste);
-		}
+		// $resultado2 = testSendEmail($customerEmail, $emailSubject, $emailMessage);
+		$this->sendEmailNativo($customerEmail, $emailSubject, $emailMessage);
+	}
+	private function sendEmailNativo($to, $subject, $message)
+	{
+		try {
+			$mailer = new Mailer('default'); // Usa o perfil configurado no app.php
+			$mailer
+				->setTo($to)
+				->setSubject($subject)
+				->setEmailFormat('both') // envia HTML e texto plano
+				->setFrom('portal@cglinox.com.br', 'CGL Conecta')
+				->deliver($message);
 
-		// Retornar resposta JSON se for requisição AJAX
-		if ($this->request->is('ajax')) {
-			return $this->response->withType('application/json')->withStringBody(json_encode([
-				'success' => $resultado,
-				'message' => $resultado ? 'Email enviado com sucesso!' : 'Erro ao enviar email',
-				'email' => $emailTeste
-			]));
-		}
+			$this->log("Email enviado com sucesso para: {$to}", 'info');
+			return true;
 
-		die;
+		} catch (\Exception $e) {
+			$this->log(
+				'Erro ao enviar email para ' . $to . ': ' . $e->getMessage(),
+				'error'
+			);
+			return false;
+		}
 	}
 
 	public function index()

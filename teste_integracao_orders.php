@@ -26,7 +26,7 @@ function testSendEmail($to, $subject, $message) {
             $subject,
             $message,
             true, // HTML
-            true  // DEBUG ATIVO
+            false  // DEBUG ATIVO
         );
         
         if ($sucesso) {
