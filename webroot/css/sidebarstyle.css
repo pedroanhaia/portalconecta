@@ -1,17 +1,26 @@
-/* Google Font Import - Poppins */
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+@font-face {
+    font-family: 'Univia Pro';
+    src: local('Univia Pro Regular'), local('Univia-Pro-Regular'),
+        url('../webroot/font/UniviaPro-Regular.woff2') format('woff2'),
+        url('../webroot/font/UniviaPro-Regular.woff') format('woff'),
+        url('../webroot/font/UniviaPro-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
 
-*{
+*:not(i){
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Univia Pro' !important;
 }
 
 :root{
     /* ===== Colors from custom-theme ===== */
     --cgl-primary: #1a2f33;
     --cgl-secondary: #f8f8fa;
+    --cgl-dark-blue: #1D2C4F;
+    --cgl-red: #981914;
     --cgl-white: #FFFFFF;
     --cgl-hover: #768285;
     --cgl-text-color: #1a2f33;

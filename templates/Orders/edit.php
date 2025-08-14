@@ -405,6 +405,10 @@
 								<?= $this->Form->control('number', ['type' => 'text', 'class' => 'form-control', 'label' => false, 'required' => true, 'placeholder' => 'Insira o número do pedido']) ?>
 							</div>
 							<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+								<label class="control-label"> Ordem de Compra </label>
+								<?= $this->Form->control('ordem_compra', ['type' => 'text', 'class' => 'form-control', 'label' => false, 'placeholder' => 'Insira a ordem de compra (opcional)']) ?>
+							</div>
+							<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
 								<label class="control-label"> Previsão de Entrega </label>
 								<?= $this->Form->control('estimatetoready', [
 										'type' => 'date',

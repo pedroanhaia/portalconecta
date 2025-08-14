@@ -52,12 +52,17 @@ class OrdersTable extends Table
 			->allowEmptyString('number');
 
 		$validator
+			->scalar('ordem_compra')
+			->maxLength('ordem_compra', 255)
+			->allowEmptyString('ordem_compra');
+
+		$validator
 			->integer('id_customer')
 			->allowEmptyString('id_customer');
 
 		$validator
-			->numeric('value')
-			->allowEmptyString('value');
+			->scalar('not_mode')
+			->allowEmptyString('not_mode');
 
 		$validator
 			->integer('status')

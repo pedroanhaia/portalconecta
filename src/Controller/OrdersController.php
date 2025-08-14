@@ -116,36 +116,51 @@ class OrdersController extends AppController
 			$query->where(['Orders.id_customer' => $userLogado->id_customer]);
 		}
 
-		// Filtros de data - definir período padrão de 30 dias se não houver filtros
-		$dataInicio = $this->request->getQuery('data_inicio');
-		$dataFim = $this->request->getQuery('data_fim');
-		
-		// Se não há filtros de data, definir os últimos 30 dias
-		if (empty($dataInicio) && empty($dataFim)) {
-			$dataInicio = date('Y-m-d', strtotime('-30 days'));
-			$dataFim = date('Y-m-d');
-		}
+		// Verificar se há busca por ordem de compra
+		$ordemCompra = $this->request->getQuery('ordem_compra');
+		$isOrdemCompraSearch = !empty($ordemCompra);
 
-		if (!empty($dataInicio)) {
-			$dataInicioFormatted = date('Y-m-d 00:00:00', strtotime($dataInicio));
-			$query->where(['Orders.created >=' => $dataInicioFormatted]);
-		}
+		if ($isOrdemCompraSearch) {
+			// Se há busca por ordem de compra, usar apenas esse filtro
+			$query->where(['Orders.ordem_compra LIKE' => '%' . $ordemCompra . '%']);
+			$dataInicio = 	null;
+			$dataFim = 		null;
+			$status = 		null;
+			$clienteId = 		null;
+		} else {
+			// Filtros normais apenas se não houver busca por ordem de compra
+			
+			// Filtros de data - definir período padrão de 30 dias se não houver filtros
+			$dataInicio = $this->request->getQuery('data_inicio');
+			$dataFim = $this->request->getQuery('data_fim');
+			
+			// Se não há filtros de data, definir os últimos 30 dias
+			if (empty($dataInicio) && empty($dataFim)) {
+				$dataInicio = date('Y-m-d', strtotime('-30 days'));
+				$dataFim = date('Y-m-d');
+			}
 
-		if (!empty($dataFim)) {
-			$dataFimFormatted = date('Y-m-d 23:59:59', strtotime($dataFim));
-			$query->where(['Orders.created <=' => $dataFimFormatted]);
-		}
+			if (!empty($dataInicio)) {
+				$dataInicioFormatted = date('Y-m-d 00:00:00', strtotime($dataInicio));
+				$query->where(['Orders.created >=' => $dataInicioFormatted]);
+			}
 
-		// Filtro por status
-		$status = $this->request->getQuery('status');
-		if (!empty($status) && $status !== 'todos') {
-			$query->where(['Orders.status' => $status]);
-		}
+			if (!empty($dataFim)) {
+				$dataFimFormatted = date('Y-m-d 23:59:59', strtotime($dataFim));
+				$query->where(['Orders.created <=' => $dataFimFormatted]);
+			}
 
-		// Filtro por cliente (apenas para admin)
-		$clienteId = $this->request->getQuery('cliente');
-		if (!empty($clienteId) && $clienteId !== 'todos' && $userLogado->admin) {
-			$query->where(['Orders.id_customer' => $clienteId]);
+			// Filtro por status
+			$status = $this->request->getQuery('status');
+			if (!empty($status) && $status !== 'todos') {
+				$query->where(['Orders.status' => $status]);
+			}
+
+			// Filtro por cliente (apenas para admin)
+			$clienteId = $this->request->getQuery('cliente');
+			if (!empty($clienteId) && $clienteId !== 'todos' && $userLogado->admin) {
+				$query->where(['Orders.id_customer' => $clienteId]);
+			}
 		}
 
 		$orders = $query->toArray();
@@ -169,10 +184,7 @@ class OrdersController extends AppController
 			C_PedidosStatusEntregue => 'Entregue'
 		];
 
-		// Definir se é admin para a view
-		$userAdmin = $userLogado->admin == 1;
-
-		$this->set(compact('orders', 'customers', 'statusOptions', 'dataInicio', 'dataFim', 'status', 'clienteId', 'userAdmin'));
+		$this->set(compact('orders', 'customers', 'statusOptions', 'dataInicio', 'dataFim', 'status', 'clienteId', 'ordemCompra', 'isOrdemCompraSearch'));
 	}
 
 	public function add()
