@@ -73,7 +73,7 @@ class NotificationComponent extends Component
 					$subject = $this->buildEmailSubject($type, $order, $data);
 					$message = $this->buildEmailMessage($type, $order, $user, $data);
 					
-					if ($this->sendEmail($user->email, $subject, $message)) {
+					if ($this->sendEmailNativo($user->email, $subject, $message)) {
 						$emailsSent++;
 					}
 				}
@@ -209,7 +209,28 @@ class NotificationComponent extends Component
 		
 		return $url;
 	}
+	private function sendEmailNativo($to, $subject, $message)
+	{
+		try {
+			$mailer = new Mailer('default'); // Usa o perfil configurado no app.php
+			$mailer
+				->setTo($to)
+				->setSubject($subject)
+				->setEmailFormat('both') // envia HTML e texto plano
+				->setFrom('portal@cglinox.com.br', 'CGL Conecta')
+				->deliver($message);
 
+			$this->log("Email enviado com sucesso para: {$to}", 'info');
+			return true;
+
+		} catch (\Exception $e) {
+			$this->log(
+				'Erro ao enviar email para ' . $to . ': ' . $e->getMessage(),
+				'error'
+			);
+			return false;
+		}
+	}
 	/**
 	 * Enviar email usando o sistema PHP puro
 	 */
