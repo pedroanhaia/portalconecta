@@ -13,9 +13,6 @@ class OrdersController extends AppController
 
 	public function initialize(): void
 	{
-		if (php_sapi_name() === 'cli') {
-            $this->Authorization->skipAuthorization();
-        }
 		parent::initialize();
 		$this->loadComponent('Notification');
 	}
@@ -31,8 +28,6 @@ class OrdersController extends AppController
 		$this->loadModel('Users');
 		$this->loadModel('OrdersUsers');
 
-		$this->Authentication->addUnauthenticatedActions(['testSendEmailNat']);
-		
 		$userLogado = $this->Authentication->getIdentity();
 		$currentAction = $this->request->getParam('action');
 
@@ -42,70 +37,8 @@ class OrdersController extends AppController
 				return $this->redirect(['action' => 'index']);
 			}
 		}
-
-
 	}
-
-	public function testSendEmailNat()
-	{
-		$this->render = false; 
-		$customerEmail = 'pedroanhaia@gmail.com';
-		$orderNumber = '67890';
-		$newStatus = 'Em Fabricação';
-		$comentario = 'Pedido aprovado e iniciada a fabricação dos equipamentos.';
-
-		$statusText = $newStatus;
-		$emailSubject = "Status do pedido #{$orderNumber} alterado - CGL Inox";
-		$emailMessage = "
-			<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-				<div style='background: #007bff; color: white; padding: 20px; text-align: center;'>
-					<h2>Atualização do Pedido #{$orderNumber}</h2>
-				</div>
-				<div style='padding: 20px; background: #f8f9fa;'>
-					<p>Olá,</p>
-					<p>O status do seu pedido foi alterado:</p>
-					<div style='background: white; padding: 15px; border-left: 4px solid #007bff; margin: 15px 0;'>
-						<ul style='margin: 0; padding-left: 20px;'>
-							<li><strong>Pedido:</strong> #{$orderNumber}</li>
-							<li><strong>Novo Status:</strong> {$statusText}</li>
-							<li><strong>Data:</strong> " . date('d/m/Y H:i') . "</li>
-						</ul>
-						<p style='margin-top: 15px;'><strong>Observações:</strong><br>{$comentario}</p>
-					</div>
-					<p>Para acompanhar seu pedido, acesse o portal do cliente.</p>
-				</div>
-				<div style='text-align: center; padding: 15px; font-size: 12px; color: #666;'>
-					<p>CGL Inox - Sistema de Acompanhamento de Pedidos</p>
-					<p>Email enviado automaticamente - " . date('d/m/Y H:i:s') . "</p>
-				</div>
-			</div>
-		";
-
-		// $resultado2 = testSendEmail($customerEmail, $emailSubject, $emailMessage);
-		$this->sendEmailNativo($customerEmail, $emailSubject, $emailMessage);
-	}
-	private function sendEmailNativo($to, $subject, $message)
-	{
-		try {
-			$mailer = new Mailer('default'); // Usa o perfil configurado no app.php
-			$mailer
-				->setTo($to)
-				->setSubject($subject)
-				->setEmailFormat('both') // envia HTML e texto plano
-				->setFrom('portal@cglinox.com.br', 'CGL Conecta')
-				->deliver($message);
-
-			$this->log("Email enviado com sucesso para: {$to}", 'info');
-			return true;
-
-		} catch (\Exception $e) {
-			$this->log(
-				'Erro ao enviar email para ' . $to . ': ' . $e->getMessage(),
-				'error'
-			);
-			return false;
-		}
-	}
+	
 
 	public function index()
 	{
