@@ -226,23 +226,31 @@ return [
      * appropriate file to src/Mailer/Transport. Transports should be named
      * 'YourTransport.php', where 'Your' is the name of the transport.
      */
-   'EmailTransport' => [
+'EmailTransport' => [
         'default' => [
             'className' => 'Smtp',
-            'host' => 'smtp.gmail.com',
-            'port' => 587,
-            'username' => 'joaomario3224@gmail.com',
-            'password' => 'xbgnolburulofhdi',
-            'tls' => true,
-            'timeout' => 60,
-            'log' => true
+            'host' => 'mail-ssl.m9.network',
+            'port' => 465,
+            'username' => 'portal@cglinox.com.br',
+            'password' => 'AkfnGkFy',
+            'scheme' => 'ssl',
+            'timeout' => 30,
+            'log' => true,
+            'context' => [
+                'ssl' => [
+                    'verify_peer' => false,
+                    'verify_peer_name' => false,
+                    'allow_self_signed' => true,
+                    'disable_compression' => true
+                ]
+            ]
         ]
     ],
 
     'Email' => [
         'default' => [
             'transport' => 'default',
-            'from' => ['joaomario3224@gmail.com' => 'Seu Nome'],
+            'from' => ['portal@cglinox.com.br' => 'CGL Inox teste'],
             'charset' => 'utf-8',
             'headerCharset' => 'utf-8',
             'emailFormat' => 'both'
