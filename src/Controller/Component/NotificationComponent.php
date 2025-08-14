@@ -73,7 +73,7 @@ class NotificationComponent extends Component
 					$subject = $this->buildEmailSubject($type, $order, $data);
 					$message = $this->buildEmailMessage($type, $order, $user, $data);
 					
-					if ($this->sendEmail($user->email, $subject, $message)) {
+					if ($this->sendEmailNativo($user->email, $subject, $message)) {
 						$emailsSent++;
 					}
 				}
@@ -186,8 +186,27 @@ class NotificationComponent extends Component
 	 */
 	private function buildOrderUrl($orderId)
 	{
-		// Você pode ajustar a URL base conforme sua configuração
-		$url = Router::url(['controller' => 'Orders', 'action' => 'view', $orderId], true);
+		// Tentar buscar a URL base das configurações
+		$baseUrl = '';
+		
+		// Verificar se há configuração de fullBaseUrl no app.php
+		try {
+			$config = \Cake\Core\Configure::read('App.fullBaseUrl');
+			if ($config) {
+				$baseUrl = $config;
+			}
+		} catch (\Exception $e) {
+			// Continua com URL padrão se houver erro
+		}
+		
+		// Se não encontrar nas configurações, usar URL padrão
+		if (empty($baseUrl)) {
+			$baseUrl = 'https://conecta.cglinox.com.br/'; // Ajuste para seu domínio
+		}
+		
+		// Construir URL completa
+		$url = rtrim($baseUrl, '/') . '/orders/view/' . $orderId;
+		
 		return $url;
 	}
 
@@ -218,6 +237,29 @@ class NotificationComponent extends Component
 			
 		} catch (\Exception $e) {
 			$this->log('Erro ao enviar email para ' . $to . ': ' . $e->getMessage(), 'error');
+			return false;
+		}
+	}
+
+	private function sendEmailNativo($to, $subject, $message)
+	{
+		try {
+			$mailer = new Mailer('default'); // Usa o perfil configurado no app.php
+			$mailer
+				->setTo($to)
+				->setSubject($subject)
+				->setEmailFormat('both') // envia HTML e texto plano
+				->setFrom('portal@cglinox.com.br', 'CGL Conecta')
+				->deliver($message);
+
+			$this->log("Email enviado com sucesso para: {$to}", 'info');
+			return true;
+
+		} catch (\Exception $e) {
+			$this->log(
+				'Erro ao enviar email para ' . $to . ': ' . $e->getMessage(),
+				'error'
+			);
 			return false;
 		}
 	}
