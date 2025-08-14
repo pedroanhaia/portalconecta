@@ -6,6 +6,7 @@ namespace App\Controller\Component;
 use Cake\Controller\Component;
 use Cake\Mailer\Mailer;
 use Cake\Routing\Router;
+use App\Utility\EmailHelper;
 
 class NotificationComponent extends Component
 {
@@ -191,23 +192,78 @@ class NotificationComponent extends Component
 	}
 
 	/**
-	 * Enviar email
+	 * Enviar email usando o sistema PHP puro
 	 */
 	private function sendEmail($to, $subject, $message)
 	{
 		try {
-			$mailer = new Mailer('default');
-
-			$mailer
-				->setFrom(['joaomario3224@gmail.com' => 'CGL Conecta'])
-				->setTo($to)
-				->setSubject($subject)
-				->setEmailFormat('html')
-				->deliver($message);
+			// Usar o sistema de email PHP puro que está funcionando
+			$success = EmailHelper::sendFrom(
+				'portal@cglinox.com.br',
+				'CGL Conecta',
+				$to,
+				$subject,
+				$message,
+				true, // HTML
+				false // sem debug
+			);
 			
-			return true;
+			if ($success) {
+				$this->log("Email enviado com sucesso para: {$to}", 'info');
+				return true;
+			} else {
+				$this->log("Falha ao enviar email para: {$to}", 'error');
+				return false;
+			}
+			
 		} catch (\Exception $e) {
 			$this->log('Erro ao enviar email para ' . $to . ': ' . $e->getMessage(), 'error');
+			return false;
+		}
+	}
+
+	/**
+	 * Enviar notificação usando template personalizado
+	 */
+	public function sendNotificationWithTemplate($to, $title, $content)
+	{
+		try {
+			$success = EmailHelper::sendNotification($to, $title, $content, false);
+			
+			if ($success) {
+				$this->log("Notificação enviada com sucesso para: {$to}", 'info');
+			} else {
+				$this->log("Falha ao enviar notificação para: {$to}", 'error');
+			}
+			
+			return $success;
+			
+		} catch (\Exception $e) {
+			$this->log('Erro ao enviar notificação para ' . $to . ': ' . $e->getMessage(), 'error');
+			return false;
+		}
+	}
+
+	/**
+	 * Teste rápido de conectividade do sistema de email
+	 */
+	public function testEmailSystem()
+	{
+		try {
+			$testEmail = 'teste@cglinox.com.br';
+			$success = EmailHelper::sendQuick(
+				$testEmail,
+				'Teste Sistema CGL Conecta - ' . date('H:i:s'),
+				'<h2>✅ Sistema de Email Funcionando</h2><p>Este é um teste automático do sistema de notificações.</p>',
+				true,
+				false
+			);
+			
+			$this->log("Teste do sistema de email: " . ($success ? "SUCESSO" : "FALHOU"), $success ? 'info' : 'error');
+			return $success;
+			
+		} catch (\Exception $e) {
+			$this->log('Erro no teste do sistema de email: ' . $e->getMessage(), 'error');
 			return false;
 		}
 	}

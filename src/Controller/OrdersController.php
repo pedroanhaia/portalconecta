@@ -547,47 +547,6 @@ class OrdersController extends AppController
 					];
 				}
 
-				// Envio de e-mail para o cliente
-				$customerEmail = $order->customer->email ?? null;
-				if ($customerEmail) {
-					$statusText = PedidosStatus($newStatus);
-					$emailSubject = "Status do pedido #{$order->number} alterado - CGL Inox";
-					$emailMessage = "
-						<div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;'>
-							<div style='background: #007bff; color: white; padding: 20px; text-align: center;'>
-								<h2>Atualização do Pedido #{$order->number}</h2>
-							</div>
-							<div style='padding: 20px; background: #f8f9fa;'>
-								<p>Olá,</p>
-								<p>O status do seu pedido foi alterado:</p>
-								<div style='background: white; padding: 15px; border-left: 4px solid #007bff; margin: 15px 0;'>
-									<ul style='margin: 0; padding-left: 20px;'>
-										<li><strong>Pedido:</strong> #{$order->number}</li>
-										<li><strong>Novo Status:</strong> {$statusText}</li>
-										<li><strong>Data:</strong> " . date('d/m/Y H:i') . "</li>
-									</ul>
-									" . (!empty($comentario) ? "<p style='margin-top: 15px;'><strong>Observações:</strong><br>{$comentario}</p>" : "") . "
-								</div>
-								<p>Para acompanhar seu pedido, acesse o portal do cliente.</p>
-							</div>
-							<div style='text-align: center; padding: 15px; font-size: 12px; color: #666;'>
-								<p>CGL Inox - Sistema de Acompanhamento de Pedidos</p>
-								<p>Email enviado automaticamente - " . date('d/m/Y H:i:s') . "</p>
-							</div>
-						</div>
-					";
-					
-					// Usar o novo sistema de email funcional
-					$emailEnviado = $this->sendEmail($customerEmail, $emailSubject, $emailMessage);
-					
-					// Log do resultado do email
-					if ($emailEnviado) {
-						$this->log("Email de alteração de status enviado para cliente: $customerEmail (Pedido #{$order->number})", 'info');
-					} else {
-						$this->log("Falha ao enviar email para cliente: $customerEmail (Pedido #{$order->number})", 'error');
-					}
-				}
-
 				return $this->response->withType('application/json')->withStringBody(json_encode([
 					'success' => true,
 					'new_log' => $newLog
