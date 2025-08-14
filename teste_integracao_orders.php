@@ -19,11 +19,14 @@ echo "Data: " . date('Y-m-d H:i:s') . "\n\n";
 // Simula o método sendEmail do OrdersController
 function testSendEmail($to, $subject, $message) {
     try {
+        echo "Iniciando envio para: $to\n";
+        
         $sucesso = EmailHelper::sendQuick(
             $to,
             $subject,
             $message,
-            true // HTML
+            true, // HTML
+            true  // DEBUG ATIVO
         );
         
         if ($sucesso) {
@@ -36,6 +39,13 @@ function testSendEmail($to, $subject, $message) {
         
     } catch (Exception $e) {
         echo "❌ Erro: " . $e->getMessage() . "\n";
+        echo "Arquivo: " . $e->getFile() . "\n";
+        echo "Linha: " . $e->getLine() . "\n";
+        return false;
+    } catch (Error $e) {
+        echo "❌ Erro Fatal: " . $e->getMessage() . "\n";
+        echo "Arquivo: " . $e->getFile() . "\n";
+        echo "Linha: " . $e->getLine() . "\n";
         return false;
     }
 }
