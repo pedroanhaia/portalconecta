@@ -88,15 +88,39 @@ class FilesController extends AppController
 		// Caminho base dos arquivos no servidor
 		$baseDir = $this->Config->get(1)->path . DS;
 
-		// Nova estrutura: Nome do cliente - número do pedido
-		$clienteNome = preg_replace('/[^a-zA-Z0-9_\s]/', '_', $order->customer->name);
+		// Buscar pasta que contenha o número do pedido após o caractere '-'
 		$pedidoNumero = str_pad($order->number, 3, '0', STR_PAD_LEFT);
-		$pastaPedido = "{$clienteNome} - {$pedidoNumero}";
-		$caminhoPedido = $baseDir . $pastaPedido . DS;
+		$caminhoPedido = null;
 
-		if (!is_dir($caminhoPedido)) {
+		// Listar todas as pastas no diretório base
+		if (is_dir($baseDir)) {
+			$pastas = glob($baseDir . '*', GLOB_ONLYDIR);
+			
+			foreach ($pastas as $pasta) {
+				$nomePasta = basename($pasta);
+				
+				// Verificar se a pasta contém '-' seguido do número do pedido
+				if (strpos($nomePasta, '-') !== false) {
+					$partes = explode('-', $nomePasta);
+					
+					// Pegar a última parte após o último '-' e limpar espaços
+					$ultimaParte = trim(end($partes));
+					
+					// Comparar números (removendo zeros à esquerda)
+					$numeroEncontrado = ltrim($ultimaParte, '0');
+					$numeroPedidoBusca = ltrim($pedidoNumero, '0');
+					
+					if ($numeroEncontrado == $numeroPedidoBusca) {
+						$caminhoPedido = $pasta . DS;
+						break;
+					}
+				}
+			}
+		}
+
+		if (!$caminhoPedido || !is_dir($caminhoPedido)) {
 			return $this->response->withType('application/json')
-				->withStringBody(json_encode(['success' => false, 'message' => 'Pasta do pedido não encontrada: ' . $pastaPedido]));
+				->withStringBody(json_encode(['success' => false, 'message' => 'Pasta do pedido não encontrada para o pedido #' . $order->number]));
 		}
 
 		// Função recursiva para vasculhar arquivos
