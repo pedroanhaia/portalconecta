@@ -74,7 +74,7 @@ echo "Resultado: " . ($resultado1 ? "✅ SUCESSO" : "❌ FALHOU") . "\n\n";
 
 // Teste 2: Email de alteração de status (como changeStatus action)
 echo "2. TESTANDO EMAIL DE ALTERAÇÃO DE STATUS:\n";
-$customerEmail = 'cliente@exemplo.com';
+$customerEmail = 'pedroanhaia@gmail.com';
 $orderNumber = '67890';
 $newStatus = 'Em Fabricação';
 $comentario = 'Pedido aprovado e iniciada a fabricação dos equipamentos.';
