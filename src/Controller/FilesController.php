@@ -92,6 +92,7 @@ class FilesController extends AppController
 		$pedidoNumero = str_pad($order->number, 3, '0', STR_PAD_LEFT);
 		$caminhoPedido = null;
 		$pastasEncontradas = [];
+		$pastasCorrespondentes = [];
 
 		// Verificar se o diretório base existe
 		if (!is_dir($baseDir)) {
@@ -124,11 +125,26 @@ class FilesController extends AppController
 					$numeroPedidoBusca = ltrim($pedidoNumero, '0');
 					
 					if ($numeroEncontrado == $numeroPedidoBusca) {
-						$caminhoPedido = $caminhoCompleto . DS;
-						break;
+						$pastasCorrespondentes[] = [
+							'nome' => $nomePasta,
+							'caminho' => $caminhoCompleto
+						];
 					}
 				}
 			}
+			
+			// Se encontrou pastas correspondentes, ordenar alfabeticamente e pegar a última
+			if (!empty($pastasCorrespondentes)) {
+				// Ordenar por nome da pasta alfabeticamente
+				usort($pastasCorrespondentes, function($a, $b) {
+					return strcmp($a['nome'], $b['nome']);
+				});
+				
+				// Pegar a última pasta (última em ordem alfabética)
+				$ultimaPasta = end($pastasCorrespondentes);
+				$caminhoPedido = $ultimaPasta['caminho'] . DS;
+			}
+			
 		} catch (\Exception $e) {
 			return $this->response->withType('application/json')
 				->withStringBody(json_encode(['success' => false, 'message' => 'Erro ao acessar diretório: ' . $e->getMessage()]));
@@ -140,6 +156,7 @@ class FilesController extends AppController
 				'baseDir' => $baseDir,
 				'pedidoNumero' => $pedidoNumero,
 				'pastasEncontradas' => array_slice($pastasEncontradas, 0, 10), // Primeiras 10 pastas para não sobrecarregar
+				'pastasCorrespondentes' => $pastasCorrespondentes,
 				'totalPastas' => count($pastasEncontradas)
 			];
 			
@@ -152,36 +169,104 @@ class FilesController extends AppController
 		}
 
 		// Função recursiva para vasculhar arquivos
-		$arquivos = $this->listarArquivos($caminhoPedido);
-
-		// Exclui os existentes
-		foreach($this->Files->findByIdOrder($order->id)->toArray() as $reg) {
-			$this->Files->delete($reg);
-		}
-
-		// Salvar os arquivos no banco de dados
-		foreach ($arquivos as $arquivo) {
-			$relativePath = str_replace($baseDir, '', $arquivo);
-			$name = basename($arquivo);
-			$type = pathinfo($arquivo, PATHINFO_EXTENSION);
+		// Primeiro, verificar se existem subpastas dentro da pasta do pedido
+		$subpastas = [];
+		$caminhoFinal = $caminhoPedido;
+		
+		try {
+			$iterator = new \DirectoryIterator($caminhoPedido);
 			
-			// Determinar categoria baseada no caminho da pasta
-			$category = $this->determineCategoryFromPath($arquivo, $caminhoPedido);
+			foreach ($iterator as $item) {
+				if ($item->isDot() || !$item->isDir()) {
+					continue;
+				}
+				
+				$subpastas[] = [
+					'nome' => $item->getFilename(),
+					'caminho' => $item->getPathname()
+				];
+			}
+			
+			// Se há subpastas, ordenar alfabeticamente e pegar a última
+			if (!empty($subpastas)) {
+				usort($subpastas, function($a, $b) {
+					return strcmp($a['nome'], $b['nome']);
+				});
+				
+				// Usar a última subpasta (última em ordem alfabética)
+				$ultimaSubpasta = end($subpastas);
+				$caminhoFinal = $ultimaSubpasta['caminho'] . DS;
+			}
+			
+		} catch (\Exception $e) {
+			// Se houver erro ao listar subpastas, usar a pasta principal
+			$caminhoFinal = $caminhoPedido;
+		}
+		
+		$arquivos = $this->listarArquivos($caminhoFinal);
 
-			$fileEntity = $this->Files->newEntity([
-				'name' => $name,
-				'path' => $arquivo, // Caminho completo
-				'status' => 1,
-				'id_order' => $id,
-				'type' => $type,
-				'category' => $category
-			]);
+		// Usar transação para evitar duplicados
+		$connection = $this->Files->getConnection();
+		
+		try {
+			$connection->begin();
+			
+			// Exclui os existentes do pedido
+			$this->Files->deleteAll(['id_order' => $order->id]);
 
-			$this->Files->save($fileEntity);
+			// Preparar dados para inserção em lote
+			$arquivosParaInserir = [];
+			
+			// Salvar os arquivos no banco de dados
+			foreach ($arquivos as $arquivo) {
+				$name = basename($arquivo);
+				$type = pathinfo($arquivo, PATHINFO_EXTENSION);
+				
+				// Determinar categoria baseada no caminho da pasta
+				$category = $this->determineCategoryFromPath($arquivo, $caminhoFinal);
+
+				$arquivosParaInserir[] = [
+					'name' => $name,
+					'path' => $arquivo, // Caminho completo
+					'status' => 1,
+					'id_order' => $id,
+					'type' => $type,
+					'category' => $category,
+					'created' => date('Y-m-d H:i:s'),
+					'modified' => date('Y-m-d H:i:s')
+				];
+			}
+			
+			// Inserir todos os arquivos de uma vez
+			if (!empty($arquivosParaInserir)) {
+				$entities = $this->Files->newEntities($arquivosParaInserir);
+				$result = $this->Files->saveMany($entities);
+				
+				if (!$result) {
+					throw new \Exception('Erro ao salvar arquivos no banco de dados');
+				}
+			}
+			
+			$connection->commit();
+			
+		} catch (\Exception $e) {
+			$connection->rollback();
+			return $this->response->withType('application/json')
+				->withStringBody(json_encode(['success' => false, 'message' => 'Erro ao salvar arquivos: ' . $e->getMessage()]));
 		}
 
 		return $this->response->withType('application/json')
-			->withStringBody(json_encode(['success' => true, 'message' => 'Arquivos mapeados com sucesso.']));
+			->withStringBody(json_encode([
+				'success' => true, 
+				'message' => 'Arquivos mapeados com sucesso.',
+				'debug' => [
+					'pastasCorrespondentes' => count($pastasCorrespondentes),
+					'pastaSelecionada' => basename($caminhoPedido),
+					'subpastasEncontradas' => count($subpastas),
+					'caminhoFinal' => basename($caminhoFinal),
+					'totalArquivos' => count($arquivos)
+				]
+			]));
 	}
 
 	private function determineCategoryFromPath($filePath, $basePath)
