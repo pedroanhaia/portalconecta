@@ -216,11 +216,23 @@ class FilesController extends AppController
 
 			// Preparar dados para inserção em lote
 			$arquivosParaInserir = [];
+			$arquivosUnicos = []; // Para controle de duplicatas
 			
 			// Salvar os arquivos no banco de dados
 			foreach ($arquivos as $arquivo) {
 				$name = basename($arquivo);
 				$type = pathinfo($arquivo, PATHINFO_EXTENSION);
+				
+				// Criar chave única baseada em nome e extensão
+				$chaveUnica = strtolower($name . '.' . $type);
+				
+				// Verificar se já foi processado (evitar duplicatas)
+				if (isset($arquivosUnicos[$chaveUnica])) {
+					continue;
+				}
+				
+				// Marcar como processado
+				$arquivosUnicos[$chaveUnica] = true;
 				
 				// Determinar categoria baseada no caminho da pasta
 				$category = $this->determineCategoryFromPath($arquivo, $caminhoFinal);
@@ -264,7 +276,9 @@ class FilesController extends AppController
 					'pastaSelecionada' => basename($caminhoPedido),
 					'subpastasEncontradas' => count($subpastas),
 					'caminhoFinal' => basename($caminhoFinal),
-					'totalArquivos' => count($arquivos)
+					'totalArquivosEncontrados' => count($arquivos),
+					'arquivosUnicos' => count($arquivosParaInserir),
+					'duplicatasIgnoradas' => count($arquivos) - count($arquivosParaInserir)
 				]
 			]));
 	}
@@ -301,6 +315,35 @@ class FilesController extends AppController
 		return 'outros';
 	}
 
+	/**
+	 * Verifica se um arquivo deve ser ignorado
+	 */
+	private function deveIgnorarArquivo($filename)
+	{
+		// Ignorar arquivos ocultos (começam com .)
+		if (strpos($filename, '.') === 0) {
+			return true;
+		}
+		
+		// Ignorar arquivos de sistema comuns
+		$arquivosIgnorados = [
+			'Thumbs.db', 
+			'desktop.ini', 
+			'.DS_Store', 
+			'~$', // Arquivos temporários do Office
+			'.tmp',
+			'.temp'
+		];
+		
+		foreach ($arquivosIgnorados as $pattern) {
+			if (stripos($filename, $pattern) !== false) {
+				return true;
+			}
+		}
+		
+		return false;
+	}
+
 	private function listarArquivos($dir)
 	{
 		$resultados = [];
@@ -315,6 +358,13 @@ class FilesController extends AppController
 
 		foreach ($it as $file) {
 			if ($file->isFile()) {
+				$filename = $file->getFilename();
+				
+				// Usar função auxiliar para verificar se deve ignorar
+				if ($this->deveIgnorarArquivo($filename)) {
+					continue;
+				}
+				
 				$resultados[] = $file->getPathname();
 			}
 		}
@@ -346,6 +396,13 @@ class FilesController extends AppController
 				}
 
 				if ($file->isFile()) {
+					$filename = $file->getFilename();
+					
+					// Usar função auxiliar para verificar se deve ignorar
+					if ($this->deveIgnorarArquivo($filename)) {
+						continue;
+					}
+					
 					$resultados[] = $file->getPathname();
 				}
 			}
@@ -508,10 +565,22 @@ class FilesController extends AppController
 			// Preparar dados para inserção em lote
 			$arquivosParaInserir = [];
 			$arquivosSalvos = 0;
+			$arquivosUnicos = []; // Para controle de duplicatas
 
 			foreach ($arquivos as $arquivo) {
 				$name = basename($arquivo);
 				$type = pathinfo($arquivo, PATHINFO_EXTENSION);
+				
+				// Criar chave única baseada em nome e extensão
+				$chaveUnica = strtolower($name . '.' . $type);
+				
+				// Verificar se já foi processado (evitar duplicatas)
+				if (isset($arquivosUnicos[$chaveUnica])) {
+					continue;
+				}
+				
+				// Marcar como processado
+				$arquivosUnicos[$chaveUnica] = true;
 				
 				// Determinar categoria baseada no caminho da pasta
 				$category = $this->determineCategoryFromPath($arquivo, $caminhoFinal);
@@ -552,9 +621,13 @@ class FilesController extends AppController
 		// Restaurar limite de tempo original
 		set_time_limit(intval($originalTimeLimit));
 
+		$totalArquivos = count($arquivos);
+		$duplicatasIgnoradas = $totalArquivos - $arquivosSalvos;
+
 		return [
 			'found' => true, 
-			'message' => "Busca ativa realizada! {$arquivosSalvos} arquivos encontrados e indexados."
+			'message' => "Busca ativa realizada! {$arquivosSalvos} arquivos únicos indexados" . 
+						($duplicatasIgnoradas > 0 ? " ({$duplicatasIgnoradas} duplicatas ignoradas)" : "") . "."
 		];
 
 		} catch (\Exception $e) {
