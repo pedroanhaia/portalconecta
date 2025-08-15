@@ -376,76 +376,145 @@ class FilesController extends AppController
 				return ['found' => false, 'message' => 'Pedido não encontrado'];
 			}
 
-			// Caminho base dos arquivos no servidor
-			$baseDir = $this->Config->get(1)->path . DS;
+		// Caminho base dos arquivos no servidor
+		$baseDir = rtrim($this->Config->get(1)->path, '\\/') . DS;
 
-			if (!is_dir($baseDir)) {
-				set_time_limit(intval($originalTimeLimit));
-				return ['found' => false, 'message' => 'Diretório base não encontrado'];
-			}
+		if (!is_dir($baseDir)) {
+			set_time_limit(intval($originalTimeLimit));
+			return ['found' => false, 'message' => 'Diretório base não encontrado'];
+		}
 
-			// Buscar pasta que contenha o número do pedido
-			$pedidoNumero = str_pad($order->number, 3, '0', STR_PAD_LEFT);
-			$pastEncontrada = null;
+		// Buscar pasta que contenha o número do pedido após o caractere '-'
+		$pedidoNumero = str_pad($order->number, 3, '0', STR_PAD_LEFT);
+		$caminhoPedido = null;
+		$pastasEncontradas = [];
+		$pastasCorrespondentes = [];
 
-			// Listar todas as pastas no diretório base
-			$pastas = glob($baseDir . '*', GLOB_ONLYDIR);
+		// Listar todas as pastas no diretório base com tratamento melhorado
+		try {
+			$iterator = new \DirectoryIterator($baseDir);
 			
-			foreach ($pastas as $pasta) {
-				$nomePasta = basename($pasta);
+			foreach ($iterator as $item) {
+				if ($item->isDot() || !$item->isDir()) {
+					continue;
+				}
 				
-				// Verificar se a pasta segue o padrão "nome cliente - numero pedido"
-				$partes = explode(' - ', $nomePasta);
-				if (count($partes) >= 2) {
-					$ultimaParte = end($partes);
-					// Remover zeros à esquerda para comparação
-					$numeroEncontrado = ltrim($ultimaParte, '0');
-					$numeroPedido = ltrim($pedidoNumero, '0');
+				$nomePasta = $item->getFilename();
+				$caminhoCompleto = $item->getPathname();
+				$pastasEncontradas[] = $nomePasta; // Para debug
+				
+				// Verificar se a pasta contém '-' seguido do número do pedido
+				if (strpos($nomePasta, '-') !== false) {
+					$partes = explode('-', $nomePasta);
 					
-					if ($numeroEncontrado == $numeroPedido) {
-						$pastEncontrada = $pasta;
-						break;
+					// Pegar a última parte após o último '-' e limpar espaços
+					$ultimaParte = trim(end($partes));
+					
+					// Comparar números (removendo zeros à esquerda)
+					$numeroEncontrado = ltrim($ultimaParte, '0');
+					$numeroPedidoBusca = ltrim($pedidoNumero, '0');
+					
+					if ($numeroEncontrado == $numeroPedidoBusca) {
+						$pastasCorrespondentes[] = [
+							'nome' => $nomePasta,
+							'caminho' => $caminhoCompleto
+						];
 					}
 				}
 			}
-
-			if (!$pastEncontrada) {
-				set_time_limit(intval($originalTimeLimit));
-				return ['found' => false, 'message' => 'Pasta do pedido não encontrada no diretório'];
-			}
-
-			// Executar o scan da pasta encontrada
-			$caminhoPedido = $pastEncontrada . DS;
-			$startTime = time();
-			$maxScanTime = 240; // 4 minutos máximo para o scan
 			
-			$arquivos = $this->listarArquivosComTimeout($caminhoPedido, $startTime, $maxScanTime);
-
-			if (empty($arquivos)) {
-				set_time_limit(intval($originalTimeLimit));
-				return ['found' => false, 'message' => 'Nenhum arquivo encontrado na pasta do pedido'];
+			// Se encontrou pastas correspondentes, ordenar alfabeticamente e pegar a última
+			if (!empty($pastasCorrespondentes)) {
+				// Ordenar por nome da pasta alfabeticamente
+				usort($pastasCorrespondentes, function($a, $b) {
+					return strcmp($a['nome'], $b['nome']);
+				});
+				
+				// Pegar a última pasta (última em ordem alfabética)
+				$ultimaPasta = end($pastasCorrespondentes);
+				$caminhoPedido = $ultimaPasta['caminho'] . DS;
 			}
+			
+		} catch (\Exception $e) {
+			set_time_limit(intval($originalTimeLimit));
+			return ['found' => false, 'message' => 'Erro ao acessar diretório: ' . $e->getMessage()];
+		}
 
-			// Verificar se ainda temos tempo
-			if ((time() - $startTime) > $maxScanTime) {
-				set_time_limit(intval($originalTimeLimit));
-				return ['found' => false, 'message' => 'Timeout: Muitos arquivos para processar. Tente novamente.'];
+		if (!$caminhoPedido || !is_dir($caminhoPedido)) {
+			set_time_limit(intval($originalTimeLimit));
+			return ['found' => false, 'message' => 'Pasta do pedido não encontrada no diretório'];
+		}
+
+		// Verificar se existem subpastas dentro da pasta do pedido
+		$subpastas = [];
+		$caminhoFinal = $caminhoPedido;
+		
+		try {
+			$iterator = new \DirectoryIterator($caminhoPedido);
+			
+			foreach ($iterator as $item) {
+				if ($item->isDot() || !$item->isDir()) {
+					continue;
+				}
+				
+				$subpastas[] = [
+					'nome' => $item->getFilename(),
+					'caminho' => $item->getPathname()
+				];
 			}
+			
+			// Se há subpastas, ordenar alfabeticamente e pegar a última
+			if (!empty($subpastas)) {
+				usort($subpastas, function($a, $b) {
+					return strcmp($a['nome'], $b['nome']);
+				});
+				
+				// Usar a última subpasta (última em ordem alfabética)
+				$ultimaSubpasta = end($subpastas);
+				$caminhoFinal = $ultimaSubpasta['caminho'] . DS;
+			}
+			
+		} catch (\Exception $e) {
+			// Se houver erro ao listar subpastas, usar a pasta principal
+			$caminhoFinal = $caminhoPedido;
+		}
 
+		// Executar o scan da pasta encontrada
+		$startTime = time();
+		$maxScanTime = 240; // 4 minutos máximo para o scan
+		
+		$arquivos = $this->listarArquivosComTimeout($caminhoFinal, $startTime, $maxScanTime);
+
+		if (empty($arquivos)) {
+			set_time_limit(intval($originalTimeLimit));
+			return ['found' => false, 'message' => 'Nenhum arquivo encontrado na pasta do pedido'];
+		}
+
+		// Verificar se ainda temos tempo
+		if ((time() - $startTime) > $maxScanTime) {
+			set_time_limit(intval($originalTimeLimit));
+			return ['found' => false, 'message' => 'Timeout: Muitos arquivos para processar. Tente novamente.'];
+		}
+
+		// Usar transação para evitar duplicados
+		$connection = $this->Files->getConnection();
+		
+		try {
+			$connection->begin();
+			
 			// Remover registros existentes do pedido de forma otimizada
 			$this->Files->deleteAll(['id_order' => $orderId]);
 
 			// Preparar dados para inserção em lote
 			$arquivosParaInserir = [];
-			$batchSize = 50; // Processar 50 arquivos por vez
 			$arquivosSalvos = 0;
 
-			foreach ($arquivos as $indice => $arquivo) {
+			foreach ($arquivos as $arquivo) {
 				$name = basename($arquivo);
 				$type = pathinfo($arquivo, PATHINFO_EXTENSION);
 				
 				// Determinar categoria baseada no caminho da pasta
-				$category = $this->determineCategoryFromPath($arquivo, $caminhoPedido);
+				$category = $this->determineCategoryFromPath($arquivo, $caminhoFinal);
 
 				$arquivosParaInserir[] = [
 					'name' => $name,
@@ -457,32 +526,36 @@ class FilesController extends AppController
 					'created' => date('Y-m-d H:i:s'),
 					'modified' => date('Y-m-d H:i:s')
 				];
-
-				// Inserir em lotes para evitar timeout
-				if (count($arquivosParaInserir) >= $batchSize || $indice === count($arquivos) - 1) {
-					try {
-						$entities = $this->Files->newEntities($arquivosParaInserir);
-						$result = $this->Files->saveMany($entities);
-						
-						if ($result) {
-							$arquivosSalvos += count($arquivosParaInserir);
-						}
-					} catch (\Exception $e) {
-						// Log do erro mas continue o processo
-						error_log("Erro ao salvar lote de arquivos: " . $e->getMessage());
-					}
-					
-					$arquivosParaInserir = []; // Limpar array para próximo lote
-				}
 			}
 
-			// Restaurar limite de tempo original
+			// Inserir todos os arquivos de uma vez
+			if (!empty($arquivosParaInserir)) {
+				$entities = $this->Files->newEntities($arquivosParaInserir);
+				$result = $this->Files->saveMany($entities);
+				
+				if ($result) {
+					$arquivosSalvos = count($arquivosParaInserir);
+					$connection->commit();
+				} else {
+					throw new \Exception('Erro ao salvar arquivos no banco de dados');
+				}
+			} else {
+				$connection->commit();
+			}
+			
+		} catch (\Exception $e) {
+			$connection->rollback();
 			set_time_limit(intval($originalTimeLimit));
+			return ['found' => false, 'message' => 'Erro ao salvar arquivos: ' . $e->getMessage()];
+		}
 
-			return [
-				'found' => true, 
-				'message' => "Busca ativa realizada! {$arquivosSalvos} arquivos encontrados e indexados."
-			];
+		// Restaurar limite de tempo original
+		set_time_limit(intval($originalTimeLimit));
+
+		return [
+			'found' => true, 
+			'message' => "Busca ativa realizada! {$arquivosSalvos} arquivos encontrados e indexados."
+		];
 
 		} catch (\Exception $e) {
 			// Restaurar limite de tempo em caso de erro
