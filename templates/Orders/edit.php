@@ -609,38 +609,38 @@ $(document).ready(function () {
 		});
 	});
 
-	// Evento para carregar usuários quando uma empresa for alterada no edit
-	$('#customer-select-edit').on('change', function() {
-		const customerId = $(this).val();
-		const usersSelect = $('#users-select-edit');
-		
-		if (customerId) {
-			// Fazer requisição AJAX para buscar usuários
-			$.ajax({
-				url: '<?= $this->Url->build(['controller' => 'Orders', 'action' => 'getUsersByCustomer']) ?>',
-				type: 'GET',
-				data: { customer_id: customerId },
-				success: function(response) {
-					// Limpar opções atuais
-					usersSelect.empty();
-					
-					if (response.success && response.users.length > 0) {
-						// Adicionar opções de usuários
-						response.users.forEach(function(user) {
-							usersSelect.append(`<option value="${user.id}">${user.name} (${user.email})</option>`);
-						});
-					} else {
-						usersSelect.append('<option disabled>Nenhum usuário encontrado</option>');
-					}
-					
-					$('.selectpicker').selectpicker('refresh');
-				},
-				error: function() {
-					usersSelect.empty().append('<option disabled>Erro ao carregar usuários</option>');
-					$('.selectpicker').selectpicker('refresh');
-				}
-			});
-		}
-	});
+	   // Evento para carregar usuários quando uma empresa for alterada no edit
+	   $('#customer-select-edit').on('change', function() {
+		   const customerId = $(this).val();
+		   const usersSelect = $('#users-select-edit');
+		   // IDs dos usuários já associados ao pedido (do PHP)
+		   const selectedUserIds = <?= json_encode(array_map(function($u){return $u->id;}, $order->users ?? [])); ?>;
+		   if (customerId) {
+			   // Fazer requisição AJAX para buscar usuários
+			   $.ajax({
+				   url: '<?= $this->Url->build(['controller' => 'Orders', 'action' => 'getUsersByCustomer']) ?>',
+				   type: 'GET',
+				   data: { customer_id: customerId },
+				   success: function(response) {
+					   // Limpar opções atuais
+					   usersSelect.empty();
+					   if (response.success && response.users.length > 0) {
+						   // Adicionar opções de usuários
+						   response.users.forEach(function(user) {
+							   const selected = selectedUserIds.includes(user.id) ? 'selected' : '';
+							   usersSelect.append(`<option value="${user.id}" ${selected}>${user.name} (${user.email})</option>`);
+						   });
+					   } else {
+						   usersSelect.append('<option disabled>Nenhum usuário encontrado</option>');
+					   }
+					   $('.selectpicker').selectpicker('refresh');
+				   },
+				   error: function() {
+					   usersSelect.empty().append('<option disabled>Erro ao carregar usuários</option>');
+					   $('.selectpicker').selectpicker('refresh');
+				   }
+			   });
+		   }
+	   }).trigger('change');
 });
 </script>
