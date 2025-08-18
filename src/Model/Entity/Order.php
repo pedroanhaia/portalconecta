@@ -40,5 +40,7 @@ class Order extends Entity
         'created' => true,
         'modified' => true,
         'estimatetoready' => true,
+        'coditem' => true,
+        'descitem' => true,
     ];
 }

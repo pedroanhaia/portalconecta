@@ -12,6 +12,14 @@
 						<?= $this->Form->control('ordem_compra', ['type' => 'text', 'class' => 'form-control', 'label' => false, 'placeholder' => 'Insira a ordem de compra (opcional)']) ?>
 					</div>
 					<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+						<label class="control-label"> Código do item </label>
+						<?= $this->Form->control('coditem', ['type' => 'text', 'class' => 'form-control', 'label' => false, 'placeholder' => 'Insira o código do item']) ?>
+					</div>
+					<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
+						<label class="control-label"> Descrição do item </label>
+						<?= $this->Form->control('descitem', ['type' => 'text', 'class' => 'form-control', 'label' => false, 'placeholder' => 'Insira a descrição do item']) ?>
+					</div>
+					<div class="col-lg-4 col-md-6 col-sm-12 col-xs-12">
 						<label class="control-label"> Previsão de Entrega </label>
 						<?= $this->Form->control('estimatetoready', [
 								'type' => 'date',

@@ -55,6 +55,14 @@ class OrdersTable extends Table
 			->scalar('ordem_compra')
 			->maxLength('ordem_compra', 255)
 			->allowEmptyString('ordem_compra');
+		$validator
+			->scalar('coditem')
+			->maxLength('coditem', 255)
+			->allowEmptyString('coditem');
+			$validator
+			->scalar('descitem')
+			->maxLength('descitem', 255)
+			->allowEmptyString('descitem');
 
 		$validator
 			->integer('id_customer')
