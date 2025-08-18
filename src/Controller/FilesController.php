@@ -6,18 +6,12 @@ namespace App\Controller;
 class FilesController extends AppController
 {
 	private $categories = [
-		'dadosgerais' => '0 - DADOS GERAIS',
+		'pedido' => '0 - PEDIDO',
 		'desenhos' => '1 - DESENHOS',
-		'art' => '2 - ART',
-		'eps' => '3 - EPS',
-		'rqs' => '4 - RQS',
-		'certmat' => '5 - CERTIFICADOS DOS MATERIAIS',
-		'certcons' => '6 - CERTIFICADOS DOS CONSUMÍVEIS',
-		'certcalib' => '7 - CERTIFICADOS DE CALIBRAÇÃO',
-		'relinsp' => '8 - RELATORIOS DE INSPEÇÃO',
-		// 'montdatabook' => 'MONTAGEM DO DATABOOK',
-		'testes' => 'TESTES',
-		'outros' => 'OUTROS'
+		'art' => '2 - CRONOGRAMA',
+		'databook' => '3 - DATABOOK',
+		'status' => '4 - STATUS SEMANAL',
+		'testes' => '5 - TESTES'
 	];
 
 	public function initialize(): void
@@ -291,17 +285,12 @@ class FilesController extends AppController
 		
 		// Mapear pastas para categorias
 		$folderMapping = [
-			'0 - DADOS GERAIS' => 'dadosgerais',
-			'1 - DESENHOS' => 'desenhos',
-			'2 - ART' => 'art',
-			'3 - EPS' => 'eps',
-			'4 - RQS' => 'rqs',
-			'5 - CERTIFICADOS DOS MATERIAIS' => 'certmat',
-			'6 - CERTIFICADOS DOS CONSUMÍVEIS' => 'certcons',
-			'7 - CERTIFICADOS DE CALIBRAÇÃO' => 'certcalib',
-			'8 - RELATORIOS DE INSPEÇÃO' => 'relinsp',
-			// 'MONTAGEM DO DATABOOK' => 'montdatabook',
-			'TESTES' => 'testes'
+			'pedido' => '0 - PEDIDO',
+			'desenhos' => '1 - DESENHOS',
+			'art' => '2 - CRONOGRAMA',
+			'databook' => '3 - DATABOOK',
+			'status' => '4 - STATUS SEMANAL',
+			'testes' => '5 - TESTES'
 		];
 
 		// Verificar se o arquivo está dentro de alguma pasta conhecida
@@ -325,20 +314,13 @@ class FilesController extends AppController
 			return true;
 		}
 		
-		// Ignorar arquivos de sistema comuns
-		$arquivosIgnorados = [
-			'Thumbs.db', 
-			'desktop.ini', 
-			'.DS_Store', 
-			'~$', // Arquivos temporários do Office
-			'.tmp',
-			'.temp'
-		];
+		// Aceitar apenas arquivos PDF, JPG e JPEG
+		$extensoesPermitidas = ['pdf', 'jpg', 'jpeg'];
+		$extensao = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 		
-		foreach ($arquivosIgnorados as $pattern) {
-			if (stripos($filename, $pattern) !== false) {
-				return true;
-			}
+		// Se a extensão não estiver na lista de permitidas, ignorar o arquivo
+		if (!in_array($extensao, $extensoesPermitidas)) {
+			return true;
 		}
 		
 		return false;
