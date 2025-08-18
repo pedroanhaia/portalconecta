@@ -173,7 +173,7 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 			<thead class="text-primary">
 				<tr>
 					<th># </th>
-					<th>Ordem de Compra</th>
+					<th>Item</th>
 					<?php if($userAdmin): ?>
 						<th>Empresa</th>
 					<?php endif; ?>
@@ -201,8 +201,8 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 						<tr>
 							<td><?= $reg->number ?></td>
 							<td>
-								<?php if (!empty($reg->ordem_compra)): ?>
-									<?= h($reg->ordem_compra) ?>
+								<?php if (!empty($reg->coditem)): ?>
+									<?= h($reg->coditem) . '-' . h($reg->descitem)  ?>
 								<?php else: ?>
 									<small class="text-muted">-</small>
 								<?php endif; ?>
