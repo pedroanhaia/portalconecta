@@ -301,7 +301,7 @@ class FilesController extends AppController
 		$folderMapping = [
 			'pedido' => '0 - PEDIDO',
 			'desenhos' => '1 - DESENHOS',
-			'art' => '2 - CRONOGRAMA',
+			'cronograma' => '2 - CRONOGRAMA',
 			'databook' => '3 - DATABOOK',
 			'status' => '4 - STATUS SEMANAL',
 			'testes' => '5 - TESTES'

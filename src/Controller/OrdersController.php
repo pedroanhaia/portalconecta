@@ -51,16 +51,28 @@ class OrdersController extends AppController
 
 		// Aplicar filtro de cliente se não for admin
 		if(!$userLogado->admin) {
-			$query->where(['Orders.id_customer' => $userLogado->id_customer]);
+			if (!is_null($userLogado->id_customer)) $query->where(['Orders.id_customer' => $userLogado->id_customer]);
+			else  $query->where(['Orders.id_customer' => 0]);
 		}
 
-		// Verificar se há busca por ordem de compra
-		$ordemCompra = $this->request->getQuery('ordem_compra');
-		$isOrdemCompraSearch = !empty($ordemCompra);
+		// Verificar se há busca por código do item
+		$coditem = $this->request->getQuery('coditem');
+		$isCodItemSearch = !empty($coditem);
 
-		if ($isOrdemCompraSearch) {
+		$descitem = $this->request->getQuery('descitem');
+		$isdescitemSearch = !empty($descitem);
+
+		if ($isCodItemSearch) {
 			// Se há busca por ordem de compra, usar apenas esse filtro
-			$query->where(['Orders.ordem_compra LIKE' => '%' . $ordemCompra . '%']);
+			$query->where(['Orders.coditem LIKE' => '%' . $coditem . '%']);
+			$dataInicio = 	null;
+			$dataFim = 		null;
+			$status = 		null;
+			$clienteId = 		null;
+		} elseif ($isdescitemSearch) {
+
+			// Se há busca por ordem de compra, usar apenas esse filtro
+			$query->where(['Orders.descitem LIKE' => '%' . $descitem . '%']);
 			$dataInicio = 	null;
 			$dataFim = 		null;
 			$status = 		null;
