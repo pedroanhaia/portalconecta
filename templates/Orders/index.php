@@ -5,7 +5,7 @@
 	}
 
 	#filtros-form .form-control-sm {
-		font-size: 0.875rem;
+		font-size: 1.3rem;
 	}
 
 	.table-responsive {
