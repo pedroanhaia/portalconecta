@@ -40,7 +40,7 @@
 		<div class="tab-content" id="orderTabsContent">
 			<div class="tab-pane fade show active" id="timeline" role="tabpanel" aria-labelledby="timeline-tab">
 				<div class="content">
-					<p class="card-title">Pedido #<?= h($order->number) ?></p>
+					<p class="card-title">Pedido #<?= h($order->number) . ' : ' . h($order->coditem) . ' - ' . h($order->descitem)?></p>
 
 					<!-- Linha do tempo -->
 					<div class="timeline">

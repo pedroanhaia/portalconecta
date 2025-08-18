@@ -29,7 +29,7 @@
                     <div class="card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
-                                <p class="card-title">Pedido #<?= h($order->number) ?></p>
+                                <p class="card-title">Pedido #<?= h($order->number) . ' : ' . h($order->coditem) . ' - ' . h($order->descitem)?></p>
                                 <?php if (isset($isAdmin) && $isAdmin): ?>
                                     <div class="admin-actions">
                                         <?= $this->Html->link(
