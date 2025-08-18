@@ -329,7 +329,7 @@ class FilesController extends AppController
 		}
 		
 		// Aceitar apenas arquivos PDF, JPG e JPEG
-		$extensoesPermitidas = ['pdf', 'jpg', 'jpeg'];
+		$extensoesPermitidas = ['pdf', 'jpg', 'jpeg', 'dwg', 'x_t'];
 		$extensao = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 		
 		// Se a extensão não estiver na lista de permitidas, ignorar o arquivo
