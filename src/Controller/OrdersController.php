@@ -415,6 +415,23 @@ class OrdersController extends AppController
 			->order(['FilesLog.created' => 'DESC'])
 		->all();
 
+		// Buscar categorias existentes para este pedido
+		$this->loadModel('Files');
+		$categoriesFound = $this->Files->getCategoriesForOrder($id);
+
+		// Preparar lista de categorias com arquivos
+		$availableCategories = [];
+		foreach ($categoriesFound as $categoryRow) {
+			$categoryName = $categoryRow->name;  // Nome original da categoria
+			$categoryLabel = $categoryRow->label; // Nome em minúsculas
+			
+			$availableCategories[] = [
+				'key' => $categoryName,
+				'label' => $categoryLabel,
+				'folder' => $categoryName
+			];
+		}
+
 		$this->set('order', $order);
 		$this->set('newLog', $newLog);
 		$this->set('allComments', $allComments);
@@ -422,6 +439,7 @@ class OrdersController extends AppController
 		$this->set('customersOpt', $customersOpt);
 		$this->set('isAdmin', $isAdmin);
 		$this->set('filesLog', $filesLog);
+		$this->set('availableCategories', $availableCategories);
 	}
 
 	public function changeStatus()
