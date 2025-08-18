@@ -13,7 +13,7 @@ use function PHPUnit\Framework\isEmpty;
 class UsersController extends AppController
 {
 	public function beforeFilter(\Cake\Event\EventInterface $event) {
-		$this->Authentication->addUnauthenticatedActions(['login']);
+		$this->Authentication->addUnauthenticatedActions(['login', 'logout']);
 		parent::beforeFilter($event);
 
 		$userLogado = $this->Authentication->getIdentity();

@@ -17,7 +17,7 @@ class FilesController extends AppController
 	public function initialize(): void
 	{
 		parent::initialize();
-		
+		$this->loadComponent('Notification');
 		if ($this->request->is('ajax')) {
 			$this->viewBuilder()->setClassName('Json');
 		}
@@ -273,6 +273,8 @@ class FilesController extends AppController
 			return $this->response->withType('application/json')
 				->withStringBody(json_encode(['success' => false, 'message' => 'Erro ao salvar arquivos: ' . $e->getMessage()]));
 		}
+
+		$this->Notification->sendNotificationToOrderUsers($id, 'file', []);
 
 		return $this->response->withType('application/json')
 			->withStringBody(json_encode([
