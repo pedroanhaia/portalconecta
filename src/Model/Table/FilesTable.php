@@ -47,6 +47,54 @@ class FilesTable extends Table
 	}
 
 	/**
+	 * Busca categorias distintas para um pedido específico
+	 *
+	 * @param int $orderId ID do pedido
+	 * @return array Lista de categorias encontradas com nome e label
+	 */
+	public function getCategoriesForOrder($orderId)
+	{
+		$categories = $this->find()
+			->select(['category'])
+			->where([
+				'id_order' => $orderId,
+				'category IS NOT' => null,
+				'category !=' => ''
+			])
+			->group(['category'])
+			->orderAsc('category')
+			->toArray();
+
+		// Transformar os resultados para incluir name e label
+		$result = [];
+		foreach ($categories as $category) {
+			$categoryName = $category->category;
+			$result[] = (object)[
+				'name' => $categoryName,
+				'label' => strtolower($categoryName)
+			];
+		}
+
+		return $result;
+	}
+
+	/**
+	 * Busca arquivos de uma categoria específica para um pedido
+	 *
+	 * @param int $orderId ID do pedido
+	 * @param string $category Categoria dos arquivos
+	 * @return \Cake\ORM\Query
+	 */
+	public function findByOrderAndCategory($orderId, $category)
+	{
+		return $this->find()
+			->where([
+				'id_order' => $orderId,
+				'category' => $category
+			]);
+	}
+
+	/**
 	 * Default validation rules.
 	 *
 	 * @param \Cake\Validation\Validator $validator Validator instance.

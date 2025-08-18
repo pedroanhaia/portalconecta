@@ -215,221 +215,39 @@
                 <div class="content">
                     <div class="files-list">
                         <div class="row">
-                            <!-- Categoria: Dados Gerais -->
-                            <div class="col-md-4 mb-3">
-                                <div class="card file-category-card" data-category="dadosgerais" data-folder="dadosgerais">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Dados Gerais</h5>
-                                        <span class="badge badge-secondary file-count">Verificando...</span>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-primary browse-files" data-category="dadosgerais" data-folder="dadosgerais" disabled>
-                                                <i class="fas fa-folder-open"></i> Ver Arquivos
-                                            </button>
-                                            <button class="btn btn-sm btn-success download-all" data-category="dadosgerais" data-folder="dadosgerais" disabled>
-                                                <i class="fas fa-download"></i> Baixar Todos
-                                            </button>
+                            <?php 
+                            // Sistema de categorias dinâmicas: 
+                            // As categorias são carregadas automaticamente do banco de dados 
+                            // baseadas nos arquivos salvos na tabela 'files' coluna 'category'
+                            ?>
+                            <?php if (!empty($availableCategories)): ?>
+                                <?php foreach ($availableCategories as $category): ?>
+                                    <!-- Categoria: <?= h($category['label']) ?> -->
+                                    <div class="col-md-4 mb-3">
+                                        <div class="card file-category-card" data-category="<?= h($category['key']) ?>" data-folder="<?= h($category['folder']) ?>">
+                                            <div class="card-body">
+                                                <h5 class="card-title"><?= h($category['label']) ?></h5>
+                                                <span class="badge badge-secondary file-count">Verificando...</span>
+                                                <div class="mt-2">
+                                                    <button class="btn btn-sm btn-primary browse-files" data-category="<?= h($category['key']) ?>" data-folder="<?= h($category['folder']) ?>" disabled>
+                                                        <i class="fas fa-folder-open"></i> Ver Arquivos
+                                                    </button>
+                                                    <button class="btn btn-sm btn-success download-all" data-category="<?= h($category['key']) ?>" data-folder="<?= h($category['folder']) ?>" disabled>
+                                                        <i class="fas fa-download"></i> Baixar Todos
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-
-                            <!-- Categoria: Desenhos -->
-                            <div class="col-md-4 mb-3">
-                                <div class="card file-category-card" data-category="desenhos" data-folder="desenhos">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Desenhos</h5>
-                                        <span class="badge badge-secondary file-count">Verificando...</span>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-primary browse-files" data-category="desenhos" data-folder="desenhos" disabled>
-                                                <i class="fas fa-folder-open"></i> Ver Arquivos
-                                            </button>
-                                            <button class="btn btn-sm btn-success download-all" data-category="desenhos" data-folder="desenhos" disabled>
-                                                <i class="fas fa-download"></i> Baixar Todos
-                                            </button>
-                                        </div>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Nenhuma categoria de arquivo encontrada para este pedido.
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Categoria: ART -->
-                            <div class="col-md-4 mb-3">
-                                <div class="card file-category-card" data-category="art" data-folder="art">
-                                    <div class="card-body">
-                                        <h5 class="card-title">ART</h5>
-                                        <span class="badge badge-secondary file-count">Verificando...</span>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-primary browse-files" data-category="art" data-folder="art" disabled>
-                                                <i class="fas fa-folder-open"></i> Ver Arquivos
-                                            </button>
-                                            <button class="btn btn-sm btn-success download-all" data-category="art" data-folder="art" disabled>
-                                                <i class="fas fa-download"></i> Baixar Todos
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Categoria: EPS -->
-                            <div class="col-md-4 mb-3">
-                                <div class="card file-category-card" data-category="eps" data-folder="eps">
-                                    <div class="card-body">
-                                        <h5 class="card-title">EPS</h5>
-                                        <span class="badge badge-secondary file-count">Verificando...</span>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-primary browse-files" data-category="eps" data-folder="eps" disabled>
-                                                <i class="fas fa-folder-open"></i> Ver Arquivos
-                                            </button>
-                                            <button class="btn btn-sm btn-success download-all" data-category="eps" data-folder="eps" disabled>
-                                                <i class="fas fa-download"></i> Baixar Todos
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Categoria: RQS -->
-                            <div class="col-md-4 mb-3">
-                                <div class="card file-category-card" data-category="rqs" data-folder="rqs">
-                                    <div class="card-body">
-                                        <h5 class="card-title">RQS</h5>
-                                        <span class="badge badge-secondary file-count">Verificando...</span>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-primary browse-files" data-category="rqs" data-folder="rqs" disabled>
-                                                <i class="fas fa-folder-open"></i> Ver Arquivos
-                                            </button>
-                                            <button class="btn btn-sm btn-success download-all" data-category="rqs" data-folder="rqs" disabled>
-                                                <i class="fas fa-download"></i> Baixar Todos
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Categoria: Certificados dos Materiais -->
-                            <div class="col-md-4 mb-3">
-                                <div class="card file-category-card" data-category="certmat" data-folder="certmat">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Cert. Materiais</h5>
-                                        <span class="badge badge-secondary file-count">Verificando...</span>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-primary browse-files" data-category="certmat" data-folder="certmat" disabled>
-                                                <i class="fas fa-folder-open"></i> Ver Arquivos
-                                            </button>
-                                            <button class="btn btn-sm btn-success download-all" data-category="certmat" data-folder="certmat" disabled>
-                                                <i class="fas fa-download"></i> Baixar Todos
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Categoria: Certificados dos Consumíveis -->
-                            <div class="col-md-4 mb-3">
-                                <div class="card file-category-card" data-category="certcons" data-folder="certcons">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Cert. Consumíveis</h5>
-                                        <span class="badge badge-secondary file-count">Verificando...</span>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-primary browse-files" data-category="certcons" data-folder="certcons" disabled>
-                                                <i class="fas fa-folder-open"></i> Ver Arquivos
-                                            </button>
-                                            <button class="btn btn-sm btn-success download-all" data-category="certcons" data-folder="certcons" disabled>
-                                                <i class="fas fa-download"></i> Baixar Todos
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Categoria: Certificados de Calibração -->
-                            <div class="col-md-4 mb-3">
-                                <div class="card file-category-card" data-category="certcalib" data-folder="certcalib">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Cert. Calibração</h5>
-                                        <span class="badge badge-secondary file-count">Verificando...</span>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-primary browse-files" data-category="certcalib" data-folder="certcalib" disabled>
-                                                <i class="fas fa-folder-open"></i> Ver Arquivos
-                                            </button>
-                                            <button class="btn btn-sm btn-success download-all" data-category="certcalib" data-folder="certcalib" disabled>
-                                                <i class="fas fa-download"></i> Baixar Todos
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Categoria: Relatórios de Inspeção -->
-                            <div class="col-md-4 mb-3">
-                                <div class="card file-category-card" data-category="relinsp" data-folder="relinsp">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Rel. Inspeção</h5>
-                                        <span class="badge badge-secondary file-count">Verificando...</span>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-primary browse-files" data-category="relinsp" data-folder="relinsp" disabled>
-                                                <i class="fas fa-folder-open"></i> Ver Arquivos
-                                            </button>
-                                            <button class="btn btn-sm btn-success download-all" data-category="relinsp" data-folder="relinsp" disabled>
-                                                <i class="fas fa-download"></i> Baixar Todos
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Categoria: Montagem do Databook -->
-                            <!-- <div class="col-md-4 mb-3">
-                                <div class="card file-category-card" data-category="montdatabook" data-folder="montdatabook">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Mont. Databook</h5>
-                                        <span class="badge badge-secondary file-count">Verificando...</span>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-primary browse-files" data-category="montdatabook" data-folder="montdatabook" disabled>
-                                                <i class="fas fa-folder-open"></i> Ver Arquivos
-                                            </button>
-                                            <button class="btn btn-sm btn-success download-all" data-category="montdatabook" data-folder="montdatabook" disabled>
-                                                <i class="fas fa-download"></i> Baixar Todos
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div> -->
-
-                            <!-- Categoria: Testes -->
-                            <div class="col-md-4 mb-3">
-                                <div class="card file-category-card" data-category="testes" data-folder="testes">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Testes</h5>
-                                        <span class="badge badge-secondary file-count">Verificando...</span>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-primary browse-files" data-category="testes" data-folder="testes" disabled>
-                                                <i class="fas fa-folder-open"></i> Ver Arquivos
-                                            </button>
-                                            <button class="btn btn-sm btn-success download-all" data-category="testes" data-folder="testes" disabled>
-                                                <i class="fas fa-download"></i> Baixar Todos
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Categoria: Outros -->
-                            <div class="col-md-4 mb-3">
-                                <div class="card file-category-card" data-category="outros" data-folder="outros">
-                                    <div class="card-body">
-                                        <h5 class="card-title">Outros</h5>
-                                        <span class="badge badge-secondary file-count">Verificando...</span>
-                                        <div class="mt-2">
-                                            <button class="btn btn-sm btn-primary browse-files" data-category="outros" data-folder="outros" disabled>
-                                                <i class="fas fa-folder-open"></i> Ver Arquivos
-                                            </button>
-                                            <button class="btn btn-sm btn-success download-all" data-category="outros" data-folder="outros" disabled>
-                                                <i class="fas fa-download"></i> Baixar Todos
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            <?php endif; ?>
                         </div>
                     </div>
 

@@ -262,12 +262,30 @@ class OrdersController extends AppController
 			}
 		)->toArray();
 
+		// Buscar categorias existentes para este pedido
+		$this->loadModel('Files');
+		$categoriesFound = $this->Files->getCategoriesForOrder($id);
+
+		// Preparar lista de categorias com arquivos
+		$availableCategories = [];
+		foreach ($categoriesFound as $categoryRow) {
+			$categoryName = $categoryRow->name;  // Nome original da categoria
+			$categoryLabel = $categoryRow->label; // Nome em minúsculas
+			
+			$availableCategories[] = [
+				'key' => $categoryName,
+				'label' => $categoryLabel,
+				'folder' => $categoryName
+			];
+		}
+
 		$this->set('order', $order);
 		$this->set('newLog', $newLog);
 		$this->set('config', $config);
 		$this->set('customersOpt', $customersOpt);
 		$this->set('allComments', $allComments);
 		$this->set('isAdmin', $isAdmin);
+		$this->set('availableCategories', $availableCategories);
 	}
 
 	public function edit($id = null)
