@@ -163,7 +163,7 @@ class FilesController extends AppController
 		}
 
 		// Função recursiva para vasculhar arquivos
-		// Primeiro, verificar se existem subpastas dentro da pasta do pedido
+		// Verificar se existem subpastas dentro da pasta do pedido (pastas de itens)
 		$subpastas = [];
 		$caminhoFinal = $caminhoPedido;
 		
@@ -175,19 +175,32 @@ class FilesController extends AppController
 					continue;
 				}
 				
-				$subpastas[] = [
-					'nome' => $item->getFilename(),
-					'caminho' => $item->getPathname()
-				];
+				$nomePasta = $item->getFilename();
+				
+				// Verificar se a pasta contém '-' seguido do código do item
+				if (strpos($nomePasta, '-') !== false && !empty($order->coditem)) {
+					$partes = explode('-', $nomePasta);
+					
+					// Pegar a última parte após o último '-' e limpar espaços
+					$ultimaParte = trim(end($partes));
+					
+					// Comparar com o código do item
+					if (strcasecmp($ultimaParte, trim($order->coditem)) === 0) {
+						$subpastas[] = [
+							'nome' => $nomePasta,
+							'caminho' => $item->getPathname()
+						];
+					}
+				}
 			}
 			
-			// Se há subpastas, ordenar alfabeticamente e pegar a última
+			// Se encontrou pastas do item, ordenar alfabeticamente e pegar a última
 			if (!empty($subpastas)) {
 				usort($subpastas, function($a, $b) {
 					return strcmp($a['nome'], $b['nome']);
 				});
 				
-				// Usar a última subpasta (última em ordem alfabética)
+				// Usar a última pasta do item (última em ordem alfabética)
 				$ultimaSubpasta = end($subpastas);
 				$caminhoFinal = $ultimaSubpasta['caminho'] . DS;
 			}
@@ -268,6 +281,7 @@ class FilesController extends AppController
 				'debug' => [
 					'pastasCorrespondentes' => count($pastasCorrespondentes),
 					'pastaSelecionada' => basename($caminhoPedido),
+					'coditemPedido' => $order->coditem ?? 'Não informado',
 					'subpastasEncontradas' => count($subpastas),
 					'caminhoFinal' => basename($caminhoFinal),
 					'totalArquivosEncontrados' => count($arquivos),
@@ -334,21 +348,53 @@ class FilesController extends AppController
 			return $resultados;
 		}
 
-		$it = new \RecursiveIteratorIterator(
-			new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS)
-		);
-
-		foreach ($it as $file) {
-			if ($file->isFile()) {
-				$filename = $file->getFilename();
-				
-				// Usar função auxiliar para verificar se deve ignorar
-				if ($this->deveIgnorarArquivo($filename)) {
+		try {
+			// Listar arquivos da pasta principal
+			$iterator = new \DirectoryIterator($dir);
+			foreach ($iterator as $item) {
+				if ($item->isDot()) {
 					continue;
 				}
 				
-				$resultados[] = $file->getPathname();
+				if ($item->isFile()) {
+					$filename = $item->getFilename();
+					
+					// Usar função auxiliar para verificar se deve ignorar
+					if ($this->deveIgnorarArquivo($filename)) {
+						continue;
+					}
+					
+					$resultados[] = $item->getPathname();
+				}
 			}
+			
+			// Listar arquivos das pastas de primeiro nível (categorias)
+			$iterator = new \DirectoryIterator($dir);
+			foreach ($iterator as $item) {
+				if ($item->isDot() || !$item->isDir()) {
+					continue;
+				}
+				
+				// Entrar apenas no primeiro nível de subpastas (categorias)
+				$subIterator = new \DirectoryIterator($item->getPathname());
+				foreach ($subIterator as $subItem) {
+					if ($subItem->isDot() || !$subItem->isFile()) {
+						continue;
+					}
+					
+					$filename = $subItem->getFilename();
+					
+					// Usar função auxiliar para verificar se deve ignorar
+					if ($this->deveIgnorarArquivo($filename)) {
+						continue;
+					}
+					
+					$resultados[] = $subItem->getPathname();
+				}
+			}
+			
+		} catch (\Exception $e) {
+			error_log("Erro ao listar arquivos: " . $e->getMessage());
 		}
 
 		return $resultados;
@@ -366,28 +412,72 @@ class FilesController extends AppController
 		}
 
 		try {
-			$it = new \RecursiveIteratorIterator(
-				new \RecursiveDirectoryIterator($dir, \RecursiveDirectoryIterator::SKIP_DOTS)
-			);
-
-			foreach ($it as $file) {
-				// Verificar timeout a cada 100 arquivos
-				if (count($resultados) % 100 === 0 && (time() - $startTime) > $maxTime) {
+			// Listar arquivos da pasta principal
+			$iterator = new \DirectoryIterator($dir);
+			foreach ($iterator as $item) {
+				if ($item->isDot()) {
+					continue;
+				}
+				
+				// Verificar timeout a cada 50 arquivos
+				if (count($resultados) % 50 === 0 && (time() - $startTime) > $maxTime) {
 					error_log("Timeout detectado durante listagem de arquivos após " . count($resultados) . " arquivos");
 					break;
 				}
-
-				if ($file->isFile()) {
-					$filename = $file->getFilename();
+				
+				if ($item->isFile()) {
+					$filename = $item->getFilename();
 					
 					// Usar função auxiliar para verificar se deve ignorar
 					if ($this->deveIgnorarArquivo($filename)) {
 						continue;
 					}
 					
-					$resultados[] = $file->getPathname();
+					$resultados[] = $item->getPathname();
 				}
 			}
+			
+			// Verificar timeout antes de continuar
+			if ((time() - $startTime) > $maxTime) {
+				return $resultados;
+			}
+			
+			// Listar arquivos das pastas de primeiro nível (categorias)
+			$iterator = new \DirectoryIterator($dir);
+			foreach ($iterator as $item) {
+				if ($item->isDot() || !$item->isDir()) {
+					continue;
+				}
+				
+				// Verificar timeout antes de entrar na subpasta
+				if ((time() - $startTime) > $maxTime) {
+					break;
+				}
+				
+				// Entrar apenas no primeiro nível de subpastas (categorias)
+				$subIterator = new \DirectoryIterator($item->getPathname());
+				foreach ($subIterator as $subItem) {
+					if ($subItem->isDot() || !$subItem->isFile()) {
+						continue;
+					}
+					
+					// Verificar timeout a cada 50 arquivos
+					if (count($resultados) % 50 === 0 && (time() - $startTime) > $maxTime) {
+						error_log("Timeout detectado durante listagem de arquivos após " . count($resultados) . " arquivos");
+						break 2; // Sair dos dois loops
+					}
+					
+					$filename = $subItem->getFilename();
+					
+					// Usar função auxiliar para verificar se deve ignorar
+					if ($this->deveIgnorarArquivo($filename)) {
+						continue;
+					}
+					
+					$resultados[] = $subItem->getPathname();
+				}
+			}
+			
 		} catch (\Exception $e) {
 			error_log("Erro durante listagem de arquivos: " . $e->getMessage());
 		}
@@ -484,7 +574,7 @@ class FilesController extends AppController
 			return ['found' => false, 'message' => 'Pasta do pedido não encontrada no diretório'];
 		}
 
-		// Verificar se existem subpastas dentro da pasta do pedido
+		// Verificar se existem subpastas dentro da pasta do pedido (pastas de itens)
 		$subpastas = [];
 		$caminhoFinal = $caminhoPedido;
 		
@@ -496,19 +586,32 @@ class FilesController extends AppController
 					continue;
 				}
 				
-				$subpastas[] = [
-					'nome' => $item->getFilename(),
-					'caminho' => $item->getPathname()
-				];
+				$nomePasta = $item->getFilename();
+				
+				// Verificar se a pasta contém '-' seguido do código do item
+				if (strpos($nomePasta, '-') !== false && !empty($order->coditem)) {
+					$partes = explode('-', $nomePasta);
+					
+					// Pegar a última parte após o último '-' e limpar espaços
+					$ultimaParte = trim(end($partes));
+					
+					// Comparar com o código do item
+					if (strcasecmp($ultimaParte, trim($order->coditem)) === 0) {
+						$subpastas[] = [
+							'nome' => $nomePasta,
+							'caminho' => $item->getPathname()
+						];
+					}
+				}
 			}
 			
-			// Se há subpastas, ordenar alfabeticamente e pegar a última
+			// Se encontrou pastas do item, ordenar alfabeticamente e pegar a última
 			if (!empty($subpastas)) {
 				usort($subpastas, function($a, $b) {
 					return strcmp($a['nome'], $b['nome']);
 				});
 				
-				// Usar a última subpasta (última em ordem alfabética)
+				// Usar a última pasta do item (última em ordem alfabética)
 				$ultimaSubpasta = end($subpastas);
 				$caminhoFinal = $ultimaSubpasta['caminho'] . DS;
 			}
