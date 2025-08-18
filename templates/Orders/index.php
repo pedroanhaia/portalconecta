@@ -50,17 +50,32 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 		<div class="card-body">
 			<?= $this->Form->create(null, ['type' => 'get', 'id' => 'filtros-form', 'class' => 'form-inline']) ?>
 			
-			<!-- Filtro por Ordem de Compra (prioritário) -->
+			<!-- Filtros específicos (prioritários) -->
 			<div class="row w-100 mb-3">
-				<div class="col-md-6">
-					<label class="form-label mb-1"><strong>Buscar por Ordem de Compra:</strong></label>
-					<?= $this->Form->control('ordem_compra', [
+				<div class="col-md-4">
+					<label class="form-label mb-1"><strong>Buscar por Código do Item:</strong></label>
+					<?= $this->Form->control('coditem', [
 						'type' => 'text',
 						'class' => 'form-control',
 						'label' => false,
-						'value' => $ordemCompra ?? '',
-						'placeholder' => 'Digite a ordem de compra para busca específica',
-						'id' => 'ordem-compra-filter'
+						'value' => $coditem ?? '',
+						'placeholder' => 'Digite o código do item para busca específica',
+						'id' => 'coditem-filter'
+					]) ?>
+					<small class="form-text text-muted">
+						<i class="fas fa-info-circle"></i> 
+						Quando preenchido, este campo desativa os outros filtros para busca específica.
+					</small>
+				</div>
+				<div class="col-md-4">
+					<label class="form-label mb-1"><strong>Buscar por Descrição do Item:</strong></label>
+					<?= $this->Form->control('descitem', [
+						'type' => 'text',
+						'class' => 'form-control',
+						'label' => false,
+						'value' => $descitem ?? '',
+						'placeholder' => 'Digite a descrição do item para busca específica',
+						'id' => 'descitem-filter'
 					]) ?>
 					<small class="form-text text-muted">
 						<i class="fas fa-info-circle"></i> 
@@ -69,7 +84,7 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 				</div>
 			</div>
 
-			<?php if (empty($ordemCompra)): ?>
+			<?php if (empty($ordemCompra) && empty($coditem) && empty($descitem)): ?>
 			<div class="row w-100" id="filtros-normais">
 				<!-- Filtro Data Início -->
 				<div class="col-md-3 mb-2">
@@ -131,7 +146,14 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 			<?php else: ?>
 			<div class="alert alert-info">
 				<i class="fas fa-search"></i> 
-				<strong>Busca por Ordem de Compra ativa:</strong> "<?= h($ordemCompra) ?>"
+				<strong>Busca específica ativa:</strong>
+				<?php if (!empty($ordemCompra)): ?>
+					Ordem de Compra: "<?= h($ordemCompra) ?>"
+				<?php elseif (!empty($coditem)): ?>
+					Código do Item: "<?= h($coditem) ?>"
+				<?php elseif (!empty($descitem)): ?>
+					Descrição do Item: "<?= h($descitem) ?>"
+				<?php endif; ?>
 				<br>Os filtros de data, status e cliente estão desativados.
 			</div>
 			<?php endif; ?>
@@ -140,12 +162,12 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 				<div class="col-12">
 					<button type="submit" class="btn btn-primary">
 						<i class="fas fa-search"></i> 
-						<?= !empty($ordemCompra) ? 'Buscar' : 'Filtrar' ?>
+						<?= (!empty($ordemCompra) || !empty($coditem) || !empty($descitem)) ? 'Buscar' : 'Filtrar' ?>
 					</button>
 					<a href="<?= $this->Url->build(['action' => 'index']) ?>" class="btn btn-secondary ml-2">
 						<i class="fas fa-times"></i> Limpar
 					</a>
-					<?php if (empty($ordemCompra)): ?>
+					<?php if (empty($ordemCompra) && empty($coditem) && empty($descitem)): ?>
 					<button type="button" class="btn btn-outline-info ml-2" id="setLast30Days">
 						<i class="fas fa-calendar-alt"></i> Últimos 30 dias
 					</button>
@@ -154,7 +176,11 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 						<small>
 							Total: <strong><?= count($orders) ?></strong> pedido(s)
 							<?php if (!empty($ordemCompra)): ?>
-								| Busca: "<?= h($ordemCompra) ?>"
+								| Busca por Ordem de Compra: "<?= h($ordemCompra) ?>"
+							<?php elseif (!empty($coditem)): ?>
+								| Busca por Código: "<?= h($coditem) ?>"
+							<?php elseif (!empty($descitem)): ?>
+								| Busca por Descrição: "<?= h($descitem) ?>"
 							<?php elseif($dataInicio && $dataFim): ?>
 								| Período: <?= date('d/m/Y', strtotime($dataInicio)) ?> a <?= date('d/m/Y', strtotime($dataFim)) ?>
 							<?php endif; ?>
@@ -191,6 +217,10 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 							<i class="fas fa-search"></i> 
 							<?php if (!empty($ordemCompra)): ?>
 								Nenhum pedido encontrado para a ordem de compra "<?= h($ordemCompra) ?>".
+							<?php elseif (!empty($coditem)): ?>
+								Nenhum pedido encontrado para o código do item "<?= h($coditem) ?>".
+							<?php elseif (!empty($descitem)): ?>
+								Nenhum pedido encontrado para a descrição do item "<?= h($descitem) ?>".
 							<?php else: ?>
 								Nenhum pedido encontrado para os filtros aplicados.
 							<?php endif; ?>
