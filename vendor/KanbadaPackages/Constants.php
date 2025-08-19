@@ -45,15 +45,18 @@
 	// Users - Função na empresa 
 		define('C_UsersTypeCliente',	1);
 		define('C_UsersTypeAdmin',		2);
+		define('C_UsersTypeSupervisor',		99);
 
 		define('C_UsersTypeOpt', [
 			C_UsersTypeCliente => 'Cliente',
-			C_UsersTypeAdmin => 'Administrador'
+			C_UsersTypeAdmin => 'Administrador',
+			C_UsersTypeSupervisor => 'Supervisor'
 		]);
 
 		function UsersType($type) {
 			if ($type == C_UsersTypeCliente) return 'Cliente';
 			if ($type == C_UsersTypeAdmin)	return 'Administrador';
+			if ($type == C_UsersTypeSupervisor)	return 'Supervisor';
 		}
 	// Pedidos - Status 
 		define('C_PedidosStatusRecebido',		1);

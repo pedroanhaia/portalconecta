@@ -32,7 +32,15 @@
 								<tr>
 									<td> <?= $reg->name ?> </td>
 									<td> <?= $reg->email ?> </td>
-									<td> <?= $reg->customer->cnpj . ' - ' . $reg->customer->name ?> </td>
+									<td> 
+										<?php 
+											if (($reg?->customer)) 
+											{
+
+												echo $reg->customer->cnpj . ' - ' . $reg->customer->name; 
+											}
+										?> 
+									</td>
 									<td> <?= UsersType($reg->type) ?> </td>
 									<td class="actions">
 										<?= $this->Html->link('<i class="fa fa-edit"></i>', ["action" => "edit", $reg->id], ['rel' => 'tooltip', 'title' => 'Editar', 'class' => 'btn btn-warning text-white btn-sm', 'id' => $reg->id, 'escape' => false]); ?>

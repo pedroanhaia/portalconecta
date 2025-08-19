@@ -50,7 +50,7 @@ class OrdersController extends AppController
 			->order(['number' => 'DESC']);
 
 		// Aplicar filtro de cliente se não for admin
-		if(!$userLogado->admin) {
+		if(!$userLogado->admin  && !$userLogado->type == C_UsersTypeSupervisor) {
 			if (!is_null($userLogado->id_customer)) $query->where(['Orders.id_customer' => $userLogado->id_customer]);
 			else  $query->where(['Orders.id_customer' => 0]);
 		}
@@ -134,7 +134,7 @@ class OrdersController extends AppController
 			C_PedidosStatusEntregue => 'Entregue'
 		];
 
-		$this->set(compact('orders', 'customers', 'statusOptions', 'dataInicio', 'dataFim', 'status', 'clienteId', 'ordemCompra', 'isOrdemCompraSearch'));
+		$this->set(compact('orders', 'customers', 'statusOptions', 'dataInicio', 'dataFim', 'status', 'clienteId'));
 	}
 
 	public function add()

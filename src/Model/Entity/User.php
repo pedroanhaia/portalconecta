@@ -44,6 +44,7 @@ class User extends Entity
         'created' => true,
         'modified' => true,
         'quadros' => true,
+        'admin' => true,
     ];
 
     /**

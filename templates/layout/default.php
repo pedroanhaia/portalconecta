@@ -17,7 +17,7 @@
 	<?= $this->Html->css(['mainstyle','normalize.min', 'milligram.min', 'fonts', 'cake', 'sidebarstyle', 'buttons', 'custom-theme']) ?>
 
 	<?= $this->Html->script(['https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js']) ?>
-	<?= $this->Html->script(["https://code.jquery.com/jquery-3.7.1.min.js", 'selectfolder']) ?>
+	<?= $this->Html->script(["https://code.jquery.com/jquery-3.7.1.min.js"]) ?>
 
 	<!-- jQuery UI para datepicker e Mask -->
 	<script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>

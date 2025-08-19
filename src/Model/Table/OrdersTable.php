@@ -26,6 +26,12 @@ class OrdersTable extends Table
 			'cascadeCallbacks' => true,
 		]);
 
+		$this->hasMany('Comments', [
+			'foreignKey' => 'id_order',
+			'dependent' => true,
+			'cascadeCallbacks' => true,
+		]);
+
 		$this->hasMany('OrdersLog', [
 			'foreignKey' => 'id_order',
 			'dependent' => true,
@@ -39,6 +45,13 @@ class OrdersTable extends Table
 			'dependent' => true,
 			'cascadeCallbacks' => true,
 		]);
+
+		$this->hasMany('Files', [
+            'foreignKey' => 'id_order',
+            'dependent' => true,
+            'cascadeCallbacks' => true
+        ]);
+
 	}
 
 	public function validationDefault(Validator $validator): Validator

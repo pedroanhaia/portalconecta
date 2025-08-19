@@ -44,6 +44,12 @@ class FilesTable extends Table
 		$this->setPrimaryKey('id');
 
 		$this->addBehavior('Timestamp');
+
+		$this->hasMany('Fileslog', [
+			'foreignKey' => 'id_file',
+			'dependent' => true,
+			'cascadeCallbacks' => true,
+		]);
 	}
 
 	/**
