@@ -74,7 +74,7 @@ class UsersController extends AppController
 
 		if ($this->request->is('post')) {
 			$user = $this->Users->patchEntity($user, $this->request->getData());
-			
+			$user->darkmode = 0;
 			if ($this->Users->save($user)) {
 				$this->Flash->success(__('Usuário cadastrado com sucesso!'));
 
