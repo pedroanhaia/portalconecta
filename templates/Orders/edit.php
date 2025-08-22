@@ -444,7 +444,7 @@ $(document).ready(function () {
 		   if (customerId) {
 			   // Fazer requisição AJAX para buscar usuários
 			   $.ajax({
-				   url: '<?= $this->Url->build(['controller' => 'Orders', 'action' => 'getUsersByCustomer']) ?>',
+				   url: '<?= $this->Url->build(['controller' => 'Orders', 'action' => 'getUsersForOrder']) ?>',
 				   type: 'GET',
 				   data: { customer_id: customerId },
 				   success: function(response) {

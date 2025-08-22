@@ -611,4 +611,28 @@ class OrdersController extends AppController
 			'users' => $users
 		]));
 	}
+	public function getUsersForOrder()
+	{
+		$this->request->allowMethod(['get']);
+		
+		// $customerId = $this->request->getQuery('customer_id');
+		
+		// if (empty($customerId)) {
+		// 	return $this->response->withType('application/json')->withStringBody(json_encode([
+		// 		'success' => false,
+		// 		'message' => 'ID do cliente não fornecido',
+		// 		'users' => []
+		// 	]));
+		// }
+
+		$users = $this->Users->find()
+			// ->where(['id_customer' => $customerId])
+			->select(['id', 'name', 'email'])
+			->toArray();
+
+		return $this->response->withType('application/json')->withStringBody(json_encode([
+			'success' => true,
+			'users' => $users
+		]));
+	}
 }

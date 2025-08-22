@@ -228,7 +228,7 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 					</tr>
 				<?php else: ?>
 					<?php foreach ($orders as $reg): ?>
-						<tr>
+						<tr style = "font-size: 1.3rem;">
 							<td><?= $reg->number ?></td>
 							<td>
 								<?php if (!empty($reg->coditem)): ?>
@@ -237,9 +237,7 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 									<small class="text-muted">-</small>
 								<?php endif; ?>
 							</td>
-							<?php if($userAdmin): ?>
-								<td><?= $reg->customer->cnpj . ' - ' . $reg->customer->name ?></td>
-							<?php endif; ?>
+							<td><?= $reg->customer->cnpj . ' - ' . $reg->customer->name ?></td>
 							<td>
 								<span class="badge badge-<?= getStatusBadgeClass($reg->status) ?>">
 									<?= PedidosStatus($reg->status) ?>
