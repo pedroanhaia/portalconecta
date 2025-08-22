@@ -237,7 +237,9 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 									<small class="text-muted">-</small>
 								<?php endif; ?>
 							</td>
-							<td><?= $reg->customer->cnpj . ' - ' . $reg->customer->name ?></td>
+							<?php if($userAdmin): ?>
+								<td><?= $reg->customer->cnpj . ' - ' . $reg->customer->name ?></td>
+							<?php endif; ?>
 							<td>
 								<span class="badge badge-<?= getStatusBadgeClass($reg->status) ?>">
 									<?= PedidosStatus($reg->status) ?>
