@@ -50,11 +50,16 @@ class OrdersController extends AppController
 			->order(['number' => 'DESC']);
 
 		// Aplicar filtro de cliente se não for admin
-		if(!$userLogado->admin  && !$userLogado->type == C_UsersTypeSupervisor) {
+		if($userLogado->admin == 0  && $userLogado->type == 1) {
 			// Filtrar apenas pedidos onde o usuário logado está associado na tabela orders_users
 			$query->matching('Users', function ($q) use ($userLogado) {
 				return $q->where(['Users.id' => $userLogado->id]);
 			});
+		}
+		else if ($userLogado->type == 2 && $userLogado->admin == 0) {
+			// Filtrar apenas pedidos do cliente associado ao usuário logado
+			$query->where(['Orders.id_customer' => $userLogado->id_customer]);
+
 		}
 
 		// Verificar se há busca por código do item
