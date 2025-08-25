@@ -71,6 +71,210 @@ class FilesController extends AppController
 		$order = $this->Orders->findById($id)
 			->contain([
 				'Customers' => ['fields' => ['name']],
+				'Files',
+			])
+		->first();
+
+		if (!$order) {
+			return $this->response->withType('application/json')
+				->withStringBody(json_encode(['success' => false, 'message' => 'Pedido não encontrado.']));
+		}
+
+		$baseDir = rtrim($this->Config->get(1)->path, '\\/') . DS;
+		$pedidoNumero = str_pad($order->number, 3, '0', STR_PAD_LEFT);
+		$caminhoPedido = null;
+		$pastasEncontradas = [];
+		$pastasCorrespondentes = [];
+
+		if (!is_dir($baseDir)) {
+			return $this->response->withType('application/json')
+				->withStringBody(json_encode(['success' => false, 'message' => 'Diretório base não encontrado: ' . $baseDir]));
+		}
+
+		try {
+			$iterator = new \DirectoryIterator($baseDir);
+			foreach ($iterator as $item) {
+				if ($item->isDot() || !$item->isDir()) continue;
+				$nomePasta = $item->getFilename();
+				$caminhoCompleto = $item->getPathname();
+				$pastasEncontradas[] = $nomePasta;
+
+				if (strpos($nomePasta, '-') !== false) {
+					$partes = explode('-', $nomePasta);
+					$ultimaParte = trim(end($partes));
+					$numeroEncontrado = ltrim($ultimaParte, '0');
+					$numeroPedidoBusca = ltrim($pedidoNumero, '0');
+
+					if ($numeroEncontrado == $numeroPedidoBusca) {
+						$pastasCorrespondentes[] = [
+							'nome' => $nomePasta,
+							'caminho' => $caminhoCompleto
+						];
+					}
+				}
+			}
+
+			if (!empty($pastasCorrespondentes)) {
+				usort($pastasCorrespondentes, fn($a, $b) => strcmp($a['nome'], $b['nome']));
+				$ultimaPasta = end($pastasCorrespondentes);
+				$caminhoPedido = $ultimaPasta['caminho'] . DS;
+			}
+
+		} catch (\Exception $e) {
+			return $this->response->withType('application/json')
+				->withStringBody(json_encode(['success' => false, 'message' => 'Erro ao acessar diretório: ' . $e->getMessage()]));
+		}
+
+		if (!$caminhoPedido || !is_dir($caminhoPedido)) {
+			return $this->response->withType('application/json')
+				->withStringBody(json_encode([
+					'success' => false, 
+					'message' => 'Pasta do pedido não encontrada para o pedido #' . $order->number,
+					'debug' => [
+						'baseDir' => $baseDir,
+						'pedidoNumero' => $pedidoNumero,
+						'pastasEncontradas' => array_slice($pastasEncontradas, 0, 10),
+						'pastasCorrespondentes' => $pastasCorrespondentes,
+						'totalPastas' => count($pastasEncontradas)
+					]
+				]));
+		}
+
+		$subpastas = [];
+		$caminhoFinal = $caminhoPedido;
+
+		try {
+			$iterator = new \DirectoryIterator($caminhoPedido);
+			foreach ($iterator as $item) {
+				if ($item->isDot() || !$item->isDir()) continue;
+				$nomePasta = $item->getFilename();
+
+				if (strpos($nomePasta, '-') !== false && !empty($order->coditem)) {
+					$partes = explode('-', $nomePasta);
+					$ultimaParte = trim(end($partes));
+					if (strcasecmp($ultimaParte, trim($order->coditem)) === 0) {
+						$subpastas[] = [
+							'nome' => $nomePasta,
+							'caminho' => $item->getPathname()
+						];
+					}
+				}
+			}
+
+			if (!empty($subpastas)) {
+				usort($subpastas, fn($a, $b) => strcmp($a['nome'], $b['nome']));
+				$ultimaSubpasta = end($subpastas);
+				$caminhoFinal = $ultimaSubpasta['caminho'] . DS;
+			}
+
+		} catch (\Exception $e) {
+			$caminhoFinal = $caminhoPedido;
+		}
+
+		$arquivos = $this->listarArquivos($caminhoFinal);
+
+		$connection = $this->Files->getConnection();
+
+		try {
+			$connection->begin();
+
+			// Monta lista de arquivos encontrados
+			$arquivosUnicos = [];
+			foreach ($arquivos as $arquivo) {
+				$name = basename($arquivo);
+				$type = pathinfo($arquivo, PATHINFO_EXTENSION);
+				$chaveUnica = strtolower($arquivo);
+				$arquivosUnicos[$chaveUnica] = [
+					'name' => $name,
+					'path' => $arquivo,
+					'type' => $type,
+					'category' => $this->determineCategoryFromPath($arquivo, $caminhoFinal)
+				];
+			}
+
+			// Busca arquivos já no banco
+			$arquivosBanco = $this->Files->find()
+				->where(['id_order' => $order->id])
+				->indexBy(fn($row) => strtolower($row->path))
+				->toArray();
+
+			// Inserir novos ou reativar
+			foreach ($arquivosUnicos as $chave => $dados) {
+				if (!isset($arquivosBanco[$chave])) {
+					$entity = $this->Files->newEntity([
+						'name' => $dados['name'],
+						'path' => $dados['path'],
+						'status' => 1,
+						'id_order' => $id,
+						'type' => $dados['type'],
+						'category' => $dados['category'],
+						'created' => date('Y-m-d H:i:s'),
+						'modified' => date('Y-m-d H:i:s')
+					]);
+					if (!$this->Files->save($entity)) {
+						throw new \Exception("Erro ao salvar arquivo {$dados['name']}");
+					}
+				} else {
+					if ($arquivosBanco[$chave]->status == 0) {
+						$arquivosBanco[$chave]->status = 1;
+						$arquivosBanco[$chave]->modified = date('Y-m-d H:i:s');
+						$this->Files->save($arquivosBanco[$chave]);
+					}
+				}
+			}
+
+			// Desativar arquivos que sumiram
+			foreach ($arquivosBanco as $chave => $arquivoBanco) {
+				if (!isset($arquivosUnicos[$chave]) && $arquivoBanco->status != 0) {
+					$arquivoBanco->status = 0;
+					$arquivoBanco->modified = date('Y-m-d H:i:s');
+					$this->Files->save($arquivoBanco);
+				}
+			}
+
+			$connection->commit();
+
+		} catch (\Exception $e) {
+			$connection->rollback();
+			return $this->response->withType('application/json')
+				->withStringBody(json_encode(['success' => false, 'message' => 'Erro ao processar arquivos: ' . $e->getMessage()]));
+		}
+
+		$this->Notification->sendNotificationToOrderUsers($id, 'file', []);
+
+		return $this->response->withType('application/json')
+			->withStringBody(json_encode([
+				'success' => true, 
+				'message' => 'Arquivos mapeados com sucesso.',
+				'debug' => [
+					'pastasCorrespondentes' => count($pastasCorrespondentes),
+					'pastaSelecionada' => basename($caminhoPedido),
+					'coditemPedido' => $order->coditem ?? 'Não informado',
+					'subpastasEncontradas' => count($subpastas),
+					'caminhoFinal' => basename($caminhoFinal),
+					'totalArquivosEncontrados' => count($arquivos),
+					'totalNoBanco' => count($arquivosBanco),
+					'novosInseridos' => count(array_diff_key($arquivosUnicos, $arquivosBanco)),
+					'reativados' => count(array_filter($arquivosBanco, fn($a) => $a->status == 1)),
+					'desativados' => count(array_filter($arquivosBanco, fn($a) => $a->status == 0))
+				]
+			]));
+	}
+
+
+	public function scanAndMapOld($id = null)
+	{
+		$this->autoRender = false;
+
+		if (!$this->request->is('ajax')) {
+			return $this->response->withType('application/json')
+				->withStringBody(json_encode(['success' => false, 'message' => 'Requisição não suportada.']));
+		}
+
+		$order = $this->Orders->findById($id)
+			->contain([
+				'Customers' => ['fields' => ['name']],
+				'Files',
 			])
 		->first();
 
@@ -838,7 +1042,7 @@ class FilesController extends AppController
 
 		try {
 			$files = $this->Files->find()
-				->where(['id_order' => $orderId, 'category' => $category])
+				->where(['id_order' => $orderId, 'category' => $category, 'status' => 1])
 				->all();
 
 			$result = [];
