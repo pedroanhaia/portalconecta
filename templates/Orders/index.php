@@ -258,6 +258,11 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 										$isPast = $estimateDate < $today;
 										$daysDiff = $today->diff($estimateDate)->days;
 										$isNear = !$isPast && $daysDiff <= 7;
+										//Quando o pedido está como entregue, não marcar como atrasado ou próximo
+										if ($reg->status == C_PedidosStatusEntregue) {
+											$isPast = false;
+											$isNear = false;
+										}
 									?>
 									<small class="<?= $isPast ? 'text-danger' : ($isNear ? 'text-warning' : 'text-muted') ?>">
 										<?= $estimateDate->format('d/m/Y') ?>
