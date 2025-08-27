@@ -68,6 +68,7 @@ class AppController extends Controller
 			$this->set('userType', $userAtt->type);
 			$this->set('userAdmin', $userAtt->admin);
 			$this->set('userName', $userAtt->name);
+			$this->set('superVir', $userAtt->type == 2 ? true : false);
 		}
 	}
 	public function isAuthorized($user)	{

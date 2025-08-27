@@ -121,7 +121,7 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 				</div>
 
 				<!-- Filtro Cliente (apenas para admin) -->
-				<?php if($userAdmin): ?>
+				<?php if($userAdmin || $superVir): ?>
 				<div class="col-md-3 mb-2">
 					<label class="form-label mb-1">Cliente:</label>
 					<?php 
@@ -237,7 +237,7 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 									<small class="text-muted">-</small>
 								<?php endif; ?>
 							</td>
-							<?php if($userAdmin): ?>
+							<?php if($userAdmin || $superVir): ?>
 								<td><?= $reg->customer->cnpj . ' - ' . $reg->customer->name ?></td>
 							<?php endif; ?>
 							<td>
