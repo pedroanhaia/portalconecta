@@ -121,7 +121,7 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 				</div>
 
 				<!-- Filtro Cliente (apenas para admin) -->
-				<?php if($userAdmin || $superVir): ?>
+				
 				<div class="col-md-3 mb-2">
 					<label class="form-label mb-1">Cliente:</label>
 					<?php 
@@ -138,10 +138,8 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 						'value' => $clienteId ?? 'todos'
 					]) ?>
 				</div>
-				<?php else: ?>
-				<!-- Espaço para manter alinhamento quando não é admin -->
-				<div class="col-md-3 mb-2"></div>
-				<?php endif; ?>
+				
+				
 			</div>
 			<?php else: ?>
 			<div class="alert alert-info">
@@ -200,9 +198,7 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 				<tr>
 					<th># </th>
 					<th>Item</th>
-					<?php if($userAdmin): ?>
-						<th>Empresa</th>
-					<?php endif; ?>
+					<th>Empresa</th>
 					<th>Status</th>
 					<th>Data Criação</th>
 					<th>Previsão Entrega</th>
@@ -237,9 +233,7 @@ $isDefaultFilter = empty($this->request->getQuery('data_inicio')) && empty($this
 									<small class="text-muted">-</small>
 								<?php endif; ?>
 							</td>
-							<?php if($userAdmin || $superVir): ?>
 								<td><?= $reg->customer->cnpj . ' - ' . $reg->customer->name ?></td>
-							<?php endif; ?>
 							<td>
 								<span class="badge badge-<?= getStatusBadgeClass($reg->status) ?>">
 									<?= PedidosStatus($reg->status) ?>

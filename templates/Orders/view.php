@@ -80,7 +80,10 @@
                                                     $daysDiff = $today->diff($estimateDate)->days;
                                                     $isPast = $estimateDate < $today;
                                                     $isNear = !$isPast && $daysDiff <= 7;
-                                                    
+                                                    if ($order->status == C_PedidosStatusEntregue) {
+                                                        $isPast = false;
+                                                        $isNear = false;
+                                                    }
                                                     $cssClass = 'estimate-highlight';
                                                     if ($isPast) {
                                                         $cssClass = 'estimate-overdue';
