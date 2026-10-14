@@ -23,7 +23,7 @@
 				<div class="col-md-6">
 					<div class="card" style="background-color:#1a2f33; color:white; padding: 50px">
 						<div class="logo-center">
-							<?= $this->Html->image('logos/Logo CGL_vertical branco.png', ['alt' => 'CGL Conecta']) ?>    
+							<?= $this->Html->image('logos/logoconectaverticalpreto.jpeg', ['alt' => 'Portal Conecta']) ?>
 						</div>
 						<main class="main card-body">
 							<div class="container">
