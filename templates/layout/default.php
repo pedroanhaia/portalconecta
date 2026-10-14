@@ -1,5 +1,5 @@
 <?php
-	$cakeDescription = 'CGL-Conecta';
+	$cakeDescription = 'Portal-Conecta';
 ?>
 <!DOCTYPE html>
 <html>
@@ -10,7 +10,7 @@
 		<?= $cakeDescription ?>:
 		<?= $this->fetch('title') ?>
 	</title>
-	<?= $this->Html->meta('icon', '/webroot/img/logo.png'); ?>
+	<?= $this->Html->meta('icon', '/webroot/img/logo.jpeg'); ?>
 
 	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
 	<?= $this->Html->css(['https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css', 'https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css', 'https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css']) ?>
@@ -51,9 +51,9 @@
 				<ul class="menu-links">
 					<li class="nav-link logo-center">
 						<?= $this->Html->link(
-							$this->Html->image('Logos/Logo CGL_vertical branco.png', ['alt' => 'logo', 'class' => 'mini-sidebar']) .
-							$this->Html->image('Logos/Logo CGL_horizontal branco.png', ['alt' => 'logo', 'class' => 'open-sidebar']),
-							'https://cglinox.com.br/',
+							$this->Html->image('Logos/logoconectaverticalpreto.png', ['alt' => 'logo', 'class' => 'mini-sidebar']) .
+							$this->Html->image('Logos/logoconectaverticalpreto.png', ['alt' => 'logo', 'class' => 'open-sidebar']),
+							'https://portalconecta.adatecnologia.com/',
 							['escape' => false, 'target' => '_blank']
 						); ?>
 					</li>
@@ -110,7 +110,7 @@
 </body>
 </html>
 <script>
-	// Sidebar 
+	// Sidebar
 		if (typeof body === 'undefined') {
 			document.addEventListener("DOMContentLoaded", function () {
 				const body = document.querySelector("body");
@@ -180,7 +180,7 @@
 			});
 
 		}
-	// Datatable 
+	// Datatable
 		var datatableOptions = {
 			"pageLength": 10,
 			"language": {
