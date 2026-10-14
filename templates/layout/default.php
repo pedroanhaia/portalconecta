@@ -1,5 +1,5 @@
 <?php
-	$cakeDescription = 'Portal-Conecta';
+	$cakeDescription = 'Portal Conecta';
 ?>
 <!DOCTYPE html>
 <html>
@@ -10,11 +10,11 @@
 		<?= $cakeDescription ?>:
 		<?= $this->fetch('title') ?>
 	</title>
-	<?= $this->Html->meta('icon', '/webroot/img/logo.jpeg'); ?>
+	<?= $this->Html->meta('icon', '/img/Logos/logoconectaverticalpreto.jpeg'); ?>
 
 	<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
 	<?= $this->Html->css(['https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css', 'https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css', 'https://unpkg.com/boxicons@2.1.1/css/boxicons.min.css']) ?>
-	<?= $this->Html->css(['mainstyle','normalize.min', 'milligram.min', 'fonts', 'cake', 'sidebarstyle', 'buttons', 'custom-theme']) ?>
+	<?= $this->Html->css(['mainstyle','normalize.min', 'milligram.min', 'fonts', 'cake', 'sidebarstyle', 'buttons', 'custom-theme', 'portal-conecta']) ?>
 
 	<?= $this->Html->script(['https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js']) ?>
 	<?= $this->Html->script(["https://code.jquery.com/jquery-3.7.1.min.js"]) ?>
@@ -51,8 +51,8 @@
 				<ul class="menu-links">
 					<li class="nav-link logo-center">
 						<?= $this->Html->link(
-							$this->Html->image('Logos/logoconectaverticalpreto.png', ['alt' => 'logo', 'class' => 'mini-sidebar']) .
-							$this->Html->image('Logos/logoconectaverticalpreto.png', ['alt' => 'logo', 'class' => 'open-sidebar']),
+							$this->Html->image('Logos/logoconectaverticalpreto.jpeg', ['alt' => 'Portal Conecta', 'class' => 'mini-sidebar']) .
+							$this->Html->image('Logos/logoconectaverticalpreto.jpeg', ['alt' => 'Portal Conecta', 'class' => 'open-sidebar']),
 							'https://portalconecta.adatecnologia.com/',
 							['escape' => false, 'target' => '_blank']
 						); ?>

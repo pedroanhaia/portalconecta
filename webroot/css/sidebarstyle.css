@@ -17,18 +17,18 @@
 
 :root{
     /* ===== Colors from custom-theme ===== */
-    --cgl-primary: #1a2f33;
-    --cgl-secondary: #f8f8fa;
-    --cgl-dark-blue: #1D2C4F;
-    --cgl-red: #981914;
+    --cgl-primary: #080c17;
+    --cgl-secondary: #f1f5fb;
+    --cgl-dark-blue: #101b31;
+    --cgl-red: #e14b58;
     --cgl-white: #FFFFFF;
-    --cgl-hover: #768285;
-    --cgl-text-color: #1a2f33;
+    --cgl-hover: #254d79;
+    --cgl-text-color: #080c17;
     --cgl-border-color: #e9ecef;
     --cgl-danger: #dc3545;
     --cgl-danger-hover: #b11928;
-    --cgl-info: #26c1e0;
-    --cgl-info-hover: #1aa4c0;
+    --cgl-info: #00aaff;
+    --cgl-info-hover: #007fd1;
     
     /* ===== Sidebar specific colors ===== */
     --body-color: var(--cgl-secondary);

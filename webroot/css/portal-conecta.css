@@ -1,0 +1,29 @@
+/* Portal Conecta — identidade visual inspirada no logotipo fornecido */
+:root{--portal-black:#05070c;--portal-navy:#101b31;--portal-blue:#009df4;--portal-cyan:#22c7ff;--portal-silver:#dce4f0;--portal-surface:#f3f6fb;--portal-border:#d6e2f1;--portal-ink:#142238;--bs-primary:#008fe0;--bs-primary-rgb:0,143,224}
+body{color:var(--portal-ink)}
+body:not(:has(.sidebar)){background:radial-gradient(ellipse at 50% 15%,#16385c 0%,#090e19 50%,#03060c 100%)!important}
+body:has(.sidebar){background:var(--portal-surface)}
+.sidebar{background:linear-gradient(180deg,#05070d 0%,#0e1b31 100%)!important;border-right:1px solid #183d65;box-shadow:3px 0 20px #061a3030}
+.sidebar .menu-links a:hover,.sidebar .menu-links a:focus-visible{background:#163c63!important;color:#fff!important}
+.sidebar .menu-links a:hover .icon{color:var(--portal-cyan)!important}
+.sidebar .logo-center{height:90px!important;padding:10px 6px}
+.sidebar .logo-center img{width:100%;max-width:215px;max-height:78px;object-fit:contain}
+.sidebar.close .logo-center img.mini-sidebar{width:60px;max-height:48px;object-fit:contain}
+.sidebar .toggle,.sidebar .toggle-switch .switch{background:var(--portal-blue)!important}
+.main-content{color:var(--portal-ink)}
+.card:not(.card-login){border-color:var(--portal-border);box-shadow:0 5px 22px rgba(12,45,84,.06)}
+.btn-primary,.button-primary,button[type=submit]:not(.btn-danger):not(.btn-warning),input[type=submit]{background:linear-gradient(120deg,#0074c4,#00b9ff)!important;border-color:#008bdb!important;color:#fff!important;box-shadow:0 3px 10px #009df42b}
+.btn-primary:hover,.button-primary:hover,button[type=submit]:not(.btn-danger):not(.btn-warning):hover{background:linear-gradient(120deg,#005eae,#008cdb)!important;border-color:#0072bf!important}
+a{color:#0075bf}a:hover{color:#00578d}
+input:focus,select:focus,textarea:focus,.form-control:focus,.form-select:focus{border-color:var(--portal-blue)!important;box-shadow:0 0 0 .2rem #009df422!important}
+.table thead,table thead{background:#eaf2fb;color:#102f50}
+.nav-tabs .nav-link.active{border-bottom:2px solid var(--portal-blue);color:#006caf}
+::selection{background:#8cdaff;color:#001629}
+/* Login */
+body:not(:has(.sidebar)) .card{background:linear-gradient(145deg,#080b13,#111d32)!important;border:1px solid #1d4e79!important;border-radius:18px!important;box-shadow:0 28px 85px #0009,0 0 38px #009df422!important}
+body:not(:has(.sidebar)) .logo-center{padding:10px 0 26px}
+body:not(:has(.sidebar)) .logo-center img{max-width:100%!important;width:min(100%,480px);height:auto;object-fit:contain}
+body:not(:has(.sidebar)) .card label{color:#e1e9f6}
+body:not(:has(.sidebar)) .card a{color:#55caff}
+body:not(:has(.sidebar)) .card input{background:#f9fbff;color:#12243a;border-radius:7px}
+@media(max-width:767px){body:not(:has(.sidebar)){overflow:auto!important;min-height:100vh;height:auto!important;padding:18px 0}body:not(:has(.sidebar)) .card{padding:22px!important}body:not(:has(.sidebar)) .container.mt-5{margin-top:1rem!important}}
